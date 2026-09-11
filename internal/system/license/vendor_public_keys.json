@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "activeKeyId": "",
+  "keys": [
+    {
+      "keyId": "AGMP-KID-82F87517-49F3CED1-BAE774CE-F298CD26",
+      "fingerprint": "SHA256:82F8751749F3CED1BAE774CEF298CD2648255DE14B5F5905483195229E4F56ED",
+      "publicKey": "029gPyG3RhUCSG+eWj9dykzQ1v1Z7ux7gJMtf4SsMws=",
+      "status": "legacy",
+      "createdAt": 0,
+      "note": "0.1.68 及更早版本内置公钥。对应发行私钥已不可用，仅保留用于验证历史 BFLC2/BFCDK。正式 0.1.69+ Release 前必须本机生成新的 active 发行密钥。"
+    }
+  ]
+}

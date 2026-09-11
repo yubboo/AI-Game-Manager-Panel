@@ -1,0 +1,22 @@
+{
+  "listen": "127.0.0.1:17890",
+  "serviceName": "ai-game-manager-panel",
+  "serviceUser": "ai-game-manager-panel",
+  "installRoot": "/opt/ai-game-manager-panel",
+  "configRoot": "/etc/ai-game-manager-panel",
+  "runtimeRoot": "/var/lib/ai-game-manager-panel",
+  "logRoot": "/var/log/ai-game-manager-panel",
+  "supportedDistributions": ["ubuntu", "debian", "rocky", "almalinux"],
+  "architectures": ["amd64", "arm64"],
+  "runAsRoot": false,
+  "enableSystemd": true,
+  "enableOnBoot": true,
+  "allowRemoteWeb": false,
+  "requireInitialAdminSetup": true,
+  "docker": {
+    "enabled": true,
+    "image": "github.com/yubboo/AI-Game-Manager-Panel/ai-game-manager-panel-server",
+    "containerPort": 17890,
+    "runAsNonRoot": true
+  }
+}

@@ -1,0 +1,55 @@
+package xiaoyuruntime
+
+import (
+	"os"
+	"path/filepath"
+	"runtime"
+	"testing"
+)
+
+func TestMissingRuntimeReturnsStableStatus(t *testing.T) {
+	service := New(Options{Root: t.TempDir(), BinaryOverride: filepath.Join(t.TempDir(), "missing-agent")})
+	status := service.Status()
+	if status.Available || status.Ready {
+		t.Fatalf("missing runtime must not report ready: %+v", status)
+	}
+	if status.Protocol != ProtocolVersion {
+		t.Fatalf("unexpected protocol: %q", status.Protocol)
+	}
+}
+
+func TestWindowsRuntimeNameHasExeSuffix(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("windows-specific runtime path behavior")
+	}
+	service := New(Options{Root: t.TempDir()})
+	if _, err := service.binaryPath(); err == nil {
+		t.Fatal("unexpected runtime discovered in isolated temp root")
+	}
+}
+
+func TestInternalAICoreRuntimePathIsPreferred(t *testing.T) {
+	root := t.TempDir()
+	name := "AI-Game-Manager-XiaoYu"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	internalDir := filepath.Join(root, "internal", "xiaoyu")
+	if err := os.MkdirAll(internalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(internalDir, name)
+	if err := os.WriteFile(want, []byte("internal-agmp-ai-core"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	service := New(Options{Root: root})
+	got, err := service.binaryPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotAbs, _ := filepath.Abs(got)
+	wantAbs, _ := filepath.Abs(want)
+	if filepath.Clean(gotAbs) != filepath.Clean(wantAbs) {
+		t.Fatalf("internal AI Core path = %q, want %q", gotAbs, wantAbs)
+	}
+}

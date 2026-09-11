@@ -1,0 +1,211 @@
+{
+  "windows": {
+    "architecture": "amd64",
+    "releaseDir": "build/release/windows/wails",
+    "desktopBinary": "build/work/windows-wails/bin/AI-Game-Manager-Panel.exe",
+    "webBinary": "build/work/windows-wails/bin/AI-Game-Manager-Web.exe",
+    "portableArchive": "AI-Game-Manager-Panel-Windows-x64-Portable.zip",
+    "portableDir": "build/release/windows/wails/portable",
+    "setupFilename": "AI-Game-Manager-Panel-0.2.2-Windows-x64-Setup.exe",
+    "installerDir": "build/release/windows/wails/installer",
+    "workDir": "build/work/windows-wails",
+    "distribution": "official-wails-inno",
+    "installerLanguage": "zh-CN",
+    "licenseAgreementRequired": true,
+    "licenseAgreement": "distribution/installer/windows/EULA-zh-CN.txt",
+    "appId": "0DFB0A2A-834E-4F69-958C-DB0B9E2E7811",
+    "sha256Companion": true,
+    "upgradeStrategy": "same-appid-inplace-runtime-preserved",
+    "agentBinary": "build/work/windows-wails/bin/AI-Game-Manager-XiaoYu.exe",
+    "agentRuntime": "rust/xiaoyu.v1",
+    "userDistribution": {
+      "primaryArtifact": "AI-Game-Manager-Panel-0.2.2-Windows-x64-Setup.exe",
+      "precompiledAgentIncluded": true,
+      "runtimeCompilation": false,
+      "requiresRust": false,
+      "requiresCargo": false,
+      "requiresMSVCBuildTools": false,
+      "requiresGo": false,
+      "requiresNode": false,
+      "embeddedAICore": true,
+      "agentExposedToUser": false,
+      "standaloneAgentArtifact": false,
+      "developerHelperIncluded": false,
+      "sourceCodeIncluded": false
+    },
+    "publisherBuild": {
+      "fromSource": true,
+      "buildsRustAgent": true,
+      "requiresRust": true,
+      "requiresCargo": true,
+      "requiresMSVCBuildTools": true,
+      "publishesStandaloneAgent": false
+    }
+  },
+  "linux": {
+    "architecture": "amd64",
+    "portableArchive": "AI-Game-Manager-Panel-Linux-x64.tar.gz",
+    "debPackagePrefix": "ai-game-manager-panel",
+    "releaseDir": "build/release/linux",
+    "installPrefix": "/usr/lib/ai-game-manager-panel",
+    "runtimeRoot": "${XDG_DATA_HOME:-$HOME/.local/share}/AI-Game-Manager-Panel",
+    "serverEdition": {
+      "architectures": [
+        "amd64",
+        "arm64"
+      ],
+      "binaryPattern": "ai-game-manager-panel-server-linux-{arch}",
+      "archivePattern": "AI-Game-Manager-Panel-Server-Linux-{arch}.tar.gz",
+      "releaseDir": "build/release/linux-server",
+      "binaryDir": "build/work/linux-server/bin",
+      "staticBinary": true,
+      "requiresDesktopLibraries": false,
+      "xiaoyuRuntimePattern": "AI-Game-Manager-XiaoYu-linux-{arch}",
+      "precompiledXiaoYuIncluded": true,
+      "aiFeatureParity": "required",
+      "headlessAI": true
+    },
+    "xiaoyuRuntime": "internal/xiaoyu/AI-Game-Manager-XiaoYu",
+    "precompiledXiaoYuIncluded": true,
+    "runtimeCompilation": false,
+    "requiresRustAtRuntime": false
+  },
+  "electron": {
+    "architecture": "amd64",
+    "framework": "Electron",
+    "electronVersion": "44.3.0",
+    "builderVersion": "26.16.1",
+    "coreBinary": "build/work/electron-core/AI-Game-Manager-Core.exe",
+    "releaseDir": "build/release/windows/electron",
+    "installerDir": "build/release/windows/electron/installer",
+    "portableDir": "build/release/windows/electron/portable",
+    "workDir": "build/work/electron-builder",
+    "transport": "loopback-http",
+    "sharedGoCore": true,
+    "sharedVueFrontend": true,
+    "packageOptimization": {
+      "asar": true,
+      "compression": "maximum",
+      "electronLanguages": [
+        "zh-CN",
+        "en-US"
+      ],
+      "stripGoDebugSymbols": true
+    },
+    "distribution": "compatibility",
+    "agentBinary": "build/work/electron-core/AI-Game-Manager-XiaoYu.exe",
+    "agentRuntime": "rust/xiaoyu.v1"
+  },
+  "licensing": {
+    "publicKeyRing": "internal/system/license/vendor_public_keys.json",
+    "releaseKeyGate": "scripts/common/check-release-key.mjs",
+    "licenseAdmin": "scripts/tools/license/AGMP-License-Admin.bat",
+    "privateKeyPolicy": "outside-repository-only",
+    "syncPublicKeyTool": "scripts/tools/license/sync-release-public-key.ps1",
+    "verifyCertificateTool": "scripts/tools/license/verify-bflc2.ps1",
+    "activationRecordWrite": "atomic-replace"
+  },
+  "agentRuntime": {
+    "language": "Rust",
+    "workspace": "rust/Cargo.toml",
+    "protocol": "xiaoyu.v1",
+    "transport": "json-rpc-stdio",
+    "binary": "AI-Game-Manager-XiaoYu",
+    "primaryInteraction": "xiaoyu",
+    "manualFallback": true,
+    "productRole": "embedded-xiaoyu-intelligence-core",
+    "userFacingProduct": false,
+    "standaloneDistribution": false
+  },
+  "productArchitecture": {
+    "product": "AI-Game-Manager-Panel",
+    "model": "two-brains-one-body",
+    "agentRole": "xiaoyu-super-brain-assistant",
+    "manualRole": "human-primary-controller",
+    "sharedCapabilityLayer": true,
+    "standaloneAgentProduct": false,
+    "deliveryTargets": {
+      "web": {
+        "kind": "complete-product-target",
+        "status": "active",
+        "xiaoyu": true,
+        "headlessCapable": true,
+        "featureParity": "core-ai-required"
+      },
+      "windowsWails": {
+        "kind": "complete-product-target",
+        "status": "active",
+        "recommended": true,
+        "xiaoyu": true,
+        "featureParity": "core-ai-required"
+      },
+      "windowsElectron": {
+        "kind": "complete-product-target",
+        "status": "compatibility",
+        "xiaoyu": true,
+        "featureParity": "core-ai-required"
+      },
+      "windowsRustNative": {
+        "kind": "complete-product-target",
+        "status": "planned"
+      },
+      "linuxServerWeb": {
+        "kind": "complete-product-target",
+        "status": "active",
+        "xiaoyu": true,
+        "headless": true,
+        "featureParity": "core-ai-required"
+      },
+      "dockerWeb": {
+        "kind": "complete-product-target",
+        "status": "active",
+        "xiaoyu": true,
+        "headless": true,
+        "featureParity": "core-ai-required"
+      }
+    },
+    "humanRole": "primary-goal-boundary-approval-override",
+    "humanOverride": "always-wins",
+    "webAIFeatureParity": "required",
+    "sharedControlHost": true,
+    "serverOwnedRuns": true,
+    "clientDisconnectDoesNotCancelRun": true
+  },
+  "environments": {
+    "development": {
+      "purpose": "source-development-and-debug",
+      "usesDeveloperHelper": true,
+      "baseToolchain": [
+        "go",
+        "node",
+        "pnpm"
+      ],
+      "rustToolchain": "on-demand-for-ai-core-or-source-release",
+      "developmentLicenseBuildTag": "agmp_dev_license"
+    },
+    "publisherBuild": {
+      "purpose": "compile-and-package-production-artifacts",
+      "isEndUserRuntime": false,
+      "mayRequire": [
+        "go",
+        "node",
+        "pnpm",
+        "rust",
+        "cargo",
+        "msvc",
+        "windows-sdk",
+        "wails-or-electron-builder",
+        "inno-setup"
+      ]
+    },
+    "production": {
+      "purpose": "end-user-runtime",
+      "runtimeCompilation": false,
+      "usesDeveloperHelper": false,
+      "requiresDeveloperToolchain": false,
+      "requires": [
+        "precompiled-agmp-artifact-only"
+      ]
+    }
+  }
+}

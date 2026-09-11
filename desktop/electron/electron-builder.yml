@@ -1,0 +1,52 @@
+appId: com.aigamemanager.panel
+productName: AI游戏管理器面板
+
+electronDist: node_modules/electron/dist
+npmRebuild: false
+asar: true
+compression: maximum
+# Electron 自带大量语言包，是 Windows 包体积的重要来源之一。
+# 当前产品默认中文，仅保留中文与英文兜底。
+electronLanguages:
+  - zh-CN
+  - en-US
+
+files:
+  - dist/**
+  - package.json
+
+extraResources:
+  - from: ../../build/work/electron-core
+    to: core
+    filter:
+      - AI-Game-Manager-Core.exe
+      - AI-Game-Manager-XiaoYu.exe
+  - from: ../../configs
+    to: defaults/configs
+    filter:
+      - '*.json'
+
+directories:
+  output: ../../build/work/electron-builder
+  buildResources: ../../build
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+
+nsis:
+  artifactName: AI-Game-Manager-Panel-${version}-x64-Setup.${ext}
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: AI游戏管理器面板
+  uninstallDisplayName: AI游戏管理器面板
+
+portable:
+  artifactName: AI-Game-Manager-Panel-${version}-x64-Portable.${ext}

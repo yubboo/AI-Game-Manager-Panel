@@ -1,0 +1,8 @@
+{
+  "productName": "AI游戏管理器面板",
+  "edition": "Community",
+  "slogan": "小鱼驱动的智能一键游戏服务器部署与管理平台",
+  "defaultRoute": "/",
+  "locale": "zh-CN",
+  "telemetry": false
+}

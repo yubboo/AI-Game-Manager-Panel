@@ -1,0 +1,49 @@
+{
+  "enabled": false,
+  "primaryInteraction": "agent",
+  "stream": true,
+  "approvalMode": "risk",
+  "allowManualFallback": true,
+  "maxConcurrentRuns": 1,
+  "toolTimeoutSeconds": 120,
+  "conversationHistoryLimit": 50,
+  "storeConversationHistory": true,
+  "secretStorage": "system-credential-store",
+  "runtime": {
+    "enabled": true,
+    "engine": "rust",
+    "protocol": "xiaoyu.v1",
+    "transport": "json-rpc-stdio",
+    "binary": "AI-Game-Manager-XiaoYu",
+    "manualFallback": true,
+    "integration": "internal-xiaoyu-core",
+    "userFacingProduct": false
+  },
+  "agentLoop": {
+    "planner": "provider-plugin",
+    "streaming": false,
+    "maxSteps": 64,
+    "maxToolCalls": 48,
+    "maxFailures": 8,
+    "repeatLimit": 3,
+    "verifyAfterAction": true
+  },
+  "productModel": "embedded-xiaoyu-intelligence-core",
+  "manualControlRole": "human-primary-controller",
+  "displayName": "小鱼",
+  "codeName": "XiaoYu",
+  "role": "AGMP Intelligence Core / 项目智能伙伴",
+  "harness": {
+    "kernel": "xiaoyu.host.v1",
+    "everythingAsPlugin": true,
+    "traceMode": "append-only",
+    "deepseekHarness": {
+      "enabled": true,
+      "mode": "tool-bridge-v1",
+      "autoMount": false,
+      "nodeExecutable": "node"
+    }
+  },
+  "brainConfiguration": "settings-model-center",
+  "assistantRelationship": "two-brains-one-body-ai-assists-human"
+}

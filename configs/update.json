@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "provider": "github-releases",
+  "repository": "yubboo/AI-Game-Manager-Panel",
+  "apiBaseUrl": "https://api.github.com",
+  "channel": "stable",
+  "checkOnStartup": true,
+  "minimumCheckIntervalMinutes": 360,
+  "assetPattern": "AI-Game-Manager-Panel-{version}-Windows-x64-Setup.exe",
+  "requireSha256": true,
+  "installMode": "interactive",
+  "preserveRuntimeData": true
+}

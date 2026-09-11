@@ -1,0 +1,49 @@
+{
+  "administratorRole": "administrator",
+  "allowFullAccessMode": true,
+  "allowArbitraryShell": true,
+  "approvalModes": [
+    {
+      "id": "ask",
+      "label": "请求批准",
+      "description": "AI 遇到需要执行、修改或权限提升的下一步时先询问；你批准后继续，拒绝则停止，未回答就持续等待。"
+    },
+    {
+      "id": "risk",
+      "label": "帮我批准",
+      "description": "AI 自动完成只读、普通操作和可逆修改；删除、覆盖、系统级或其他高风险操作仍必须由你批准。"
+    },
+    {
+      "id": "full",
+      "label": "完全访问权限",
+      "description": "由最高管理员主动开启；AI 可自主使用全部已注册且已启用的 AGMP Tool 完成目标。"
+    }
+  ],
+  "fileScope": [
+    "${AGMP_ROOT}",
+    "${INSTANCE_ROOT}"
+  ],
+  "policies": {
+    "ask": {
+      "read": "allow",
+      "operate": "confirm",
+      "modify": "confirm",
+      "destructive": "confirm",
+      "system": "confirm"
+    },
+    "risk": {
+      "read": "allow",
+      "operate": "allow",
+      "modify": "allow",
+      "destructive": "confirm",
+      "system": "confirm"
+    },
+    "full": {
+      "read": "allow",
+      "operate": "allow",
+      "modify": "allow",
+      "destructive": "allow",
+      "system": "allow"
+    }
+  }
+}

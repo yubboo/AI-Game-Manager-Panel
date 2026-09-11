@@ -1,0 +1,178 @@
+name: AI Game Manager Panel Safety Gate
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: GitHub secret/file safety gate
+        run: node scripts/common/check-github-safety.mjs
+
+      - name: Project structure gate
+        run: node scripts/common/check-project-layout.mjs
+
+      - name: Product architecture gate
+        run: node scripts/common/check-product-architecture.mjs
+
+      - name: Module ownership gate
+        run: node scripts/common/check-modules.mjs
+
+      - name: Windows updater gate
+        run: node scripts/common/check-updater.mjs
+
+      - name: Windows installer gate
+        run: node scripts/common/check-windows-installer.mjs
+
+      - name: XiaoYu Rust brain structure gate
+        run: node scripts/common/check-xiaoyu-core.mjs
+
+      - name: XiaoYu autonomous harness gate
+        run: node scripts/common/check-xiaoyu-harness.mjs
+
+      - name: XiaoYu model center gate
+        run: node scripts/common/check-xiaoyu-model-center.mjs
+
+      - name: XiaoYu intelligence gate
+        run: node scripts/common/check-xiaoyu-intelligence.mjs
+
+      - name: XiaoYu Agent Runtime gate
+        run: node scripts/common/check-xiaoyu-agent-runtime.mjs
+
+      - name: Multi-client AI parity gate
+        run: node scripts/common/check-multi-client-ai.mjs
+
+      - name: Organization and email security gate
+        run: node scripts/common/check-organization-security.mjs
+
+      - name: Bridge authentication boundary gate
+        run: node scripts/common/check-bridge-auth-boundary.mjs
+
+      - name: Web session security gate
+        run: node scripts/common/check-web-session-security.mjs
+
+      - name: Environment Manager v2 gate
+        run: node scripts/common/check-environment-manager.mjs
+
+      - name: Linux headless XiaoYu gate
+        run: node scripts/common/check-headless-xiaoyu.mjs
+
+      - name: Release key structure gate
+        run: node scripts/common/check-release-key.mjs --allow-unconfigured
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Go tests
+        run: go test ./internal/... ./cmd/...
+
+      - name: Go vet
+        run: go vet ./internal/... ./cmd/...
+
+      - name: Development license build-tag test
+        run: go test -tags agmp_dev_license ./internal/system/license
+
+      - name: Rust Agent format
+        run: cargo fmt --manifest-path rust/Cargo.toml --all -- --check
+
+      - name: Rust Agent check
+        run: cargo check --manifest-path rust/Cargo.toml --workspace
+
+      - name: Rust Agent tests
+        run: cargo test --manifest-path rust/Cargo.toml --workspace
+
+
+  headless-ai:
+    name: Linux Headless + Web + XiaoYu
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.17.0 --activate
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Enforce headless AI parity
+        run: |
+          node scripts/common/check-xiaoyu-harness.mjs
+          node scripts/common/check-xiaoyu-model-center.mjs
+          node scripts/common/check-xiaoyu-intelligence.mjs
+          node scripts/common/check-xiaoyu-agent-runtime.mjs
+          node scripts/common/check-multi-client-ai.mjs
+          node scripts/common/check-headless-xiaoyu.mjs
+          node scripts/common/check-organization-security.mjs
+          node scripts/common/check-bridge-auth-boundary.mjs
+          node scripts/common/check-web-session-security.mjs
+
+      - name: Build XiaoYu headless runtime
+        run: cargo build --manifest-path rust/Cargo.toml -p xiaoyu-core --release
+
+      - name: Install and build Web UI
+        working-directory: frontend
+        run: |
+          pnpm install --no-frozen-lockfile
+          pnpm run build
+
+      - name: Sync Web assets
+        run: node scripts/common/sync-web-assets.mjs
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Build Linux headless AGMP Core
+        run: go build -tags agmp_dev_license -trimpath -o /tmp/agmp-headless ./cmd/aigame-manager-web
+
+      - name: Verify Web can reach XiaoYu without a desktop shell
+        env:
+          AGMP_HEADLESS_XIAOYU_RUNTIME: ${{ github.workspace }}/rust/target/release/xiaoyu
+        run: go test -tags agmp_dev_license ./internal/bridge/httpapi -run TestLinuxHeadlessWebCanReachPrecompiledXiaoYuRuntime -count=1
+
+      - name: Verify headless artifacts
+        run: |
+          test -x rust/target/release/xiaoyu
+          test -x /tmp/agmp-headless
+          test -f cmd/aigame-manager-web/web/index.html

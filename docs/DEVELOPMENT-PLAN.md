@@ -1,0 +1,219 @@
+# AI Game Manager Panel 开发计划
+
+> **0.1.65 菜单说明：** 本文较早阶段记录中的旧菜单编号只作为历史验收记录保留。当前 Windows Helper 顶层菜单以 `AI Game Manager Panel.ps1` 的 0-10 为准：Wails Release=`4`、Electron Release=`5`、Linux=`6`、双桌面完整发布=`10 -> 3`。
+
+> 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
+
+
+## 0.2.2：XiaoYu Agent Runtime / Guided Autonomy
+
+- 把“模型智能”正式作为 XiaoYu 的通用智能来源，Expert / Skill / Memory / Experience 只做优先专业指导；
+- Domain Tool 优先，但不再把缺少专用 Tool 等同于 XiaoYu 无能力；
+- 增加受控通用文件写入/替换/创建/删除与 `shell.exec` 后备能力；
+- 继续沿用请求批准 / 帮我批准 / 完全访问三种审批模式作为最终执行授权；
+- Runtime Manager 向 XiaoYu 暴露 resolve/default/remove，形成安装→验证→移除闭环；
+- 引入 Tool guidance tier、Memory relevance ranking 与 Observation compaction；
+- Provider Capability Matrix 开始保证原生 reasoning/tool/replay 能力不被 Harness 无意削弱；
+- 修复 DeepSeek thinking 与 `tool_choice` 兼容冲突。
+
+**冻结条件：** Agent Runtime 相关 Go 测试、Module/XiaoYu/Model/Project Gates 通过；前端与 Rust 在具备对应工具链的环境完成 typecheck/build/cargo test。下一阶段优先 PTY/Jobs、Tool Search、Reflection、并行 Tool 和 Subagent，而不是先堆大量角色 Prompt。
+
+## Phase 1：平台 Shell 与完整骨架（0.1.41）
+
+- Codex 风格 小鱼成为默认首页；
+- AI 未配置时保留完整手动一键部署；
+- 审批模式 UI：请求批准 / 帮我批准 / 完全访问；
+- 根目录 `configs/` 配置中心；
+- GSM 功能完整映射到模块矩阵和目录骨架；
+- 清理每目录 README，集中架构文档；
+- Installer 工程继续保留并同步版本。
+
+**冻结条件：** `pnpm build`、`go test ./...`、`go vet ./...`、Windows 双 EXE 正式构建通过，AI 首页/手动部署入口/现有 DST 工作台无回归。
+
+## Phase 2：全局日志中心（0.1.42）
+
+- 左侧日志中心成为全平台唯一历史日志入口；
+- 统一聚合 AI Game Manager Panel Core、操作记录、Steam、游戏、AI、节点日志；
+- Go 端真实行数统计与增量缓存；
+- 日志目录分页、来源/游戏/实例/Shard/状态/日期筛选；
+- 正文从头/从尾/游标分页、全文搜索、级别和分类筛选；
+- 单日志导出、筛选 ZIP、单条删除、筛选删除、清空历史；
+- 活动日志删除保护；
+- DST 工作台日志入口跳转全局 LogHub；
+- 操作审计使用有界队列和 Buffered I/O，不记录秘密和完整控制台命令。
+
+**冻结条件：** `go test ./internal/...`、`go vet ./internal/...`、`pnpm --dir frontend run build`、Windows Release（Desktop/Web/Portable/Setup）通过；Linux Release 脚本完成原生/WSL 构建验收；实机确认日志刷新、筛选、删除、导出、手工删除同步和 DST 运行日志保护。
+
+## Phase 2.5：Linux Server Edition 与多架构部署基础（0.1.43）
+
+- 无 GUI 的 Linux Server Edition；
+- amd64 / arm64 Go 静态二进制；
+- `bash scripts/build_linux.sh` 统一构建入口；
+- systemd 安装、启动、停止、重启、日志、开机自启和诊断；
+- 安装用 root、运行用独立 `ai-game-manager-panel` 用户；
+- Docker 多架构 Server Edition；
+- `configs/server.json` 统一 Server/Linux/Docker 默认值；
+- Linux Desktop 与 Linux Server 发布链分离；
+- 为后续实例、资源监控、RCON、SteamCMD 与 AI 远程部署建立 Server 基座。
+
+**冻结条件：** `go test ./internal/...`、`go vet ./internal/...`、amd64/arm64 Server Edition 交叉编译通过、Shell 语法检查通过、项目骨架检查通过；至少在一个真实 Linux amd64 环境完成 systemd 安装/启停验收，ARM64 在后续真实设备或 CI Runner 补实机验证。
+
+## Release Hotfix：Windows 正式发布链（0.1.44）
+
+- `build/work` 保留最近一次成功编译的 Desktop/Web EXE；
+- Portable 与 Setup 使用 staging，两者都成功后才晋升正式 Release；
+- Inno Setup 6 提前检查；
+- `BUILD-STATUS.txt` 记录失败步骤与原因；
+- Portable 与 Installer 分目录；
+- 增加“仅构建 Windows 安装程序”入口。
+
+**冻结条件：** Windows 本机菜单 `4` 生成 `build/release/windows/wails/desktop/AI-Game-Manager-Panel.exe`、`build/release/windows/wails/web/AI-Game-Manager-Web.exe`、Portable ZIP、`AI-Game-Manager-Panel-<version>-Windows-x64-Setup.exe`；模拟 Installer 失败时确认旧 `build/work` 与旧完整 Release 不被删除。
+
+## Startup Security Gate：首次管理员、会话与环境初始化（0.1.45）
+
+- 首次数据目录仅开放一次 Owner Bootstrap，创建后永久关闭公开注册；
+- `bootstrap.lock` 让账号库丢失/损坏时保持失效关闭，不自动重新开放 Owner 创建；
+- PBKDF2-HMAC-SHA256 + 随机盐保存密码派生结果；
+- 随机 Bearer Session 与 24 小时会话过期；
+- Web `/api/v1/*` 默认受 Session 保护，仅健康检查、Bootstrap 状态、首个 Owner 创建、登录为公开端点；
+- 登录管理员在用户中心创建后续账号；
+- 首次登录后检测 SteamCMD、DST Dedicated Server 与 AI Game Manager Panel 运行目录；
+- Windows 提供官方 SteamCMD 托管安装入口；Steam 身份、SteamCMD 登录与游戏凭据边界分离；
+- Desktop/Web 共用 Application 认证与环境服务，环境初始化完成后才进入主 Shell。
+
+**冻结条件：** `go test ./internal/...`、`go vet ./internal/...`、项目骨架/版本门禁通过；认证 Bootstrap 关闭、Session、账号持久化、bootstrap.lock 失效关闭与环境初始化均有自动测试；Windows 本机完成 `pnpm --dir frontend run build`、首次 Owner → 登录 → 环境初始化 → 主界面及 Web Bearer API 实机验收。
+
+## Release Toolchain Hotfix：Windows BAT 编码与 Inno 自动补齐（0.1.46）
+
+- Windows 可执行 BAT 全部 ASCII-safe；
+- 中文菜单/安装器提示由 Unicode-safe PowerShell 输出；
+- Inno Setup 6 支持 PATH / 安装目录 / 注册表探测；
+- 优先 winget，缺失 winget 时回退官方签名安装包；
+- 下载后执行 SHA-256 与 Authenticode 双校验；
+- 构建失败继续保留最近一次 `build/work` 与当前已发布 Release。
+
+**冻结条件：** Windows 本机菜单 `4` 在“未安装 Inno Setup 且无 winget”环境中能完成工具链补齐并继续执行 Release；控制台不得再出现中文乱码或中文残片被当作命令执行。
+
+## Release Test Isolation Hotfix：Windows 环境单测隔离（0.1.47）
+
+- 修复 `internal/deploy/environment/service_test.go` 在 Windows Release 中硬编码 `steamcmd` 的跨平台错误；
+- 初始化持久化测试使用显式临时 SteamCMD 路径，不依赖系统安装状态；
+- 项目路径自动探测测试根据 `runtime.GOOS` 创建 `steamcmd.exe` / `steamcmd` 临时夹具；
+- 增加“没有 SteamCMD 时初始化必须 fail-closed”的回归测试；
+- Windows/amd64 对环境测试执行交叉编译门禁。
+
+**冻结条件：** Linux/Windows 平台规则下环境测试均不读取真实机器 SteamCMD；`go test ./...` 在 Windows Release 机器上不因未安装 SteamCMD 而失败。
+
+## Release Installer Language Fallback Hotfix：Inno 语言容错（0.1.49，已由 0.1.72 取代）
+
+0.1.49 曾采用“存在外部简中语言包则启用，否则回退英文”的兼容方案。
+
+从 **0.1.72** 起正式策略调整为：
+
+- 始终使用 Inno Setup 自带 `Default.isl` 作为基础；
+- 中文向导文本直接由项目 `AIGameManagerPanel.iss` 覆盖；
+- 不再探测或依赖 `Languages\ChineseSimplified.isl`；
+- 正式安装器必须显示简体中文；
+- 必须启用 `LicenseFile=EULA-zh-CN.txt`，用户不同意协议不得继续安装。
+
+**当前冻结条件：** `check-windows-installer.mjs` 必须 PASS，Windows 实机 Setup 必须完成“欢迎页 → 强制协议 → 安装目录 → 开始菜单 → 附加任务 → 安装 → 完成”的中文流程。
+
+## Release Test Data Isolation Hotfix：HTTP 认证测试隔离（0.1.48）
+
+- `Application` 新增显式 `Options{Root, DataDir}` 与 `NewWithOptions`，生产入口 `New()` 保持兼容；
+- HTTP 集成测试必须使用 `t.TempDir()` 注入独立运行根目录和 `dataDir`；
+- 禁止测试通过 `XDG_CONFIG_HOME` 等平台特定环境变量猜测用户配置目录；
+- 增加 Application 回归测试，验证账号库与 `bootstrap.lock` 必须写入注入的临时数据目录；
+- Windows/amd64 对 Application 与 HTTP API 测试执行交叉编译门禁。
+
+**冻结条件：** Windows 本机 `go test ./...` 不受 `%APPDATA%\AI Game Manager Panel` 中历史 Owner/Bootstrap 状态影响；重复运行 Release 测试结果一致，HTTP Bearer 集成测试每次从空临时账号库开始。
+
+## Startup Security UX：登录安全密钥与可跳过环境初始化（0.1.51）
+
+- 首次 Owner Bootstrap 继续作为唯一强制步骤，不允许跳过；
+- Owner 注册页可生成 256-bit `BFK1-` 登录安全密钥，并提供复制/下载与“已安全保存”确认；
+- 账号库只保存安全密钥 SHA-256 校验值，不保存明文；
+- 默认仍支持账号 + 密码登录；每个账号可在用户中心独立启用安全密钥二次验证；
+- 启用后登录必须同时通过账号、密码和安全密钥；
+- 已登录用户重新确认当前密码后可轮换安全密钥，旧密钥立即失效；
+- 首次 Step 02 环境初始化允许持久化跳过，不再阻断主 Shell；
+- “运行环境”页提供后续 SteamCMD 安装、路径检测与补初始化入口。
+
+**冻结条件：** Auth/HTTP/Environment 自动测试覆盖安全密钥生成、启用/关闭、错误密钥拒绝、轮换失效与环境跳过持久化；`go test ./...`、`go vet ./...`、前端类型检查/构建通过；Windows 实机确认 Owner 注册密钥下载、两种登录策略、跳过环境后可进入主界面并能在运行环境页补初始化。
+
+## Dual Desktop Foundation：Wails + Electron 并行（0.1.52）
+
+- 保留 Wails Desktop，不重写现有 Go Core；
+- 新增 Electron 44.3.0 Desktop Shell；
+- Electron 通过随机 loopback HTTP 连接同一 `cmd/ai-game-manager-panel-web` / Application Core；
+- Vue UI 通过 Backend Adapter 自动识别 Wails / Electron / Web；
+- Electron Renderer 默认开启 context isolation + sandbox，关闭 nodeIntegration；
+- Electron NSIS / Portable 使用独立 staging 与 Release，不污染菜单 4 Wails 发布链；
+- Windows 菜单提供 Wails、Electron 独立开发/构建以及双桌面对比构建；
+- 项目检查同时加入 Electron TypeScript gate。
+
+**冻结条件：** Wails 菜单 4 继续 1/13～13/13 通过；Electron 菜单 13 完成 Go Core sidecar、Electron TypeScript、NSIS、Portable 全链构建；两套桌面运行同一账号/环境业务契约且没有复制 Core 业务代码；实机比较窗口/DPI/中文路径/内存/启动速度后再决定默认桌面框架。
+
+## Phase 3：统一实例管理
+
+建立跨游戏 Instance 模型：创建、启动、停止、重启、更新、复制、删除、状态、资源指标和崩溃恢复。
+
+## Phase 4：文件中心
+
+文件浏览、上传下载、分块上传、压缩解压、复制移动、在线编辑、文件监听、安全根目录。
+
+## Phase 5：终端与 RCON
+
+统一 PTY、游戏控制台、SteamCMD、RCON，会话/命令历史和 WebSocket 实时流。
+
+## Phase 6：任务中心与计划任务
+
+后台任务、取消/重试、Cron、定时备份、重启、更新、命令、失败策略。
+
+## Phase 7：备份恢复
+
+跨游戏备份 Provider、压缩、校验、恢复、下载、删除、保留策略和自动备份。
+
+## Phase 8：网络与组网
+
+端口、防火墙、NAT、EasyTier/其他 Provider、内网穿透、网络诊断。
+
+## Phase 9：运行环境
+
+SteamCMD、Java、VC++、DirectX、Python、Docker 等环境检测和安装 Provider。
+
+## Phase 10：插件扩展
+
+AI Game Manager Panel 插件/Provider 生命周期、权限、版本、依赖、升级、禁用和故障隔离。
+
+## Phase 11：节点 Agent
+
+Windows/Linux 远程 Agent、心跳、资源上报、安全握手、任务分发和 Web 集中管理。
+
+## Phase 12：多游戏模板
+
+Palworld、PZ、Terraria、Minecraft、Factorio、tModLoader、通用 Steam Dedicated Server，复用公共实例/日志/备份/终端。
+
+## Phase 13：用户与权限
+
+最高管理员、角色、RBAC、会话、API Token、Web 登录、审计。远程 Web 在该阶段通过之前仍默认仅本机访问。
+
+## Phase 14：Installer / Updater 深化
+
+Windows `AI-Game-Manager-Panel-<version>-Windows-x64-Setup.exe` 与 Linux `.deb` 的基础发布流水线已提前在 0.1.42 接入。Phase 14 继续完成自动更新、签名、版本检查、差分升级、回滚策略，以及更多 Linux 包格式（如 RPM/AppImage）的发布治理。
+
+## Phase 15：AI Tool Registry
+
+把已完成的部署、实例、日志、文件、备份、网络、任务等能力注册为稳定 Tool，完成风险分类和审计。
+
+## Phase 16：真实 AI Provider 与一句话部署
+
+接入可配置 Provider。自然语言 -> Plan -> Approval -> Tool Execution -> 结果回执。手动 UI 与 AI 始终共用同一 Core。
+
+## Phase 17：AI 智能诊断
+
+日志/状态/配置联合诊断、修复建议、可审批自动修复；禁止 AI 绕过 Tool Registry。
+
+## Phase 18：稳定性与 1.0 候选
+
+性能基准、长时间运行、故障恢复、升级迁移、权限安全、安装器、Desktop/Web/Agent 全链路实机验收。

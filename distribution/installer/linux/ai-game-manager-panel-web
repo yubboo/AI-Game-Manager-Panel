@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+APP="/usr/lib/ai-game-manager-panel"
+ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/AI-Game-Manager-Panel"
+mkdir -p "$ROOT"
+if [[ ! -d "$ROOT/configs" ]]; then cp -R "$APP/configs-default" "$ROOT/configs"; fi
+mkdir -p "$ROOT/runtime"/{data,log,backups,instances,temp,exports,plugins,cache}
+export AGMP_ROOT="$ROOT"
+export AGMP_XIAOYU_RUNTIME="$APP/internal/xiaoyu/AI-Game-Manager-XiaoYu"
+exec "$APP/AI-Game-Manager-Web" "$@"

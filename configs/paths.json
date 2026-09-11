@@ -1,0 +1,10 @@
+{
+  "dataDir": "runtime/data",
+  "logDir": "runtime/log",
+  "backupDir": "runtime/backups",
+  "instanceDir": "runtime/instances",
+  "tempDir": "runtime/temp",
+  "exportDir": "runtime/exports",
+  "pluginDir": "runtime/plugins",
+  "cacheDir": "runtime/cache"
+}

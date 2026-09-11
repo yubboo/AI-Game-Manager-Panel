@@ -1,0 +1,23 @@
+{
+  "level": "info",
+  "retentionDays": 30,
+  "maxFileSizeMB": 64,
+  "maxFilesPerSource": 100,
+  "compressRotated": true,
+  "flushIntervalMs": 500,
+  "operationAudit": true,
+  "redactSecrets": true,
+  "exportSubdir": "exports",
+  "catalogPageSize": 100,
+  "readPageSize": 600,
+  "autoRefreshSeconds": 5,
+  "directories": {
+    "core": "ai-game-manager-panel",
+    "operations": "operations",
+    "audit": "audit",
+    "ai": "ai",
+    "steam": "steam",
+    "games": "games",
+    "nodes": "nodes"
+  }
+}

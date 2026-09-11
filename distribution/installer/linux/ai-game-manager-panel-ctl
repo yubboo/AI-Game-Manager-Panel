@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SERVICE_NAME="${AGMP_SERVICE_NAME:-ai-game-manager-panel}"
+cmd="${1:-status}"
+case "$cmd" in
+  start|stop|restart|enable|disable) sudo systemctl "$cmd" "$SERVICE_NAME" ;;
+  status) systemctl status "$SERVICE_NAME" --no-pager || true ;;
+  logs) journalctl -u "$SERVICE_NAME" -n "${2:-200}" -f ;;
+  doctor) echo "Kernel: $(uname -sr)"; echo "Arch: $(uname -m)"; echo "Service: $SERVICE_NAME"; systemctl is-enabled "$SERVICE_NAME" 2>/dev/null || true; systemctl is-active "$SERVICE_NAME" 2>/dev/null || true; XIAOYU="${AGMP_XIAOYU_RUNTIME:-/opt/ai-game-manager-panel/internal/xiaoyu/AI-Game-Manager-XiaoYu}"; if [[ -x "$XIAOYU" ]]; then "$XIAOYU" --root "${AGMP_ROOT:-/var/lib/ai-game-manager-panel}" doctor --json || true; else echo "XiaoYu Runtime: MISSING ($XIAOYU)"; fi ;;
+  *) echo "用法: ai-game-manager-panel-ctl {start|stop|restart|status|logs|enable|disable|doctor}" >&2; exit 2 ;;
+esac

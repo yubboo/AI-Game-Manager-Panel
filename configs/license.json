@@ -1,0 +1,8 @@
+{
+  "activationRequired": false,
+  "placement": "system-settings",
+  "blockingLogin": false,
+  "binding": "machineCode + installId + Ed25519 BFLC2",
+  "product": "AI Game Manager Panel",
+  "note": "CDK/机器码/安装 ID 属于系统设置中的授权能力，不参与首次注册或登录前置门禁。0.1.72 起正式构建会自动尝试从本机仓库外 ReleaseKeys 同步 Active 公钥；客户端继续内置公开发行密钥环；私钥只由项目所有者在源码仓库外本机保存。"
+}

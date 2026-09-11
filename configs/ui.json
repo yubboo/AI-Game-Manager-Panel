@@ -1,0 +1,121 @@
+{
+  "theme": "dark",
+  "accent": "orange",
+  "sidebarWidth": 248,
+  "compactSidebarWidth": 72,
+  "showTopbar": true,
+  "navigation": [
+    {
+      "id": "main",
+      "title": "",
+      "items": [
+        {
+          "id": "ai",
+          "to": "/",
+          "label": "小鱼",
+          "icon": "ai"
+        },
+        {
+          "id": "dashboard",
+          "to": "/dashboard",
+          "label": "仪表盘",
+          "icon": "home"
+        },
+        {
+          "id": "deployment",
+          "to": "/deployment",
+          "label": "一键部署",
+          "icon": "games"
+        },
+        {
+          "id": "instances",
+          "to": "/instances",
+          "label": "实例管理",
+          "icon": "servers"
+        },
+        {
+          "id": "tasks",
+          "to": "/tasks",
+          "label": "任务中心",
+          "icon": "check"
+        },
+        {
+          "id": "files",
+          "to": "/files",
+          "label": "文件管理",
+          "icon": "files"
+        },
+        {
+          "id": "backups",
+          "to": "/backups",
+          "label": "备份恢复",
+          "icon": "backup"
+        },
+        {
+          "id": "scheduler",
+          "to": "/scheduler",
+          "label": "计划任务",
+          "icon": "scheduler"
+        },
+        {
+          "id": "plugins",
+          "to": "/plugins",
+          "label": "插件扩展",
+          "icon": "plugins"
+        },
+        {
+          "id": "network",
+          "to": "/network",
+          "label": "网络与组网",
+          "icon": "network"
+        },
+        {
+          "id": "logs",
+          "to": "/logs",
+          "label": "日志中心",
+          "icon": "logs"
+        }
+      ]
+    },
+    {
+      "id": "system",
+      "title": "系统",
+      "items": [
+        {
+          "id": "nodes",
+          "to": "/nodes",
+          "label": "节点管理",
+          "icon": "nodes"
+        },
+        {
+          "id": "users",
+          "to": "/users",
+          "label": "用户与权限",
+          "icon": "users"
+        },
+        {
+          "id": "settings",
+          "to": "/settings",
+          "label": "设置中心",
+          "icon": "settings"
+        },
+        {
+          "id": "developer",
+          "to": "/developer",
+          "label": "开发者工具",
+          "icon": "developer"
+        }
+      ]
+    }
+  ],
+  "workbench": {
+    "title": "小鱼在这里，今天想一起做什么？",
+    "subtitle": "告诉小鱼你的目标；它会理解当前环境、规划步骤、调用受控能力，并在需要时向你请求批准。",
+    "placeholder": "和小鱼说，例如：帮我检查饥荒服务器，先备份，再更新并确认启动正常……",
+    "suggestions": [
+      "小鱼，检查一下本机开服环境",
+      "小鱼，帮我看看最近失败的任务",
+      "小鱼，检查服务器状态并告诉我有没有异常"
+    ]
+  }
+}

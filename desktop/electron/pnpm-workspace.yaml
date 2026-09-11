@@ -1,0 +1,19 @@
+packages:
+  - '.'
+
+# Electron packaging expects a physical node_modules layout when using pnpm.
+nodeLinker: hoisted
+
+# pnpm 11 uses allowBuilds as the single build-script policy.
+# Electron needs its install script to prepare the runtime binary.
+# electron-winstaller is pulled transitively but AI Game Manager Panel packages with electron-builder NSIS/Portable,
+# so its lifecycle script is explicitly denied instead of interactively approved.
+strictDepBuilds: true
+allowBuilds:
+  electron: true
+  electron-winstaller: false
+
+# pnpm 11 has a built-in minimum release age. Electron is pinned exactly in package.json,
+# so whitelist this reviewed exact version to prevent pnpm from mutating this file during install.
+minimumReleaseAgeExclude:
+  - electron@44.3.0
