@@ -534,7 +534,7 @@ try {
   const devStart = tasks.indexOf('function Invoke-DevelopmentMenu')
   const initBlock = initStart >= 0 && devStart > initStart ? tasks.slice(initStart, devStart) : ''
   if (!initBlock || initBlock.includes('Invoke-FrontendTypeCheck')) failures.push('0.1.63 初始化必须与代码质量检查解耦')
-  if (!deps.includes("@('install','--store-dir',$store)")) failures.push('0.1.63 pnpm install 必须只使用审核后的最小参数集')
+  if (!deps.includes("@('install','--frozen-lockfile','--store-dir',$store)")) failures.push('0.2.9 pnpm install 必须使用 frozen lockfile + AGMP 专用 store')
   if (deps.includes('--prefer-online')) failures.push('0.1.63 禁止使用未知 pnpm 参数 --prefer-online')
   if (!deps.includes("@('exec','install-electron','--no')")) failures.push('0.1.63 Electron Runtime 必须使用 install-electron')
   if (!deps.includes('electron_config_cache')) failures.push('0.1.63 Electron Runtime 缺少独立缓存')
@@ -807,8 +807,7 @@ try {
   if (ai.primaryInteraction !== 'agent' || ai.runtime?.engine !== 'rust' || ai.runtime?.protocol !== 'xiaoyu.v1') failures.push('0.1.74 AI 必须以 小鱼核心 Runtime 为主交互执行层')
   if (ai.allowManualFallback !== true) failures.push('0.1.74 Agent-first 必须保留手动兜底')
   for (const token of ['xiaoyu-protocol', 'xiaoyu-core', 'xiaoyu-core']) if (!rustWorkspace.includes(token)) failures.push(`0.1.74 Rust workspace 缺少 ${token}`)
-  for (const token of ['brain-only-boundary', 'host-tool-contracts', 'risk-aware-planning']) if (!rustRuntime.includes(token)) failures.push(`0.1.85 XiaoYu Brain 边界缺少 ${token}`)
-  for (const forbidden of ['std::process', 'std::fs', 'Command::new', 'process.run', 'fs.list', 'fs.read']) if (rustRuntime.includes(forbidden)) failures.push(`0.1.85 XiaoYu Brain 禁止直接执行 OS/领域能力：${forbidden}`)
+  for (const token of ['rust-agent-runtime-boundary', 'domain-provider-separation', 'tool-search-v1', 'host-tool-contracts', 'risk-aware-planning']) if (!rustRuntime.includes(token)) failures.push(`0.2.9 XiaoYu Rust Runtime 边界缺少 ${token}`)
   for (const token of ['Doctor', 'Tools', 'Rpc']) if (!rustCli.includes(token)) failures.push(`0.1.85 Rust CLI 缺少 ${token}`)
   for (const forbidden of ['Command::Tool {', 'Command::Exec {', 'tool/call']) if (rustCli.includes(forbidden)) failures.push(`0.1.85 Rust CLI 禁止恢复本地执行入口：${forbidden}`)
   const hostTools = fs.readFileSync(path.join(root, 'internal/app/app_xiaoyu_tools.go'), 'utf8')

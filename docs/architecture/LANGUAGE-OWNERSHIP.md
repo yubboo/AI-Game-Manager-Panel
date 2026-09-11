@@ -1,0 +1,192 @@
+# AGMP Language Ownership
+
+> 本文定义 AI Game Manager Panel 的长期语言职责边界。它不是“哪门语言更高级”的比较，而是为了让人类与 AI 开发代理在新增代码时，第一时间知道代码应该放到哪里。
+
+## 1. 三层长期边界
+
+规范化职责声明（供人类、AI 与 CI 共同读取）：
+
+- **Rust = XiaoYu Agent Runtime / Native Execution / Security Boundary**
+- **Go = AGMP Product Host / Game Domain Services**
+- **Vue / TypeScript = UI / Presentation / UX**
+
+```text
+Vue / TypeScript
+    ↓
+Presentation / UX
+
+Go
+    ↓
+AGMP Product Host / Game Domain Services
+
+Rust
+    ↓
+XiaoYu Agent Runtime / Native Execution / Security Boundary
+```
+
+### Vue / TypeScript
+
+负责用户交互与展示：
+
+- Dashboard、设置、日志、实例、游戏工作台；
+- XiaoYu Chat / Run / Approval / Trace UI；
+- Wails / Electron / Web 共用前端；
+- 只展示和请求能力，不成为权限、业务规则或 Agent 决策权威。
+
+### Go
+
+负责 AGMP 产品业务与领域服务：
+
+- 游戏服务器：Minecraft / DST / 后续游戏 Adapter；
+- Steam / SteamCMD / Environment / Instance / Backup / Update；
+- Web API、认证、组织、许可证、配置与业务持久化；
+- Domain Tool Provider：把稳定业务能力以结构化 Tool 暴露给 XiaoYu；
+- Wails 当前桌面 Shell 与产品生命周期。
+
+Go 的价值是成熟的网络/并发/服务生态、清晰的业务代码和简单部署，不是“AI 主语言”。
+
+### Rust
+
+负责 XiaoYu 的通用 Agent Runtime：
+
+- Brain Policy / Decision Grammar；
+- Agent Loop / Goal State / Recovery；
+- Tool Search / Capability Discovery；
+- Context / Session / Thread；
+- Long-running Job / PTY；
+- 通用 Shell / Process / Filesystem Runtime；
+- Apply Patch；
+- Sandbox / Capability Lease / Native Security Boundary；
+- Reflection / Experience Pipeline；
+- Subagent / Specialist Dispatch；
+- XiaoYu Protocol 与跨端可复用 Native Runtime。
+
+Rust 不是为了 GitHub 语言占比而使用。只有真正属于 Agent 通用运行时、Native 执行或安全边界的能力才进入 Rust。
+
+## 2. Domain 与 Agent Runtime 的判定规则
+
+新增功能先问：
+
+> 这是“游戏/产品业务能力”，还是“任何 Agent 都可能需要的通用能力”？
+
+### 应放 Go 的例子
+
+```text
+安装 DST Dedicated Server
+解析 cluster.ini
+管理 Minecraft 实例
+Steam App 更新策略
+备份游戏存档
+AGMP 用户/RBAC/License
+Updater 业务规则
+```
+
+### 应优先放 Rust 的例子
+
+```text
+Agent 下一步决策协议
+Tool Search
+PTY Session
+后台 Job
+通用 Shell 执行器
+通用文件修改 / Apply Patch
+Sandbox
+命令取消与超时
+Agent Context Compaction
+Reflection
+Subagent
+```
+
+## 3. 调用关系
+
+长期目标：
+
+```text
+User
+  ↓
+Vue / Web / Desktop
+  ↓
+XiaoYu Rust Agent Runtime
+  ├─ Provider-facing Agent semantics
+  ├─ Tool Search / Session / Context
+  ├─ Generic Native Tools
+  └─ Sandbox / Approval Enforcement
+         │
+         ├──────── Generic capability ───────→ OS
+         │
+         └──────── Domain capability ────────→ Go AGMP Domain Provider
+                                                ↓
+                                         Game / Steam / Instance / Update
+```
+
+Go Domain Service 仍是游戏业务事实来源；Rust 不复制 DST/Minecraft/Steam 业务。
+
+## 4. 安全模型
+
+Rust 的内存安全不能替代产品授权。XiaoYu 安全必须同时依赖：
+
+```text
+Rust memory safety
++ capability scope
++ sandbox
++ path boundary
++ command policy
++ approval
++ RBAC
++ audit
++ execution verification
+```
+
+- 用户的三种审批模式继续是最终授权入口；
+- Go Product Host 负责用户身份、RBAC、License 与 Domain 权限；
+- Rust Native Runtime 负责通用 Agent Tool 的执行边界与 Sandbox；
+- 高风险动作必须携带 Host 授权上下文，不能因为进入 Rust 就绕过审批；
+- Domain Tool 与通用 Tool 都必须可审计、可取消、可验证。
+
+## 5. 当前迁移现实
+
+0.2.9 是 **Rust-first Agent Runtime 架构冻结点**，不是一次性重写。
+
+当前已有大量稳定 Go Runtime/Host 代码，例如：
+
+```text
+internal/xiaoyu/host
+internal/platform/runtime
+internal/ops/files
+```
+
+这些代码暂时继续工作，保证 0.2.8 已经全绿的产品基线不被推倒。
+
+从 0.2.9 起：
+
+1. 不再把新的通用 Agent Runtime 能力默认堆进 Go；
+2. 新的 Tool Search / Session / Job / PTY / Sandbox / Reflection / Subagent 优先进入 Rust；
+3. 旧 Go Agent 机制按测试覆盖逐步迁移，不允许“大爆炸式重写”；
+4. 每迁移一块，必须先建立协议和 Agent Bench，再删除旧实现；
+5. Wails 桌面 Shell 暂时保留，不因为 Rust 路线立刻切换 Tauri。
+
+## 6. Desktop 原则
+
+当前 Windows 主桌面仍是：
+
+```text
+Wails + Vue + Go Host
+```
+
+Electron 是兼容壳。
+
+Rust 作为 XiaoYu 内部 Runtime 随完整 AGMP 一起发行。未来只有当 Rust Runtime 已经足够完整、Tauri 迁移收益明显且 Wails Bridge 足够薄时，才重新评估 Desktop Shell；禁止为了“Rust 百分比”重写已经稳定的桌面层。
+
+## 7. AI 开发代理硬规则
+
+所有 AI 在新增 XiaoYu 代码前必须：
+
+1. 阅读本文；
+2. 判断功能是 Domain 还是 Agent Runtime；
+3. Agent 通用能力默认 Rust-first；
+4. Domain 业务默认 Go；
+5. UI 默认 Vue/TypeScript；
+6. 不因迁移目标复制两套长期实现；
+7. 不为了 Rust 占比迁移稳定 Go 业务；
+8. 不把 Rust 当成绕过 Approval/RBAC 的“更高权限层”。
+

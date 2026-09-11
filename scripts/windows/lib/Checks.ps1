@@ -6,6 +6,8 @@ function Invoke-ProjectLayoutGate {
     $tools = Get-AGMPTools
     Invoke-AGMPNative -FilePath $tools.Node -Arguments @('scripts/common/check-source-tree.mjs')
     Invoke-AGMPNative -FilePath $tools.Node -Arguments @('scripts/common/check-naming.mjs')
+    Invoke-AGMPNative -FilePath $tools.Node -Arguments @('scripts/common/check-language-ownership.mjs')
+    Invoke-AGMPNative -FilePath $tools.Node -Arguments @('scripts/common/check-dependency-locks.mjs')
     Invoke-AGMPNative -FilePath $tools.Node -Arguments @('scripts/common/check-project-layout.mjs')
     Invoke-AGMPNative -FilePath $tools.Node -Arguments @('scripts/common/check-product-architecture.mjs')
     Invoke-AGMPNative -FilePath $tools.Node -Arguments @('scripts/common/check-modules.mjs')

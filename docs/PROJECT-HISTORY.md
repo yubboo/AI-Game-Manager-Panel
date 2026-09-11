@@ -4,6 +4,24 @@
 
 > 版本顺序采用 `0.2.1 ... 0.2.100 -> 0.3.0`。新版本记录追加到本文件顶部。
 
+## AI-Game-Manager-Panel 0.2.9
+
+### Rust-first Agent Runtime / Dependency Freeze
+
+- 0.2.8 GitHub Actions 首次确认 Safety、Linux Headless + Web + XiaoYu、Windows Helper + Encoding 三个 Job 全绿，Rust fmt/check/test、Go test/vet、Frontend build、Linux headless 集成全部通过。
+- 正式冻结 `docs/architecture/LANGUAGE-OWNERSHIP.md`：Rust 负责 XiaoYu Agent Runtime / Native Execution / Security Boundary；Go 负责 AGMP Product Host / Game Domain Services；Vue/TypeScript 负责 UI。
+- Rust `xiaoyu-core` 从历史 Brain-only 定位进入 Agent Runtime 渐进迁移期；不一次性重写现有 Go Host/Process Runtime。
+- 新增 Rust `tool_search.rs`、`ToolSearchRequest/Hit/Response` 与 `tools/search` JSON-RPC，作为第一块 Rust-first Capability Discovery。Go `agmp.capability.search` 优先使用 Rust ranking，失败时只使用迁移期兼容排序。
+- 收回 0.2.8 GitHub Runner 真实生成的 `go.mod/go.sum`、`rust/Cargo.lock`、Frontend/Electron `pnpm-lock.yaml`，正式进入可复现依赖基线。
+- GitHub CI 改为 Cargo `--locked`、pnpm `--frozen-lockfile`、Go `mod verify + tidy diff`。新增 Language Ownership Gate 与 Dependency Lock Gate，并纳入本地推送/Windows Helper。
+- Windows 主桌面继续 Wails + Vue + Go Host + 内置 Rust XiaoYu Runtime；不为了 Rust 百分比立即迁移 Tauri。
+
+### 下一阶段
+
+- 继续 Rust-first 迁移 Session/Job、PTY、Sandbox，再逐步处理 Reflection / Experience 与 Subagent。
+- 每迁移一个权威路径必须先有 protocol tests + Agent Bench + CI，再删除旧 Go 兼容实现。
+
+---
 ## AI-Game-Manager-Panel 0.2.8
 
 ### CI 全绿收口与 XiaoYu Agent Bench

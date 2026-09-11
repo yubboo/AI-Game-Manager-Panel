@@ -6,10 +6,10 @@
       "category": "智能核心",
       "route": "/",
       "status": "partial",
-      "phase": "0.2.0 · XiaoYu Native Model Harness",
+      "phase": "0.2.9 · Rust-first XiaoYu Agent Runtime",
       "features": [
         "小鱼自然语言主入口",
-        "XiaoYu Intelligence Core（Rust Brain-only）",
+        "XiaoYu Agent Runtime（Rust-first）",
         "XiaoYu Plugin Kernel / Everything-as-Plugin",
         "Tool Registry / Capability Discovery",
         "Agent Loop：Plan / Act / Observe / Validate / Recover",
@@ -30,7 +30,11 @@
         "Inline Task Approval Card",
         "Procedural Wait Rejection"
       ],
-      "sourceRefs": []
+      "sourceRefs": [
+        "rust:xiaoyu-core/tool_search",
+        "rpc:tools/search",
+        "doc:LANGUAGE-OWNERSHIP"
+      ]
     },
     {
       "id": "dashboard",

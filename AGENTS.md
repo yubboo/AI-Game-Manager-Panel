@@ -1,3 +1,8 @@
+
+## AI 开发阅读顺序
+
+开始较大修改前依次阅读：`docs/PROJECT-STATUS.md` → `docs/PROJECT-ARCHITECTURE.md` → `docs/architecture/LANGUAGE-OWNERSHIP.md` → `docs/development/PROJECT-RULES.md` → `docs/DEVELOPMENT-PLAN.md`。历史细节只在需要时读取 `docs/PROJECT-HISTORY.md`。当前状态与长期规范优先于历史版本描述。
+
 # AI Game Manager Panel AI / 人工开发规范
 
 > 本文件是 AI Game Manager Panel 的强制开发规范。人工开发、ChatGPT、Codex 或其他 AI 修改项目时都必须遵守。
@@ -17,6 +22,8 @@ AI Game Manager Panel（AI游戏管理器面板）定位为：**现代化、智�
 
 当前阶段优先级固定为：**核心能力 > 稳定可用 > 性能 > 安全 > 省心运维 > 架构美化/目录重排**。在 Agent 核心闭环和主要服务器能力稳定前，禁止为了“看起来更漂亮”大规模移动根目录或重写总体项目布局。
 
+**语言归属先读规则：** 新增或迁移代码前必须阅读 `docs/architecture/LANGUAGE-OWNERSHIP.md`。Agent 通用能力默认 Rust-first；游戏/产品 Domain 默认 Go；UI 默认 Vue/TypeScript。
+
 ## 1.1 开发环境与生产环境硬边界
 
 必须严格区分“源码开发/发行构建环境”和“普通用户生产运行环境”：
@@ -30,9 +37,10 @@ AI Game Manager Panel（AI游戏管理器面板）定位为：**现代化、智�
 
 ## 2. 技术栈
 
-- 游戏与平台业务核心：Go。
-- 小鱼 Intelligence Core：Rust（Brain / Planner / Workflow / Context / Memory / Tool 选择 / Result Validation）。最终 Tool 权限、审批、审计和业务执行由 Go Host 强制。
-- Windows 桌面端：Wails + Vue 3 + TypeScript + Vite + Pinia；Rust 仅作为 小鱼核心 的底层实现之一，不作为独立产品暴露。
+- **Go = AGMP Product Host / Domain Services。** 游戏、Steam、实例、部署、更新、Web API、认证、许可证与稳定业务 Service 继续使用 Go；Go 不是 XiaoYu 的长期 Agent Runtime 主语言。
+- **Rust = XiaoYu Agent Runtime / Native Execution / Security Boundary。** Brain Policy、Agent Loop、Tool Search、Context/Session、PTY/Jobs、通用 Shell/File/Process、Sandbox、Reflection、Subagent 等 Agent 通用能力优先进入 Rust。
+- **Vue + TypeScript = Presentation / UX。** Windows 主桌面当前仍为 Wails + Vue 3 + TypeScript + Vite + Pinia；不为了 Rust 占比立即重写 Wails。
+- 语言职责长期规范见 `docs/architecture/LANGUAGE-OWNERSHIP.md`。
 - Web 管理平台：复用同一套 Vue 前端，通过 HTTP/WebSocket Bridge 调用同一 Go Core。
 - JavaScript/TypeScript 包管理只允许 **pnpm**。
 - 正式用户产物按“完整 AGMP 运行端”发布：Web、Wails、Electron、未来 Rust Native。内部 Agent/Core 二进制可以存在于包内，但禁止单独作为普通用户产品发布。
@@ -67,9 +75,10 @@ AI Game Manager Panel（AI游戏管理器面板）定位为：**现代化、智�
 
 源码业务骨架按领域聚合，禁止恢复 `internal/service` 平铺大仓库：
 
-- `rust/crates/xiaoyu-core`：**小鱼超级大脑唯一实现**，负责理解上下文、规划、工作流、Tool 选择、智能状态机和结果验证；Brain 不直接读写业务文件、不创建 OS 进程、不执行游戏/系统 Tool。
-- `rust/crates/xiaoyu-protocol`：小鱼与 Go Core 的稳定协议边界，当前协议 `xiaoyu.v1`。
-- `internal/xiaoyu`：Go 侧只保留 `contract / control / runtime` 三组小鱼桥接职责；不得复制 Rust Brain，也不得承载游戏业务。
+- `rust/crates/xiaoyu-core`：**XiaoYu Agent Runtime 主实现**。负责 Brain Policy、Agent 状态机、Tool Search、Context/Session，以及后续 PTY/Jobs/Sandbox/Reflection/Subagent。
+- `rust/crates/xiaoyu-protocol`：XiaoYu Runtime 与 AGMP Host 的稳定协议边界，当前协议 `xiaoyu.v1`。
+- `internal/xiaoyu`：当前 Go 兼容/桥接层，包含 Contract / Control / Host / Runtime Bridge。0.2.9 起冻结“继续往 Go 增加通用 Agent Runtime”的做法；新通用 Agent 能力必须先评估 Rust。
+- 现有 `internal/xiaoyu/host` 与 `internal/platform/runtime` 在迁移期间继续工作，禁止为了架构美观一次性重写；每次迁移必须有协议、测试和 Agent Bench 后再删除旧实现。
 - `internal/games`：具体游戏特殊规则与 Adapter；公共能力禁止复制进游戏目录。
 - `internal/server`：实例、服务器控制台、RCON、通用游戏工作区。
 - `internal/ops`：文件、日志、备份、任务、计划任务等强关联运维能力。
@@ -126,7 +135,7 @@ AI Game Manager Panel（AI游戏管理器面板）定位为：**现代化、智�
 - 禁止无界数组、日志 DOM、goroutine、Channel、缓存。
 - 高频状态优先事件推送或单一自适应轮询，禁止多个页面重复轮询同一数据。
 - 大日志、大文件必须分页/流式/增量处理。
-- Go 承担文件、进程、压缩、哈希、扫描、日志等重任务，Vue 只负责交互。
+- 重任务按职责归属：游戏/产品业务由 Go Domain Service 承担；XiaoYu 通用 Native Runtime（Shell/File/Process/PTY/Job/Sandbox）优先 Rust；Vue 只负责交互。
 - 长期后台任务必须可取消、可关闭、可观测。
 - 单 Vue/Go 文件约 800 行时必须评估拆分，禁止继续形成巨型万能文件。
 
@@ -134,9 +143,9 @@ AI Game Manager Panel（AI游戏管理器面板）定位为：**现代化、智�
 
 标准调用链：
 
-`AI Provider -> XiaoYu Brain/Planner -> AGMP Host Tool Registry -> Go Permission/Approval -> Domain Executor -> platform/runtime -> OS / Game`
+`AI Provider -> XiaoYu Rust Agent Runtime -> Capability / Tool -> Approval -> Generic Native Runtime 或 Go Domain Provider -> OS / Game`
 
-AI 只调用 AGMP Host 已注册 Tool。游戏服务器业务优先经 Go Domain API；当结构化领域能力不足时，可使用 Host 注册的 `shell.exec` 等通用后备 Tool。Shell/系统级工具属于显式高风险能力，必须经过 Go Host 的身份、权限、审批与审计边界，并受 `configs/permissions.json` 控制。Rust XiaoYu Brain 只能提出/编排 Tool 请求，不能自行执行 OS 能力。
+游戏服务器业务优先经 Go Domain API；通用 Agent 能力（Tool Search、Shell、File、Process、PTY、Job、Sandbox 等）长期归 Rust Runtime。迁移期间现有 `shell.exec` / `fs.*` / Process 仍可由 Go Host 执行，但不得成为继续扩张 Go Agent Runtime 的理由。任何 Rust Native 执行也必须携带 Host 身份/RBAC/审批上下文并进入审计，Rust 不是绕过用户 Yes/No 的高权限后门。
 
 审批模式由最高管理员决定：
 
@@ -293,7 +302,7 @@ Linux Release（涉及 Linux 代码/发布脚本时）
 ## 0.1.74 Agent-first / Rust Runtime 规则
 
 - 小鱼是默认主入口；传统可视化页面和手动终端是辅助/兜底，不得反过来让 AI 变成装饰聊天框。
-- 小鱼核心 Runtime 与 Go Core 必须保持职责分离：Rust 不复制 Steam/DST/实例/授权/文件/Process 业务，Go 不重复实现 Brain/Planner/Memory。Process/stdio/PTY 的平台实现统一归 `internal/platform/runtime`。
+- 小鱼 Runtime 与 Go Domain Core 必须保持职责分离：Rust 不复制 Steam/DST/实例/授权等领域业务，Go 不继续扩张 Brain/Planner/Tool Search/Session/Reflection 等通用 Agent Runtime。0.2.9 起 Process/stdio/PTY 进入渐进迁移期：现有 `internal/platform/runtime` 保持兼容，新 XiaoYu 通用执行能力优先 Rust。
 - Rust wire protocol 当前固定为 `xiaoyu.v1`，UI/Go/Rust 三层字段变更必须同步并有 Gate。
 - XiaoYu 智能能力不能只靠静态 Prompt/Gate 验证；`internal/xiaoyu/host/bench_test.go` 是首批 Agent Bench 基线，至少覆盖 fallback recovery、mutation 后验证、approval resume。新增 Agent Runtime 行为必须优先增加可重复 Bench。
 - Agent Bench 测量“目标是否被正确完成/恢复/验证并尊重审批边界”，禁止以 Tool 数量、Prompt 长度或角色数量冒充智能提升。
@@ -311,7 +320,7 @@ Linux Release（涉及 Linux 代码/发布脚本时）
 - 未实现功能不得创建只有 `doc.go`、`module.ts` 或空 README 的占位包；规划状态统一由 `configs/modules.json` 管理，出现真实代码时再创建目录。
 - `internal/app` 允许按 `app_core.go / app_games.go / app_xiaoyu.go / app_auth.go` 等同包文件聚合，禁止重新长成一个 1000+ 行全能文件。
 - 终端只维护一套用户入口：Bottom Panel `TerminalPanel`；系统能力统一走 XiaoYu/Domain 安全边界，不得出现死代码式第二套 Terminal UI。
-- `internal/platform/runtime` 是共享 Process/Terminal Session 实现。DST、Minecraft 和未来满足 stdin/stdout 模型的游戏必须复用它；游戏只实现命令/解析适配，不得再次出现各游戏自己的 `process_windows.go`。
+- `internal/platform/runtime` 继续作为 Go Domain 的共享 Process/Terminal 基座；游戏域不得各自复制进程实现。XiaoYu 的新通用 PTY/Job/Shell Runtime 优先进入 Rust，并通过稳定协议调用 Go Domain，而不是继续扩张 Go Host Agent 机制。
 - 新增文件/目录/接口名称必须短、明确、可搜索。优先 `files`、`nodes`、`license`、`settings`、`backup` 等稳定业务词，避免冗长重复命名。
 - 同一功能拆成多个文件时必须使用统一短前缀，例如 `file_scan.go`、`file_scan_rule.go`、`file_scan_win.go`；有明确顺序时才使用 `xxx_one.go`、`xxx_two.go`。不得把同一功能拆成看不出关联的一堆文件。
 - 新增源码文件名优先控制在 32 个字符以内；超过 48 个字符必须有明确理由并由 Module Gate 拦截。
@@ -323,19 +332,19 @@ AI 权限名称固定为 **请求批准 / 帮我批准 / 完全访问权限**。
 
 - AGMP 产品模型固定为 **Human + XiaoYu / two-brains-one-body**。用户拥有最终控制权；XiaoYu 负责智能规划与自动执行，两者共享 Host/Domain/Runtime，禁止两套业务身体。
 - XiaoYu 属于 AGMP Core，不属于桌面端。Web/Linux/Docker 必须拥有与 Windows Desktop 等价的核心 AI：Model Center、Harness、Tool、审批、Run、事件流。
-- Headless 是强制架构能力：`internal/xiaoyu` 与 Rust Brain 禁止依赖 Wails/Electron；Linux/Docker 正式包缺预编译 XiaoYu Runtime 直接失败。
+- Headless 是强制架构能力：`internal/xiaoyu` 与 Rust XiaoYu Runtime 禁止依赖 Wails/Electron；Linux/Docker 正式包缺预编译 XiaoYu Runtime 直接失败。
 - Autonomous Run 归 Server 所有，客户端断线不取消；Run 绑定 Initiator，多用户 Operator 只能查看/控制自己的 Run，Owner/Admin 可监督全部。
 - Human takeover/pause/cancel 永远高于 XiaoYu；人工接管后自动循环停止，直到明确交还。
-- Go Host/RunManager 只能负责生命周期、安全、Tool 执行驱动和模型通信，不能复制 Rust 的 Planner/Memory/语义 Decision。
+- Go Host/RunManager 当前负责产品生命周期、模型通信、身份/RBAC 与 Domain Tool Bridge；新的 Planner/Tool Search/Session/Recovery/Reflection 等语义能力优先迁入 Rust，Go 不得继续形成第二套长期 Agent Runtime。
 - 第三方 DSH Tool 插件默认以 Node Permission 受限子进程运行，只读插件自身目录，不继承 AGMP 秘密环境，不允许直接 child_process/文件写；插件入口与 patch 必须通过 symlink 真实路径边界检查。
 
-### 0.1.85 Shared Runtime 硬规则
+### 0.2.9 Rust-first Agent Runtime 硬规则
 
-- Rust `xiaoyu-core` 是 **Brain-only**：禁止 `std::process` / `std::fs` 等直接 OS/业务执行；可执行 Tool 的注册、最终权限/审批与 Handler 全部归 AGMP Go Host。
-- `internal/xiaoyu/contract.Registry` 是唯一 Host Tool Catalog/Dispatch 边界；同名 Tool 禁止覆盖，名称和风险级别必须通过校验。
-- 工作区文件 Tool 必须经过 `internal/ops/files` 的 canonical path + symlink containment 校验，不能由 Brain 自己读文件。
-
-- `internal/platform/runtime` 是 AGMP 唯一 Process/stdio 实现边界。业务域不得直接 `exec.Command`、`exec.CommandContext` 或自行创建 stdin/stdout/stderr pipe。
+- Rust `xiaoyu-core` 不再定义为 Brain-only，而是 **XiaoYu Agent Runtime**。新增 Tool Search、Context/Session、PTY/Jobs、通用 Shell/File/Process、Sandbox、Reflection、Subagent 等能力优先 Rust。
+- Rust 不复制 Steam/DST/Minecraft/Instance/License/Updater 等 Go Domain 业务；Domain Tool 仍由对应 Go Service 提供。
+- `internal/xiaoyu/contract.Registry` 在迁移期间继续作为 Go Domain Tool Catalog/Dispatch 边界；同名 Tool 禁止覆盖，名称和风险级别必须通过校验。
+- Rust Native Tool 不能绕过身份/RBAC/三种审批模式。Host 授权上下文、路径/参数边界、审计和执行后验证都是硬安全要求。
+- `internal/platform/runtime` 继续服务 Go Domain；现有业务域不得直接 `exec.Command`、`exec.CommandContext` 或自行创建 stdin/stdout/stderr pipe。XiaoYu 新的通用 Native Runtime 不再默认堆到此 Go 包。
 - 长生命周期游戏/终端会话统一使用 `Session`；一次性内部命令统一使用有输出上限和 Context 取消的 `Run`；无需交互的外部启动使用 `StartDetached` 并异步回收。
 - Session 必须保留 stdout/stderr 来源、串行化 stdin、PID/状态/退出码快照；Unix 终止以进程组为单位，Windows 保持隐藏控制台并允许显式 `ShowWindow` 的 GUI 安装器例外。
 - PTY/ConPTY 和跨 AGMP 重启后的会话重连仍是独立增强项；实现时只能扩展当前 Runtime，不得再创建另一套 Process Core。

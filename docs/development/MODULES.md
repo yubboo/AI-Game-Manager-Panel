@@ -1,6 +1,6 @@
-# AGMP 0.1.88 模块边界
+# AGMP 0.2.9 模块边界
 
-> 0.1.83 冻结领域骨架、0.1.85 冻结 Shared Runtime；0.1.88 在不搬主骨架的前提下增加 XiaoYu Host/Harness、模型中心、双大脑控制权和 Web/Linux AI Parity。模块是否规划存在仍由 `configs/modules.json` 描述；源码目录只为真实实现创建。
+> 0.2.9 冻结语言职责：Rust-first XiaoYu Agent Runtime、Go Domain Host、Vue UI。详细边界见 `docs/architecture/LANGUAGE-OWNERSHIP.md`。模块是否规划存在仍由 `configs/modules.json` 描述；源码目录只为真实实现创建。
 
 ## 1. 一级领域
 
@@ -8,7 +8,7 @@
 
 | 领域 | 后端主归属 | 负责内容 | 禁止内容 |
 | --- | --- | --- | --- |
-| 小鱼 | `rust/crates/xiaoyu-core` + `internal/xiaoyu` | Rust Brain；Go 侧 Contract / Control / Runtime Bridge | Go 侧重建 Planner/Brain；复制业务实现 |
+| 小鱼 | `rust/crates/xiaoyu-core` + `internal/xiaoyu` | Rust Agent Runtime；Go 侧 Domain Contract / Host Bridge | Go 继续扩张通用 Agent Runtime；Rust 复制游戏 Domain |
 | 游戏 | `internal/games` | 每款游戏的规则、解析、Adapter、配置差异 | 重写通用进程、文件、Steam、备份能力 |
 | 服务器 | `internal/server` | 实例、服务器控制台、RCON、游戏工作区 | 写具体游戏规则 |
 | 运维 | `internal/ops` | Files、Logs、Backup、Tasks、Scheduler | 写安装器/Steam 下载流程 |
@@ -27,15 +27,15 @@
 
 这样避免“目录很多，看起来像完成了，实际只有占位文件”。
 
-## 3. XiaoYu 唯一大脑
+## 3. XiaoYu Rust-first Agent Runtime
 
 ```text
-rust/crates/xiaoyu-core       = 唯一 Intelligence Core / Brain
+rust/crates/xiaoyu-core       = XiaoYu Agent Runtime 主实现
 rust/crates/xiaoyu-protocol   = 稳定协议
-internal/xiaoyu/contract      = Go Tool 契约与唯一可执行 Registry
-internal/xiaoyu/control       = Go 审批状态与权限桥接
-internal/xiaoyu/host          = Plugin/Capability Host、Run 生命周期、模型通信与安全驱动（不是第二个 Brain）
-internal/xiaoyu/runtime       = Go <-> Rust Brain Runtime Bridge
+internal/xiaoyu/contract      = Go Domain Tool 契约 / 迁移期 Registry
+internal/xiaoyu/control       = Go Host 身份/RBAC/审批桥接
+internal/xiaoyu/host          = 当前兼容 Host/Run/Provider 层，冻结新增通用 Agent Runtime
+internal/xiaoyu/runtime       = Go <-> Rust Agent Runtime Bridge
 ```
 
 **AI 不直接接管模块私有数据。** 小鱼只能通过公开 Tool / Service / API 使用领域能力。`internal/xiaoyu` 不得再增加 `brain/`、`planner/`、`memory/` 等第二套智能核心。
@@ -44,22 +44,20 @@ internal/xiaoyu/runtime       = Go <-> Rust Brain Runtime Bridge
 
 ```text
 用户
-  -> 小鱼 Rust Core
-  -> Tool 选择 / 计划
-  -> AGMP Host Tool Registry
-  -> Go Permission / Approval / Audit
-  -> Domain Tool / Service
-  -> Platform
+  -> XiaoYu Rust Agent Runtime
+  -> Tool Search / Plan / Session
+  -> Approval / Capability Policy
+  -> Generic Native Tool 或 Go Domain Tool
   -> OS / Steam / Game Server
-  -> Result Validator
-  -> 小鱼继续规划或完成
+  -> Observation / Validation
+  -> XiaoYu 继续规划或完成
 ```
 
-`shell.exec` 是 0.2.2 起提供给 XiaoYu 的受控通用后备 Host Tool；`process.run` 只保留为人工/兼容别名并维持 `XiaoYu=false`。小鱼应优先使用已有 Domain Tool，但不能把“没有专用 Tool”误判为无能力；Shell 的实际执行仍经过身份、RBAC、Step-up、三种审批模式和审计。Rust Brain 不自行实现 Shell。
+`shell.exec` 当前仍是 Go Host 提供的受控通用后备能力；0.2.9 起新的通用 Shell/File/Process/PTY/Job 能力优先迁入 Rust Runtime。小鱼仍应优先 Domain Tool，但不能把“没有专用 Tool”误判为无能力。迁入 Rust 后同样必须经过身份、RBAC、三种审批模式、Sandbox、审计和验证。
 
-## 3.1 Host Tool Registry
+## 3.1 Capability / Tool Registry
 
-可执行 Tool 的权威目录是 `internal/xiaoyu/contract.Registry`，不是 Rust 本地 Tool Registry。它负责唯一名称、风险级别、可调用标记与 Handler 映射；重复名称直接失败，禁止静默覆盖。
+迁移期间 Go `internal/xiaoyu/contract.Registry` 继续是 Domain Tool 的权威目录，负责唯一名称、风险级别与 Handler 映射。Rust Runtime 负责 Tool Search/Capability 选择，并将在后续承接通用 Native Tool Registry。两边都禁止同名静默覆盖。
 
 当前真实 Host Tools 已覆盖系统、工作区文件读写、游戏发现、Steam/环境状态、Runtime 管理、DST Cluster/命令/日志以及受控 `shell.exec`。Tool Schema、风险、来源与 guidance tier 统一由 Host Registry 暴露给 Brain；人工入口与 XiaoYu Tool 优先复用同一领域动作，领域能力不足时再使用通用后备能力。
 
@@ -137,4 +135,4 @@ frontend/src/features/
 
 ## 9. 通用进程终端
 
-`internal/platform/runtime` 统一管理所有真正的进程创建与 stdio：长生命周期使用 `Session`，一次性内部命令使用 `Run`，受控 Shell 使用 `RunShell`，非交互外部启动使用 `StartDetached`，多会话由 `Manager` 管理。它负责 PID、状态快照、stdout/stderr 来源、串行 stdin、环境变量 Overlay、超时取消、退出回收、非阻塞订阅、Sequence、固定容量历史以及平台终止策略。DST 和 XiaoYu Runtime 已复用；业务域禁止直接 `exec.Command` / `StdinPipe` / `StdoutPipe` / `StderrPipe`，Rust Brain 也禁止 `std::process/std::fs`。PTY/ConPTY 与跨应用重连属于后续高级能力，但不得另造第二套 Process Core。
+`internal/platform/runtime` 继续作为 **Go Domain** 的统一进程/stdin/stdout 基座；业务域禁止直接 `exec.Command` / stdio pipe。XiaoYu 的新通用 Native Runtime 从 0.2.9 起优先 Rust，未来 PTY/Jobs/Sandbox 不再默认扩张 Go `platform/runtime`。迁移时必须保持单一权威执行路径，禁止永久维护两套 Process Core。

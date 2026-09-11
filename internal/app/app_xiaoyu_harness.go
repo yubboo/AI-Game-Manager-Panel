@@ -65,7 +65,7 @@ func (e xiaoyuApplicationExecutor) Execute(ctx context.Context, call xiaoyuhost.
 // hostReceiptValidator only checks whether AGMP Host produced a structurally
 // usable execution receipt. It does NOT decide whether the user's goal is done,
 // how to recover, or which Tool should run next; those semantic decisions stay
-// inside XiaoYu Rust Brain.
+// inside the XiaoYu Rust Agent Runtime.
 type hostReceiptValidator struct{}
 
 func (hostReceiptValidator) Validate(_ context.Context, _ string, _ xiaoyuhost.Decision, outcome xiaoyuhost.ToolOutcome) (xiaoyuhost.Validation, error) {
@@ -73,7 +73,7 @@ func (hostReceiptValidator) Validate(_ context.Context, _ string, _ xiaoyuhost.D
 		return xiaoyuhost.Validation{OK: false, Summary: "Tool 仍在等待批准"}, nil
 	}
 	if outcome.Denied {
-		return xiaoyuhost.Validation{OK: true, Summary: "Tool 被安全边界拒绝，交回 XiaoYu Brain 重新规划"}, nil
+		return xiaoyuhost.Validation{OK: true, Summary: "Tool 被安全边界拒绝，交回 XiaoYu Agent Runtime 重新规划"}, nil
 	}
 	return xiaoyuhost.Validation{OK: true, Summary: "AGMP Host 已收到结构化执行结果"}, nil
 }
@@ -94,7 +94,7 @@ func (a *Application) xiaoyuLoop(token string) (*xiaoyuhost.Loop, xiaoyuhost.Bra
 	if !info.Ready {
 		message := strings.TrimSpace(info.Message)
 		if message == "" {
-			message = "XiaoYu Brain Provider 尚未就绪"
+			message = "XiaoYu Model Provider 尚未就绪"
 		}
 		return nil, info, errors.New(message)
 	}

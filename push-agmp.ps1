@@ -97,6 +97,8 @@ function Assert-ProjectIntegrity {
         'main.go',
         'wails.json',
         'frontend/package.json',
+        'frontend/pnpm-lock.yaml',
+        'desktop/electron/pnpm-lock.yaml',
         'frontend/src/app/router.ts',
         'frontend/src/features/xiaoyu/AIWorkbenchView.vue',
         'internal/xiaoyu/host/loop.go',
@@ -105,10 +107,14 @@ function Assert-ProjectIntegrity {
         'internal/app/app_xiaoyu_tools.go',
         'runtime/README.md',
         'rust/Cargo.toml',
+        'rust/Cargo.lock',
         'rust/crates/xiaoyu-core/Cargo.toml',
         'rust/crates/xiaoyu-core/src/lib.rs',
+        'rust/crates/xiaoyu-core/src/tool_search.rs',
         'rust/crates/xiaoyu-protocol/Cargo.toml',
         'scripts/common/check-github-safety.mjs',
+        'scripts/common/check-language-ownership.mjs',
+        'scripts/common/check-dependency-locks.mjs',
         'scripts/common/check-duplicates.mjs',
         'scripts/common/check-source-tree.mjs',
         'scripts/common/check-naming.mjs',
@@ -119,6 +125,8 @@ function Assert-ProjectIntegrity {
         'scripts/windows/AIGameManagerPanel.ps1',
         'scripts/windows/tasks/Tasks.ps1',
         'docs/NAMING-CONVENTIONS.md',
+        'docs/PROJECT-STATUS.md',
+        'docs/architecture/LANGUAGE-OWNERSHIP.md',
         'AGMP-Sync.bat',
         'sync-agmp.ps1'
     )
@@ -132,9 +140,9 @@ function Assert-ProjectIntegrity {
     }
 
     $requiredTrees = @(
-        @{ Path = 'scripts/common'; MinimumFiles = 17 },
+        @{ Path = 'scripts/common'; MinimumFiles = 19 },
         @{ Path = 'scripts/windows'; MinimumFiles = 8 },
-        @{ Path = 'rust/crates'; MinimumFiles = 5 },
+        @{ Path = 'rust/crates'; MinimumFiles = 6 },
         @{ Path = 'internal/xiaoyu'; MinimumFiles = 21 },
         @{ Path = 'frontend/src'; MinimumFiles = 25 }
     )
@@ -361,6 +369,8 @@ function Test-RepositorySafety([ValidateSet('tracked','staged','candidate')] [st
         $nodeGates = @(
             @{ Path = 'scripts\common\check-source-tree.mjs'; Name = 'Source Tree Gate' },
             @{ Path = 'scripts\common\check-naming.mjs'; Name = 'Naming Gate' },
+            @{ Path = 'scripts\common\check-language-ownership.mjs'; Name = 'Language Ownership Gate' },
+            @{ Path = 'scripts\common\check-dependency-locks.mjs'; Name = 'Dependency Lock Gate' },
             @{ Path = 'scripts\common\check-duplicates.mjs'; Name = 'Duplicate Source Gate' },
             @{ Path = 'scripts\common\check-github-safety.mjs'; Name = 'GitHub Safety Gate' }
         )

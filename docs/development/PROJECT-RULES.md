@@ -21,16 +21,16 @@ Web、Wails、Electron、未来 Rust Native 只是同一个 AGMP 的不同构建
 - Human override 永远优先：`pause / takeover / cancel` 必须能中断当前可取消 Brain Turn；人工接管期间 XiaoYu 不得自动继续。
 - 多用户 Web 中，Run 必须绑定发起人。Owner/Admin 可全局监督；普通 Operator 只能读取/控制自己的 Run 与对应 Event Stream。
 - 人工按钮和 XiaoYu Tool 必须调用同一 Domain Action。禁止为了 AI 另建一套 DST/Minecraft/Steam/Backup 业务实现。
-- Go RunManager/Host 只负责生命周期、安全和执行驱动；“下一步做什么、目标是否完成、如何语义恢复”由 Rust XiaoYu Brain 决定，禁止 Go 逐渐形成第二个 Planner/Brain。
+- Go RunManager/Host 当前负责产品生命周期、Provider 传输、身份/RBAC 和 Domain Tool Bridge；新的 Tool Search、Session、Recovery、Reflection、Subagent 等通用 Agent 语义优先进入 Rust，禁止 Go 继续形成长期第二套 Agent Runtime。
 - 第三方 DSH Tool 插件必须在独立受限进程运行，默认不得获得宿主环境秘密、任意文件写入或 child_process；插件必须通过 AGMP Tool/Capability 才能操作服务器资源。
 
 ## 2. 小鱼是内置核心大脑
 
 小鱼是 AGMP 内置的智能核心，不是外挂、插件式第二产品，也不是要求用户另外下载和启动的软件。
 
-产品主控制链固定为：
+产品主控制链长期目标为：
 
-`用户意图 -> XiaoYu Brain/计划 -> AGMP Host Tool Registry -> Go 权限/审批 -> Domain 执行 -> 验证 -> 汇报`
+`用户意图 -> XiaoYu Rust Agent Runtime -> Capability/Tool -> Approval -> Rust Generic Runtime 或 Go Domain Provider -> 验证 -> 汇报`
 
 为了稳定性、性能和故障隔离，底层可以使用 Rust 原生模块、内部进程、Go 服务或平台组件；这些只属于实现细节。任何内部可执行文件都不得被包装成普通用户需要理解或单独操作的产品。
 
@@ -101,7 +101,7 @@ Web、Wails、Electron、未来 Rust Native 只是同一个 AGMP 的不同构建
 
 - 文件管理归文件模块；设置归设置模块；节点归节点模块；授权归授权模块；备份、日志、终端、Steam、实例等同理。
 - UI 可以把某模块嵌在另一个页面里，例如“授权与许可证”显示在设置中心，但授权业务仍归 `internal/system/license`，不得把许可证核心逻辑搬进设置模块。
-- Rust `xiaoyu-core` 是唯一超级大脑，负责理解、规划、工作流、Tool 编排与结果验证；Go `internal/xiaoyu` 只保留 `contract / control / runtime` 三组桥接职责，不复制 Brain 或领域业务。尚未实现的领域能力以 Tool 契约和 `configs/modules.json` 状态存在，不为占位预建空目录。
+- Rust `xiaoyu-core` 是 XiaoYu Agent Runtime 主实现，负责 Brain Policy、Agent 状态机、Tool Search、Context/Session，并逐步承接 PTY/Jobs/Sandbox/Reflection/Subagent；Go `internal/xiaoyu` 是迁移期 Host/Bridge，不得继续新增长期通用 Agent Runtime。领域业务仍归 Go Domain Service。
 - 业务域可以依赖 `internal/platform`，但禁止为了省事直接修改其他业务域的私有状态；`internal/platform` 不得反向依赖任何业务域。
 - 新功能较小时不要过度拆分。强关联代码可以保留在同一文件；确实需要拆分时使用短而一致的前缀，例如 `file_scan.go`、`file_scan_rules.go`、`file_scan_win.go`，或 `file_scan_one.go` / `file_scan_two.go`。
 - 文件名、目录名和 API 名优先使用短、明确、可搜索的业务词。禁止为了“显得专业”制造超长命名；人和 AI 都应能从名字判断归属与用途。
@@ -113,7 +113,7 @@ Web、Wails、Electron、未来 Rust Native 只是同一个 AGMP 的不同构建
 - 手动终端唯一 UI 为 Bottom Panel 的 `TerminalPanel`；不得再维护第二套独立终端页面。
 - `internal/platform/runtime` 是跨游戏统一的进程终端底座，负责 Process/stdin/stdout/stderr/PID/退出等待/Terminate/Kill、非阻塞输出订阅与固定容量历史；游戏域只保留命令语义、Ready 判定和专属状态解析，禁止复制 OS 进程实现。
 - 0.1.85 起所有真正的子进程创建必须收口到 `internal/platform/runtime`：长生命周期用 `Session`，一次性受控命令用 `Run`，非交互启动用 `StartDetached`。业务域、XiaoYu Bridge、Updater 不得重新直接 `exec.Command` 或持有 stdio pipe；`exec.LookPath` 仅用于发现可执行文件，不视为进程创建。
-- Rust `xiaoyu-core` 是 Brain-only，禁止 `std::process` / `std::fs` 和本地 `fs.read/fs.list/process.run` 执行。可执行 Tool 必须注册在 Go Host `internal/xiaoyu/contract.Registry`，最终 Handler 归所属业务域。
+- 0.2.9 起 Rust `xiaoyu-core` 不再定义为 Brain-only。新的通用 Shell/File/Process/PTY/Job/Sandbox 能力优先 Rust；Steam/DST/Minecraft/Instance/License 等 Domain Tool 仍由 Go Service 提供。任何 Rust Native 执行都必须经过 Host 身份/RBAC/审批上下文、Sandbox、审计和结果验证。
 - 共享 Runtime 必须保持有界：一次性输出有大小上限，超时必须终止进程；stdin 并发写必须串行；stdout/stderr 保留来源；Session 状态、PID、退出码和退出时间必须可快照。
 
 详细模块归属见 `docs/development/MODULES.md`。
@@ -126,6 +126,6 @@ Web、Wails、Electron、未来 Rust Native 只是同一个 AGMP 的不同构建
 - **帮我批准**：小鱼可以主动规划并给出推荐，但只有读取自动完成；任何会改变系统状态的 Tool 都必须等待用户明确批准。推荐意见不能替代批准。
 - **完全访问权限**：用户授予 AI 最高 AGMP Tool 权限，可自主规划并执行已注册、已启用的系统能力，不逐项请求批准。
 
-“完全访问权限”不是“关闭安全”。无论哪种模式，以下保护都不能被权限模式绕过：身份/RBAC、模块 API 边界、参数校验、路径作用域、目标存在性检查、并发/幂等保护、必要备份与回滚条件、秘密保护、操作审计、执行后验证。Full 权限表示用户已授权已注册能力在当前策略范围内自动执行，不等于绕过 Host。AI 仍应优先使用模块 Service / Domain Tool；当领域能力不足时可以调用 Host 注册的 `shell.exec` 通用后备能力，但不能通过 Rust Brain、前端或未注册旁路直接执行 OS 操作。
+“完全访问权限”不是“关闭安全”。无论哪种模式，以下保护都不能被权限模式绕过：身份/RBAC、模块 API 边界、参数校验、路径作用域、目标存在性检查、并发/幂等保护、必要备份与回滚条件、秘密保护、操作审计、执行后验证。Full 权限表示用户已授权已注册能力在当前策略范围内自动执行，不等于绕过 Host。AI 仍应优先使用模块 Service / Domain Tool；领域能力不足时可以使用通用 Agent Runtime。迁移期间 `shell.exec` 仍由 Go Host 提供，后续迁入 Rust 也必须保持同等审批、Sandbox 与审计，不允许前端或未授权旁路直接执行 OS 操作。
 
 AI 的主要职责始终围绕 AGMP：理解用户的开服/运维意图，自动调用系统内置能力完成任务。通用聊天可以提供，但优先级低于“安全、准确地操控 AGMP 完成用户目标”。

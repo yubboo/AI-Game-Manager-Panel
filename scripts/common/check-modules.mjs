@@ -65,10 +65,10 @@ try {
     if (exists(forbidden)) fail.push(`禁止恢复旧分散目录：${forbidden}`)
   }
 
-  // XiaoYu Go 侧只保留契约、控制边界、Harness Host 与 Rust Runtime 桥；Brain/Planner/Memory 必须归 Rust xiaoyu-core。
+  // XiaoYu Go 侧保留 Domain Contract、Host Control、兼容 Run/Provider 与 Rust Runtime Bridge；新的通用 Agent Runtime 能力优先 Rust。
   const allowedXiaoYu = new Set(['contract', 'control', 'host', 'runtime'])
   for (const item of fs.readdirSync(p('internal/xiaoyu'), { withFileTypes: true })) {
-    if (item.isDirectory() && !allowedXiaoYu.has(item.name)) fail.push(`XiaoYu Go Bridge 出现未授权子域：${item.name}；Brain/Planner 不得在 Go 重建`)
+    if (item.isDirectory() && !allowedXiaoYu.has(item.name)) fail.push(`XiaoYu Go Bridge 出现未授权子域：${item.name}；新 Agent Runtime 子域应优先 Rust`)
   }
 
   // 平台层禁止恢复 0.1.83 已清理的一函数一目录微包。
@@ -151,11 +151,11 @@ try {
 
   const runtime = read('rust/crates/xiaoyu-core/src/lib.rs')
   const cli = read('rust/crates/xiaoyu-core/src/bin/xiaoyu.rs')
-  for (const forbidden of ['std::process', 'std::fs', 'Command::new', 'process.run', 'fs.list', 'fs.read']) {
-    if (runtime.includes(forbidden)) fail.push(`XiaoYu Rust Brain 禁止拥有 OS/领域执行实现：${forbidden}`)
+  for (const token of ['rust-agent-runtime-boundary', 'domain-provider-separation', 'tool-search-v1']) {
+    if (!runtime.includes(token)) fail.push(`XiaoYu Rust Runtime 缺少职责标记：${token}`)
   }
-  for (const forbidden of ['Command::Tool {', 'Command::Exec {', 'tool/call']) {
-    if (cli.includes(forbidden)) fail.push(`XiaoYu CLI 禁止恢复本地执行入口：${forbidden}`)
+  for (const forbidden of ['Command::Tool {', 'Command::Exec {']) {
+    if (cli.includes(forbidden)) fail.push(`XiaoYu CLI 暂不允许暴露用户直连执行命令：${forbidden}`)
   }
   const hostTools = read('internal/app/app_xiaoyu_tools.go')
   for (const required of ['system.info','fs.list','fs.read','fs.write','fs.replace','shell.exec','process.run']) {
@@ -188,4 +188,4 @@ if (fail.length) {
   process.exit(1)
 }
 
-console.log('AGMP Module Gate PASS (domain aggregation · one Process Core · Rust Brain-only · Host Tool execution)')
+console.log('AGMP Module Gate PASS (domain aggregation · Rust-first Agent Runtime · Go Domain Host)')

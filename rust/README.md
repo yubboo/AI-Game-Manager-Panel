@@ -1,13 +1,49 @@
-# AGMP 小鱼核心 Runtime
+# AGMP XiaoYu Rust Runtime
 
-0.1.74 开始，Rust 是 AI Game Manager Panel 智能 Agent 的本地执行运行时，而不是复制 Go 游戏业务。
+0.2.9 起，Rust 的长期职责从“Brain-only”升级为 **XiaoYu Agent Runtime / Native Execution / Security Boundary**。
 
-职责边界：
+Rust 负责 XiaoYu 的通用 Agent 能力，Go 继续负责 AGMP 游戏/产品 Domain Service。详细语言职责见 `docs/architecture/LANGUAGE-OWNERSHIP.md`。
 
-- Rust：Agent CLI、Tool Runtime、审批策略、本地命令执行、未来 PTY/沙箱/会话协议。
-- Go：游戏服务器、Steam/DST、实例、授权、更新、Web API 与现有业务 Service。
-- Vue：小鱼优先的人机交互；传统可视化页面作为手动兜底。
+## 当前 crate
 
-当前协议：`xiaoyu.v1`，本地 CLI 支持 `doctor`、`tools`、`tool`、`exec` 和 JSON-RPC stdio `rpc`。
+```text
+rust/crates/xiaoyu-core       # Agent Runtime 主实现
+rust/crates/xiaoyu-protocol   # xiaoyu.v1 协议
+```
 
-> 0.1.74 是 XiaoYu Runtime Foundation。小鱼模型 Provider、多轮自动规划、流式 Tool Call、PTY 长会话与 Tauri 桌面壳在后续阶段继续接入。
+当前已经包含：
+
+- provider-neutral Brain Policy / Decision Grammar；
+- Guided Autonomy；
+- Session foundation；
+- Approval hint；
+- Tool Search / Capability Discovery（0.2.9）；
+- JSON-RPC stdio Runtime。
+
+后续 Rust-first 能力：
+
+- Agent Loop / Goal State；
+- Context / Session / Thread；
+- Long-running Jobs；
+- PTY；
+- Generic Shell / File / Process；
+- Apply Patch；
+- Sandbox / Capability Lease；
+- Reflection / Experience；
+- Subagent。
+
+## Domain 边界
+
+Rust 不复制：
+
+- Steam / SteamCMD 业务；
+- DST / Minecraft 业务规则；
+- Instance / Backup / License / Updater 业务。
+
+这些仍由 Go Domain Service 提供结构化 Tool。
+
+## 安全
+
+Rust Native Runtime 不等于无限权限。任何真实执行都必须保持：身份/RBAC、三种审批模式、Capability Scope、Sandbox、路径/参数限制、秘密保护、审计和执行后验证。
+
+普通用户不需要安装 Rust/Cargo/MSVC。发行构建机/CI 预编译 XiaoYu Runtime，并把它作为 AGMP 内部组件随完整产品发布。

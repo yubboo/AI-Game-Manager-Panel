@@ -1,8 +1,9 @@
-// Package xiaoyuruntime connects AGMP to XiaoYu's Rust Brain runtime.
+// Package xiaoyuruntime connects AGMP to XiaoYu's Rust Agent Runtime.
 //
-// The Rust process is an isolated intelligence/policy runtime, not an OS or
-// game executor. Executable Tools are owned by the AGMP Go Host and domain
-// modules; all process/stdio execution ultimately uses platform/runtime.
+// 0.2.9 starts the Rust-first Agent Runtime migration. Go remains the source
+// of truth for AGMP domain services, while generic Agent capabilities move to
+// Rust incrementally. Existing Go execution paths remain compatible until the
+// Rust equivalents have protocol tests and Agent Bench coverage.
 package xiaoyuruntime
 
 import (
@@ -51,6 +52,22 @@ type ToolSpec struct {
 	XiaoYu      bool           `json:"xiaoyu"`
 	Parameters  map[string]any `json:"parameters,omitempty"`
 	Source      string         `json:"source,omitempty"`
+}
+
+type ToolSearchRequest struct {
+	Query string     `json:"query"`
+	Tools []ToolSpec `json:"tools"`
+	Limit int        `json:"limit,omitempty"`
+}
+
+type ToolSearchHit struct {
+	Tool  ToolSpec `json:"tool"`
+	Score uint32   `json:"score"`
+}
+
+type ToolSearchResponse struct {
+	Query string          `json:"query"`
+	Hits  []ToolSearchHit `json:"hits"`
 }
 
 type ToolCallRequest struct {
@@ -151,6 +168,18 @@ func (s *Service) Status() Status {
 	}
 }
 
+// SearchTools delegates capability relevance ranking to the Rust Agent Runtime.
+// A search hit does not grant execution permission; approval/RBAC remains
+// independent from capability discovery.
+func (s *Service) SearchTools(ctx context.Context, query string, tools []ToolSpec, limit int) (ToolSearchResponse, error) {
+	var value ToolSearchResponse
+	request := ToolSearchRequest{Query: strings.TrimSpace(query), Tools: tools, Limit: limit}
+	if err := s.runRPC(ctx, "tools/search", request, &value); err != nil {
+		return value, err
+	}
+	return value, nil
+}
+
 // Ready implements host.BrainPolicy. A configured model is not considered a
 // usable XiaoYu Brain unless the Rust policy core is present and protocol-ready.
 func (s *Service) Ready(_ context.Context) (bool, string) {
@@ -204,17 +233,17 @@ func (s *Service) runRPC(parent context.Context, method string, params any, targ
 		Stdin: string(raw) + "\n", MaxOutputBytes: 4 * 1024 * 1024,
 	})
 	if result.TimedOut {
-		return fmt.Errorf("小鱼 Brain RPC 超时：%w", ctx.Err())
+		return fmt.Errorf("小鱼 Agent Runtime RPC 超时：%w", ctx.Err())
 	}
 	if errors.Is(err, platformruntime.ErrOutputTruncated) {
-		return errors.New("小鱼 Brain RPC 输出超过安全上限")
+		return errors.New("小鱼 Agent Runtime RPC 输出超过安全上限")
 	}
 	if err != nil {
 		message := strings.TrimSpace(result.Stderr)
 		if message == "" {
 			message = err.Error()
 		}
-		return fmt.Errorf("小鱼 Brain RPC 失败：%s", message)
+		return fmt.Errorf("小鱼 Agent Runtime RPC 失败：%s", message)
 	}
 	var response struct {
 		Result json.RawMessage `json:"result"`
@@ -224,24 +253,23 @@ func (s *Service) runRPC(parent context.Context, method string, params any, targ
 		} `json:"error"`
 	}
 	if err := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &response); err != nil {
-		return fmt.Errorf("解析小鱼 Brain RPC 响应失败：%w", err)
+		return fmt.Errorf("解析小鱼 Agent Runtime RPC 响应失败：%w", err)
 	}
 	if response.Error != nil {
-		return fmt.Errorf("小鱼 Brain RPC 错误 %d：%s", response.Error.Code, response.Error.Message)
+		return fmt.Errorf("小鱼 Agent Runtime RPC 错误 %d：%s", response.Error.Code, response.Error.Message)
 	}
 	if len(response.Result) == 0 {
-		return errors.New("小鱼 Brain RPC 没有返回 result")
+		return errors.New("小鱼 Agent Runtime RPC 没有返回 result")
 	}
 	if err := json.Unmarshal(response.Result, target); err != nil {
-		return fmt.Errorf("解析小鱼 Brain RPC result 失败：%w", err)
+		return fmt.Errorf("解析小鱼 Agent Runtime RPC result 失败：%w", err)
 	}
 	return nil
 }
 
-// Executable Tool dispatch intentionally does not live in this Rust bridge.
-// AGMP owns Tool metadata, approval and execution in internal/xiaoyu/contract
-// plus the corresponding Go domain modules. This service only talks to the
-// XiaoYu Brain runtime for health/protocol capabilities.
+// Domain Tool dispatch still belongs to AGMP Go services. This bridge now also
+// exposes Rust-owned capability search; generic native execution will migrate
+// behind this protocol incrementally without bypassing Host approval/RBAC.
 
 func (s *Service) binaryPath() (string, error) {
 	candidates := make([]string, 0, 8)

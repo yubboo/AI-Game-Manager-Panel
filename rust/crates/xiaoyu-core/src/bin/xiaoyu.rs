@@ -21,8 +21,8 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Compatibility/introspection command. Executable Tools live in AGMP Go
-    /// domains, therefore XiaoYu Core intentionally reports no local Tools.
+    /// Compatibility/introspection command. Domain Tools live in AGMP Go
+    /// services; generic native Tools migrate into XiaoYu Runtime incrementally.
     Tools {
         #[arg(long)]
         json: bool,
@@ -82,6 +82,11 @@ fn dispatch(runtime: &Runtime, request: JsonRpcRequest) -> JsonRpcResponse {
     let result: Result<Value> = (|| match request.method.as_str() {
         "initialize" | "runtime/status" => Ok(serde_json::to_value(runtime.status())?),
         "tools/list" => Ok(serde_json::to_value(runtime.tools())?),
+        "tools/search" => {
+            let search: xiaoyu_protocol::ToolSearchRequest =
+                serde_json::from_value(request.params.clone())?;
+            Ok(serde_json::to_value(runtime.search_tools(search))?)
+        }
         "session/create" => {
             let cwd = request.params.get("cwd").and_then(Value::as_str);
             let mode: ApprovalMode = serde_json::from_value(

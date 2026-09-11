@@ -41,8 +41,7 @@ try {
   const app = read('internal/app/app_xiaoyu_harness.go')
   for (const token of ['hostReceiptValidator','normalizeXiaoYuAttachments','AppendAttachments','XiaoYuStartRun','XiaoYuTakeoverRun','XiaoYuEventStream','xiaoyuAdvanceAfterSteer','WithThreadContext']) requireToken(app, token, `Application Harness 缺少：${token}`)
   const rust = read('rust/crates/xiaoyu-core/src/lib.rs')
-  for (const token of ['prepare_brain','resolve_brain','brain-only-boundary','ui.navigate','agent-kernel-v2','Goal-first','不要输出隐藏思维链','public_action_summary','settings.*','frame.thread.recentTurns','用户实时纠正','approvalId']) requireToken(rust, token, `Rust Brain 缺少：${token}`)
-  for (const forbidden of ['std::process','std::fs','Command::new']) if (rust.includes(forbidden)) failures.push(`Rust Brain 禁止恢复 OS 执行：${forbidden}`)
+  for (const token of ['prepare_brain','resolve_brain','rust-agent-runtime-boundary','ui.navigate','agent-kernel-v2','Goal-first','不要输出隐藏思维链','public_action_summary','settings.*','frame.thread.recentTurns','用户实时纠正','approvalId']) requireToken(rust, token, `Rust Agent Runtime 缺少：${token}`)
   const permissions = JSON.parse(read('configs/permissions.json'))
   if (permissions?.policies?.risk?.read !== 'allow' || permissions?.policies?.risk?.operate !== 'allow' || permissions?.policies?.risk?.modify !== 'allow' || permissions?.policies?.risk?.destructive !== 'confirm' || permissions?.policies?.risk?.system !== 'confirm') failures.push('帮我批准必须自动放行 read/operate/modify，仅 destructive/system 进入真实审批')
   const approvalMenu = read('frontend/src/features/xiaoyu/components/ApprovalMenu.vue')
@@ -54,4 +53,4 @@ if (failures.length) {
   failures.forEach(item => console.error(` - ${item}`))
   process.exit(1)
 }
-console.log('AGMP XiaoYu Harness Gate PASS (steerable thread · terminal turn boundary · three approval modes · outside-click close · Rust brain-only)')
+console.log('AGMP XiaoYu Harness Gate PASS (steerable thread · terminal turn boundary · three approval modes · outside-click close · Rust Agent Runtime)')

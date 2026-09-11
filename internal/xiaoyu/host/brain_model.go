@@ -64,11 +64,11 @@ func (b *ConfiguredModelBrain) Info(ctx context.Context) BrainInfo {
 		return BrainInfo{ID: "xiaoyu.model", Name: "小鱼大脑", Source: "model-center", Ready: false, Message: "请先在系统设置 → 模型管理配置默认模型"}
 	}
 	if b.Policy == nil {
-		return BrainInfo{ID: profile.ID, Name: profile.Name, Model: profile.Model, Source: profile.Provider, Ready: false, Message: "XiaoYu Rust Brain Policy 未连接"}
+		return BrainInfo{ID: profile.ID, Name: profile.Name, Model: profile.Model, Source: profile.Provider, Ready: false, Message: "XiaoYu Rust Agent Runtime 未连接"}
 	}
 	if ready, msg := b.Policy.Ready(ctx); !ready {
 		if strings.TrimSpace(msg) == "" {
-			msg = "XiaoYu Rust Brain Core 未就绪"
+			msg = "XiaoYu Rust Agent Runtime 未就绪"
 		}
 		return BrainInfo{ID: profile.ID, Name: profile.Name, Model: profile.Model, Source: profile.Provider, Ready: false, Message: msg}
 	}

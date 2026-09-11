@@ -1,213 +1,245 @@
-# AI Game Manager Panel 0.1.88 总架构
+# AI Game Manager Panel 0.2.9 总架构
 
-> AGMP 是唯一产品；0.1.88 将产品控制模型冻结为 **Human + XiaoYu，两个大脑、同一副身体**。Rust XiaoYu 是唯一智能大脑，用户是最终人为大脑；两者通过同一个 AGMP Host、同一组 Domain 能力和同一个 Shared Runtime 控制游戏服务器。Web/Linux/Docker 与 Windows Desktop 必须保持核心 AI 能力等价。
+> AGMP 是唯一产品。用户与 XiaoYu 是“两个大脑、同一副身体”：用户拥有最终授权与接管权；XiaoYu 负责理解、规划、执行编排、验证、恢复与总结。0.2.9 起语言职责正式冻结为 **Rust-first Agent Runtime / Go Domain Host / Vue UI**。
 
-## 1. 永久核心关系
-
-**Web / Wails / Electron / Rust Native：同一产品，不同运行端。**
+## 1. 产品模型
 
 ```text
                            用户
                             │
-                  ┌─────────┴─────────┐
-                  │                   │
-               XiaoYu AI           Human Control
-               智能大脑             人为大脑
-                  │                   │
-                  └─────────┬─────────┘
+                 ┌──────────┴──────────┐
+                 │                     │
+            XiaoYu Agent            Human UI
+                 │                     │
+                 └──────────┬──────────┘
                             │
-                   Domain Tool / API
+                       AGMP Product
                             │
-      ┌─────────┬───────────┼───────────┬──────────┐
-      │         │           │           │          │
-    games     server       ops        deploy     system
-      └─────────┴───────────┼───────────┴──────────┘
+          ┌─────────────────┴─────────────────┐
+          │                                   │
+ Rust XiaoYu Agent Runtime              Go Domain Host
+          │                                   │
+ Agent / Tool / Session                 Game / Steam / Instance
+ Native Runtime / Sandbox               Auth / Update / Web API
+          │                                   │
+          └─────────────────┬─────────────────┘
                             │
-                         platform
-                            │
-                OS / Steam / Game Server
+                         OS / Game
 ```
 
-- **Rust = 小鱼 Intelligence Core。** Brain / Planner / Workflow / Context / Memory / Tool 选择 / Result Validation 归 Rust；它只思考和编排，不直接碰 OS/业务数据。
-- **Go = AGMP 业务身体 + 安全执行边界。** 游戏、服务器、运维、部署、系统能力由 Go 提供稳定领域 API；Host Tool Registry、身份/RBAC/审批/审计和最终 Tool Handler 都在 Go 强制执行。
-- **Vue + TypeScript = 统一 UI。** Web/Wails/Electron 复用同一前端。
-- **Python = 可选 Sidecar。** 不进入小鱼核心硬依赖。
+永久规则：
 
+- **同一产品，不同运行端**：Web / Wails / Electron / Linux Server / Docker / 未来 Rust Native 都只是完整 AGMP 的不同交付目标，不拆成独立 XiaoYu 产品。
+- **Human override always wins**：暂停、接管、取消优先于 XiaoYu 自动执行。
+- **同一副身体**：人工 UI 与 XiaoYu 不能维护两套业务实现。
+- **Server-owned Run**：浏览器断线不取消后台 Run。
+- **多端 AI parity**：Web / Wails / Electron / Linux Server / Docker 必须共享同一个 XiaoYu 能力模型。
+- **Headless first**：删除桌面壳后，Go Core + Rust XiaoYu + Web 仍应工作。
 
-## 1.1 双大脑、一副身体与多端原则
+## 2. Language Ownership
+
+详细规范：[`architecture/LANGUAGE-OWNERSHIP.md`](architecture/LANGUAGE-OWNERSHIP.md)。
+
+### 2.1 Rust = XiaoYu Agent Runtime
+
+Rust 长期负责：
 
 ```text
-Human UI / Manual Control        XiaoYu Rust Brain
-          \                         /
-           \                       /
-            └────── AGMP Host ─────┘
-             Identity / RBAC / Approval
-             Tool / Capability / Audit
-                       │
-              Domain Services
-                       │
-              Shared Platform Runtime
-                       │
-             Windows / Linux / Game
+Brain Policy
+Agent Loop / Goal State
+Tool Search / Capability Discovery
+Context / Session / Thread
+Long-running Jobs
+PTY
+Generic Shell / Process / Filesystem
+Apply Patch
+Sandbox / Capability Lease
+Reflection / Experience
+Subagent / Specialist Dispatch
+xiaoyu.v1 Protocol
 ```
 
-硬规则：
+Rust 的目标不是复制游戏业务，而是成为 XiaoYu 可跨 Windows/Linux/Web Host 复用的通用 Agent Runtime 与 Native Security Boundary。
 
-- **Human override always wins**：用户暂停、接管或取消时，XiaoYu 当前可取消推理回合立即停止，直到用户明确交还控制权。
-- **同一副身体**：人工按钮与 XiaoYu Tool 不允许维护两套业务实现；必须汇入同一 Domain Action，再进入同一 Shared Runtime。
-- **Server-owned Run**：自主任务属于 AGMP Server，不属于某个浏览器标签页；Web 断线只取消 Event Subscription，不取消 Run。
-- **Web AI parity**：Linux Server Web / Docker Web / Windows Web 与桌面端共享同一 XiaoYu、模型中心、Harness、Tool Host、审批和事件流。桌面仅允许托盘、窗口等真正 Desktop-only 能力例外。
-- **多用户隔离**：Run 记录 Initiator；Owner/Admin 可全局监督，普通 Operator 默认只读取/控制自己创建的 Run。全局模型/插件管理事件不向普通用户 Event Stream 广播。
-- **Headless first**：删除 `desktop/` 后，AGMP Core + XiaoYu + Web 仍必须能够独立构建和运行。
+### 2.2 Go = AGMP Product Host / Domain Services
 
-## 2. 根目录
+Go 负责：
+
+```text
+Minecraft / DST / future games
+Steam / SteamCMD
+Instance / Workspace
+Backup / Logs / Tasks
+Environment / Update
+Auth / RBAC / License / Settings
+Web API
+Wails current desktop host
+Domain Tool Provider
+```
+
+Go 的业务 Service 是 Domain 事实来源。Rust 需要安装 DST、管理 Minecraft 或更新 Steam App 时，应调用 Go Domain Tool，而不是复制这些业务逻辑。
+
+### 2.3 Vue / TypeScript = Presentation / UX
+
+Vue 统一承载 Web/Wails/Electron UI：XiaoYu、Dashboard、设置、实例、日志、游戏工作台、审批和 Trace。前端不能成为权限或业务状态权威。
+
+## 3. 当前迁移状态
+
+0.2.8 已建立全绿 CI，因此 0.2.9 不进行“大爆炸式重写”。当前仍有成熟 Go 实现：
+
+```text
+internal/xiaoyu/host       # 当前 Agent Host / Run / provider transport
+internal/platform/runtime  # 当前 Go Process/Session runtime
+internal/ops/files         # 当前 Go workspace file boundary
+```
+
+从 0.2.9 起这些代码进入**兼容迁移期**：
+
+1. 不再默认把新的通用 Agent Runtime 能力加入 Go；
+2. 新 Tool Search / Session / Job / PTY / Sandbox / Reflection / Subagent 优先 Rust；
+3. 每迁移一块必须先有稳定协议与 Agent Bench；
+4. 新旧实现短期可并存，但只能有一个权威路径；
+5. 迁移完成并验证后再删除旧路径。
+
+因此，“Rust-first”表示**新能力归属与迁移方向**，不是宣称 0.2.9 已经把所有 Go Runtime 重写完成。
+
+## 4. 根目录
 
 ```text
 AI-Game-Manager-Panel/
 ├─ cmd/              # Go 程序入口
 ├─ configs/          # 非敏感产品配置
-├─ desktop/          # Desktop Shell
+├─ desktop/          # Desktop Shell / compatibility shell
 ├─ distribution/     # Installer / Docker / License 发行资源
-├─ docs/             # 集中文档
+├─ docs/             # 当前规范与唯一项目历史
 ├─ frontend/         # Vue 3 + TypeScript
-├─ internal/         # Go 领域业务与平台能力
-├─ runtime/          # 用户可写运行数据
-├─ rust/             # XiaoYu Intelligence Core
+├─ internal/         # Go Product Host / Domain Services
+├─ runtime/          # 用户可写运行数据（不进 Git）
+├─ rust/             # XiaoYu Agent Runtime
 └─ scripts/          # 开发、Gate、构建、发行工具
 ```
 
 普通功能不得新增根级源码目录。
 
-## 3. Go 骨架
+## 5. Go Domain 骨架
 
 ```text
 internal/
-├─ app/                      # 应用装配/生命周期
-├─ bridge/                   # HTTP / Wails Adapter
-├─ config/                   # configs 加载
-│
-├─ xiaoyu/                   # Go <-> XiaoYu 边界，不是第二个 Brain
-│  ├─ contract/              # Tool/Plan/Provider/Registry 契约
-│  ├─ control/               # 审批状态/权限策略桥
-│  └─ runtime/               # Rust Runtime 进程桥
-│
-├─ games/                    # 游戏差异
-│  ├─ common/
-│  ├─ dst/
-│  │  ├─ dedicated/
-│  │  ├─ logcenter/
-│  │  ├─ preferences/
-│  │  ├─ runtime/
-│  │  ├─ setup/
-│  │  └─ workspace/
-│  └─ steam/
-│     └─ dst/
-│
-├─ server/                   # 通用服务器域；当前真实代码为 workspace
-│  └─ workspace/
-│
-├─ ops/                      # 运维域
-│  ├─ files/                 # 工作区文件安全读取基础
-│  └─ logs/
-│
-├─ deploy/                   # 部署域
-│  ├─ environment/
-│  ├─ steam/
-│  │  └─ maintenance/
-│  └─ updater/
-│
-├─ system/                   # AGMP 系统域
-│  ├─ auth/
-│  ├─ license/
-│  └─ settings/
-│
-└─ platform/                 # 最底层共享基础设施
-   ├─ files/
-   ├─ http/
-   ├─ net/
-   ├─ os/
-   ├─ runtime/
-   ├─ security/
-   ├─ steam/
-   └─ telemetry/
+├─ app/                  # 应用装配/生命周期
+├─ bridge/               # HTTP / Wails Adapter
+├─ config/               # configs 加载
+├─ xiaoyu/               # 迁移期 Go Host / Bridge，不是长期第二套 Runtime
+│  ├─ contract/          # Domain Tool 契约
+│  ├─ control/           # Host 身份/审批桥
+│  ├─ host/              # 当前兼容 Agent Host；新通用语义不再扩张
+│  └─ runtime/           # Go <-> Rust Runtime Bridge
+├─ games/                # 游戏差异
+├─ server/               # 通用服务器域
+├─ ops/                  # Files / Logs / Backup / Tasks
+├─ deploy/               # Environment / Steam / Updater
+├─ system/               # Auth / License / Settings / Security
+└─ platform/             # Go Domain 底层基础设施
 ```
 
-### 3.1 Application 编排文件
+依赖规则：
 
-`internal/app` 保持一个 Go package，不增加新的中间层；原 1397 行 `app.go` 按统一前缀收为 `app.go / app_core.go / app_games.go / app_license.go / app_xiaoyu.go / app_auth.go / app_environment.go`。领域 Service 仍在各自目录，`app_*` 只负责装配和对外编排。
+1. `platform` 不反向依赖上层业务域。
+2. `games` 不复制通用文件/网络/进程/Steam 基础设施。
+3. `app` 只装配公开 Service。
+4. `bridge` 只做协议适配/鉴权入口。
+5. `internal/xiaoyu/host` 不新增长期 Planner/Tool Search/Reflection/Subagent 等能力。
+6. Domain Tool Handler 必须调用所属 Go Service，不把业务实现写进 XiaoYu Bridge。
 
-### 3.2 为什么没有大量 skeleton 目录
+## 6. Rust Runtime 骨架
 
-规划能力由 `configs/modules.json` 与 `configs/games.json` 记录。0.1.83 起，`internal` 子目录尽量代表“已经有真实源码”，不再为了 roadmap 创建只有 `doc.go` 的空包。一级领域根可保留 `doc.go` 作为依赖边界声明。
-
-## 4. XiaoYu Rust Core
+0.2.9 继续保持两个 workspace crate，避免过早拆成十几个包：
 
 ```text
 rust/
+├─ Cargo.toml
+├─ Cargo.lock
 └─ crates/
    ├─ xiaoyu-core/
-   │  ├─ src/lib.rs
-   │  └─ src/bin/xiaoyu.rs
+   │  └─ src/
+   │     ├─ lib.rs
+   │     ├─ tool_search.rs      # 0.2.9 起的首批 Rust Runtime 能力
+   │     └─ bin/xiaoyu.rs
    └─ xiaoyu-protocol/
       └─ src/lib.rs
 ```
 
-当前坚持两个 crate，不把 Brain/Planner/Context/Memory/Workflow 拆成十几个项目。只有独立发布或独立生命周期真正成立时才允许拆 crate。Rust Core 是 Brain-only；可执行 Tool 由 Go Host 提供。
+逻辑可以继续按模块拆文件；只有真正需要独立发布、权限边界或生命周期时才拆 crate。
 
-Go 侧只保留：
+### 6.1 Rust Native Tool 安全边界
 
-```text
-internal/xiaoyu/contract
-internal/xiaoyu/control
-internal/xiaoyu/runtime
-```
-
-禁止新增 Go `brain/`、`planner/`、`memory/` 来形成第二个大脑。
-
-## 5. 服务器终端
-
-终端是公共控制入口，不属于某一游戏，也不是 XiaoYu 的裸 Shell 后门。
-
-最终目标依赖链：
+未来 Rust Shell/File/Process/PTY 不等于“裸 OS 权限”。执行链必须保持：
 
 ```text
-小鱼 / 人工 UI
-      ↓
-Server Domain
-      ↓
-Platform Runtime
-      ↓
-Process / PTY / stdin / stdout
-      ↓
-Game Server
+Model Decision
+   ↓
+Rust Agent Runtime
+   ↓
+Capability / Policy
+   ↓
+Host identity + RBAC + approval context
+   ↓
+Sandbox / path / argument boundary
+   ↓
+Execution
+   ↓
+Audit + Observation + Verification
 ```
 
-0.1.83 已先解决 UI 重复：真正可执行受控命令的 `TerminalPanel.vue` 已嵌入 Bottom Panel，旧的独立死页面删除；`/terminal` 只负责打开 Bottom Panel。
+三种审批模式（请求批准 / 帮我批准 / 完全访问权限）继续由用户决定最终自动化级别。Full 只减少交互审批，不取消硬安全检查。
 
-底层公共 Process/Terminal Session 已由 DST 实际复用。0.1.85 进一步加入 stdout/stderr 来源分离、串行 stdin、环境变量 Overlay、状态快照、命名 Session Manager、受限一次性 Run、超时取消、异步回收、Unix 进程组终止、非阻塞输出订阅、单调 Sequence 与固定容量环形历史。PTY/ConPTY 与跨应用重连恢复仍属于高级增强，但不会再改变共享 Runtime 的职责边界。
+## 7. Domain Tool 与 Generic Tool
 
-### 5.1 通用 Process / Terminal Runtime
+两种能力长期并存：
 
-`internal/platform/runtime` 是唯一进程创建边界：`Session` 负责长生命周期控制台，`Run` 负责有输出上限/超时取消的一次性内部命令，`RunShell` 是显式受控 Shell，`StartDetached` 负责无需交互但必须正确回收的外部启动；`Manager` 管理命名 Session。环境变量默认继承父进程并按调用方 Overlay，stdout/stderr 保留来源；Session 提供非阻塞订阅和固定容量历史。XiaoYu Runtime、Updater 与系统打开器都复用这一底座；Gate 同时禁止 Go 业务模块绕过它以及 Rust XiaoYu Brain 自建 Process/File 执行。
+### Domain Tool
 
-
-## 5.2 XiaoYu Host Tool 边界
+例如：
 
 ```text
-Rust XiaoYu Brain
-        ↓ Tool request
-internal/xiaoyu/contract.Registry
-        ↓
-Go identity / permission / approval / audit
-        ↓
-Domain Handler (ops / server / deploy / system / games)
-        ↓
-platform/runtime / files / net / ...
+environment.install_java
+environment.remove_runtime
+dst.cluster.stop
+backup.create
+instance.start
 ```
 
-Rust Core 不直接包含 `std::process` / `std::fs` 的 Host 执行实现。系统、文件、Shell 等真实能力都由 AGMP Host Registry 提供；0.2.2 起 `shell.exec` 是 XiaoYu 可见的通用后备 Tool，`process.run` 仅保留为人工/兼容别名。小鱼优先使用结构化 Domain Tool，Domain Tool 不足时允许转向通用能力；是否执行由 RBAC、Step-up 与三种审批模式决定。Tool Registry 拒绝重复名称，防止后注册模块覆盖/劫持现有能力。
+由 Go Domain Service 提供，结构化、可验证、优先使用。
 
-## 6. 前端
+### Generic Tool
+
+例如未来 Rust Runtime 的：
+
+```text
+shell.exec
+fs.read / fs.write / fs.replace
+process.run
+pty.open
+job.start
+patch.apply
+```
+
+用于未知程序、第三方 CLI、异常诊断和 Domain Tool 覆盖不到的现实情况。
+
+原则：**Domain Tool 优先，不是能力上限。**
+
+## 8. Desktop
+
+当前 Windows 主桌面保持：
+
+```text
+Wails + Vue + Go Host + embedded Rust XiaoYu Runtime
+```
+
+Electron 保持兼容桌面方案。
+
+不为了 GitHub Rust 百分比立即切 Tauri。未来当 Rust Runtime 足够完整、桌面 Bridge 足够薄且迁移收益明确时，再单独评估 Tauri / Rust Native Shell。
+
+## 9. 前端
 
 ```text
 frontend/src/
@@ -225,22 +257,39 @@ frontend/src/
 │  ├─ users/
 │  └─ xiaoyu/
 └─ shared/
-   └─ components/ModulePlaceholderView.vue
 ```
 
-planned 功能不创建空 Feature 目录。Router 直接使用统一 `ModulePlaceholderView` + `configs/modules.json` 展示规划能力。
+planned 功能使用 `configs/modules.json` + `ModulePlaceholderView.vue`，不创建空源码目录。
 
-## 7. 依赖硬规则
+## 10. 数据与发行
 
-1. `platform` 不得依赖 `xiaoyu/games/server/ops/deploy/system`。
-2. `games` 只描述游戏差异，不复制通用 Process/File/HTTP/Steam。
-3. `server` 不硬编码某款游戏分支；游戏通过 Adapter/Contract 提供差异。
-4. `ops/deploy/system` 跨域必须通过公开能力，不访问其他域私有状态。
-5. `app` 只装配和协调公开 Service，不发展成业务实现仓库。
-6. `bridge` 只做协议转换/鉴权入口，不写业务状态机。
-7. XiaoYu 只通过注册 Tool / Domain API 操控 AGMP，不能用 `process.run` 绕过已存在的系统能力。
-8. 单个未来规划点不能成为新目录理由；禁止恢复 `internal/service`、`internal/core`、`internal/games/dst/service`。
+- 用户可写数据进入根 `runtime/`，不得提交 GitHub。
+- 普通用户只获得预编译完整 AGMP；不要求安装 Rust/Cargo/MSVC/Go/Node/pnpm。
+- XiaoYu Runtime 可以是内部子进程，但不作为独立用户产品发布。
+- Release Key、API Key、Token、真实服务器数据永远不进入公开仓库。
 
-## 8. 数据与发行边界
+## 11. 可复现构建
 
-所有用户可写数据继续进入 `runtime/`。正式用户只获得预编译完整 AGMP；不会被要求安装 Rust、Cargo、MSVC、Go、Node 或 pnpm。XiaoYu Runtime 可以作为内部子进程隔离，但只属于完整 AGMP，不作为单独用户产品。
+0.2.9 正式提交并冻结：
+
+```text
+go.mod / go.sum
+rust/Cargo.lock
+frontend/pnpm-lock.yaml
+desktop/electron/pnpm-lock.yaml
+```
+
+CI 必须使用 `cargo --locked` 与 `pnpm --frozen-lockfile`；Go module graph 若被 `go mod tidy` 改动，CI 必须失败。
+
+## 12. AI 开发代理读取顺序
+
+处理架构/AI Runtime 任务时优先读取：
+
+1. `AGENTS.md`
+2. `docs/architecture/LANGUAGE-OWNERSHIP.md`
+3. `docs/PROJECT-ARCHITECTURE.md`
+4. `docs/architecture/XIAOYU-CORE.md`
+5. `docs/development/XIAOYU-AGENT-RUNTIME.md`
+6. `docs/DEVELOPMENT-PLAN.md`
+7. `docs/PROJECT-HISTORY.md`（只用于历史）
+

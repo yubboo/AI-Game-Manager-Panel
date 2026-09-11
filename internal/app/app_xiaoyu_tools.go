@@ -110,13 +110,13 @@ func (a *Application) registerXiaoYuTools() {
 				Name: "agmp.capability.search", Description: "搜索 AGMP 全部产品模块与 XiaoYu 当前真实可执行 Tool。遇到‘这个系统能不能做什么/应该怎么操作/找不到下一步/直接 Tool 不明显’时先用它发现能力；返回模块实现状态，skeleton/planned 只表示路线图，不能当成已实现。", Risk: xiaoyucontract.RiskRead,
 				Category: "system", Manual: false, XiaoYu: true, Source: "agmp.system",
 				Parameters: map[string]any{"type": "object", "properties": map[string]any{"query": map[string]any{"type": "string", "minLength": 1, "maxLength": 200}}, "required": []string{"query"}, "additionalProperties": false},
-			}, func(_ context.Context, args map[string]any) (xiaoyucontract.ToolExecution, error) {
+			}, func(ctx context.Context, args map[string]any) (xiaoyucontract.ToolExecution, error) {
 				query, _ := args["query"].(string)
 				query = strings.TrimSpace(query)
 				if query == "" {
 					return xiaoyucontract.ToolExecution{}, errors.New("Capability 搜索关键词不能为空")
 				}
-				value := a.searchXiaoYuCapabilities(query)
+				value := a.searchXiaoYuCapabilities(ctx, query)
 				return xiaoyucontract.ToolExecution{Summary: "已搜索 AGMP 产品模块与当前可执行能力。", Data: value}, nil
 			}); err != nil {
 				return nil, err

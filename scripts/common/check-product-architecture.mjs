@@ -10,6 +10,7 @@ try {
   const rules = read('AGENTS.md')
   const projectRules = read('docs/development/PROJECT-RULES.md')
   const arch = read('docs/PROJECT-ARCHITECTURE.md')
+  const ownership = read('docs/architecture/LANGUAGE-OWNERSHIP.md')
   const release = JSON.parse(read('configs/release.json'))
   const ai = JSON.parse(read('configs/ai.json'))
   const product = release.productArchitecture ?? {}
@@ -29,7 +30,8 @@ try {
   ok(history.includes('## AI-Game-Manager-Panel 0.1.79'), 'PROJECT-HISTORY 必须保留 0.1.79 历史记录')
   for (const token of ['AI Game Manager Panel 是唯一产品主体','小鱼是 AGMP 内置的核心大脑','两个大脑，同一副身体','开发环境与生产环境硬边界']) ok(rules.includes(token), `AGENTS.md 缺少架构规则：${token}`)
   for (const token of ['AI Game Manager Panel（AGMP）是唯一产品本体','小鱼是 AGMP 内置的智能核心','两个大脑，同一副身体','开发环境与生产环境严格分离','0.1.83 完成核心目录定型后冻结骨架']) ok(projectRules.includes(token), `PROJECT-RULES.md 缺少强制规则：${token}`)
-  ok(arch.includes('Web / Wails / Electron / Rust Native') && arch.includes('同一产品，不同运行端'), '项目架构文档缺少统一多端产品模型')
+  ok(arch.includes('Web / Wails / Electron') && arch.includes('Rust Native') && arch.includes('同一产品，不同运行端'), '项目架构文档缺少统一多端产品模型')
+  ok(ownership.includes('Rust = XiaoYu Agent Runtime') && ownership.includes('Go = AGMP Product Host') && ownership.includes('Vue / TypeScript = UI'), '项目架构必须固定 Rust Agent Runtime / Go Domain Host / Vue UI 语言职责')
 
   const wails = read('scripts/windows/lib/Wails.ps1')
   const tasks = read('scripts/windows/tasks/Tasks.ps1')

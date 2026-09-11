@@ -67,12 +67,10 @@ try {
   requireText('Rust workspace', workspace, 'xiaoyu-core')
   requireText('Agent protocol', protocol, 'xiaoyu.v1')
   requireText('Agent protocol', protocol, '#[serde(rename_all = "camelCase")]')
-  for (const token of ['RiskLevel', 'ApprovalMode', 'ApprovalDecision', 'ToolSpec', 'JsonRpcRequest', 'JsonRpcResponse']) requireText('Agent protocol', protocol, token)
-  for (const token of ['brain-only-boundary', 'host-tool-contracts', 'risk-aware-planning', 'session-foundation']) requireText('小鱼核心', runtime, token)
-  for (const forbidden of ['std::process', 'std::fs', 'Command::new', 'process.run', 'fs.read', 'fs.list']) {
-    if (runtime.includes(forbidden)) failures.push(`小鱼 Brain 禁止直接拥有 OS/领域执行能力：${forbidden}`)
-  }
-  for (const token of ['Doctor', 'Tools', 'Rpc', 'tools/list', 'session/create', 'policy/preview']) requireText('XiaoYu CLI', cli, token)
+  for (const token of ['RiskLevel', 'ApprovalMode', 'ApprovalDecision', 'ToolSpec', 'ToolSearchRequest', 'ToolSearchHit', 'ToolSearchResponse', 'JsonRpcRequest', 'JsonRpcResponse']) requireText('Agent protocol', protocol, token)
+  for (const token of ['rust-agent-runtime-boundary', 'domain-provider-separation', 'tool-search-v1', 'host-tool-contracts', 'risk-aware-planning', 'session-foundation']) requireText('小鱼核心', runtime, token)
+  requireText('Tool Search', read('rust/crates/xiaoyu-core/src/tool_search.rs'), 'search_tools')
+  for (const token of ['Doctor', 'Tools', 'Rpc', 'tools/list', 'tools/search', 'session/create', 'policy/preview']) requireText('XiaoYu CLI', cli, token)
   for (const forbidden of ['Command::Tool {', 'Command::Exec {', 'tool/call']) {
     if (cli.includes(forbidden)) failures.push(`XiaoYu CLI 禁止恢复本地执行入口：${forbidden}`)
   }
@@ -128,8 +126,8 @@ try {
   if (aiConfig.runtime?.protocol !== 'xiaoyu.v1') failures.push('configs/ai.json runtime.protocol 必须为 xiaoyu.v1')
   if (aiConfig.runtime?.transport !== 'json-rpc-stdio') failures.push('configs/ai.json runtime.transport 必须为 json-rpc-stdio')
   if (aiConfig.allowManualFallback !== true) failures.push('Agent-first 仍必须保留手动兜底')
-  requireText('GitHub Actions', workflow, 'cargo check --manifest-path rust/Cargo.toml --workspace')
-  requireText('GitHub Actions', workflow, 'cargo test --manifest-path rust/Cargo.toml --workspace')
+  requireText('GitHub Actions', workflow, 'cargo check --manifest-path rust/Cargo.toml --workspace --locked')
+  requireText('GitHub Actions', workflow, 'cargo test --manifest-path rust/Cargo.toml --workspace --locked')
 } catch (error) {
   failures.push(`小鱼核心 Gate 检查失败：${error instanceof Error ? error.message : String(error)}`)
 }
@@ -139,4 +137,4 @@ if (failures.length) {
   failures.forEach(item => console.error(` - ${item}`))
   process.exit(1)
 }
-console.log('AGMP 小鱼核心 Gate PASS (Rust Brain-only · Host Tool Registry · Shared Runtime · Approval)')
+console.log('AGMP 小鱼核心 Gate PASS (Rust Agent Runtime · Tool Search · Go Domain Provider · Approval)')

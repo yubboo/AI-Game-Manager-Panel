@@ -32,7 +32,12 @@ jobs:
           test -f scripts/common/check-project-layout.mjs
           test -f scripts/common/check-xiaoyu-harness.mjs
           test -f rust/Cargo.toml
+          test -f rust/Cargo.lock
           test -f rust/crates/xiaoyu-core/src/lib.rs
+          test -f rust/crates/xiaoyu-core/src/tool_search.rs
+          test -f frontend/pnpm-lock.yaml
+          test -f desktop/electron/pnpm-lock.yaml
+          test -f docs/architecture/LANGUAGE-OWNERSHIP.md
           test -f runtime/README.md
           test -f internal/xiaoyu/host/loop.go
           test -f frontend/src/app/router.ts
@@ -42,6 +47,12 @@ jobs:
 
       - name: Naming and path gate
         run: node scripts/common/check-naming.mjs
+
+      - name: Language ownership gate
+        run: node scripts/common/check-language-ownership.mjs
+
+      - name: Dependency lock gate
+        run: node scripts/common/check-dependency-locks.mjs
 
       - name: Duplicate source gate
         run: node scripts/common/check-duplicates.mjs
@@ -64,7 +75,7 @@ jobs:
       - name: Windows installer gate
         run: node scripts/common/check-windows-installer.mjs
 
-      - name: XiaoYu Rust brain structure gate
+      - name: XiaoYu Rust Agent Runtime structure gate
         run: node scripts/common/check-xiaoyu-core.mjs
 
       - name: XiaoYu autonomous harness gate
@@ -109,10 +120,12 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
 
-      - name: Normalize and download Go modules
+      - name: Verify locked Go modules
         run: |
-          go mod tidy
           go mod download
+          go mod verify
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
 
       - name: Go tests
         run: go test ./internal/... ./cmd/...
@@ -130,10 +143,10 @@ jobs:
         run: cargo fmt --manifest-path rust/Cargo.toml --all -- --check
 
       - name: Rust Agent check
-        run: cargo check --manifest-path rust/Cargo.toml --workspace
+        run: cargo check --manifest-path rust/Cargo.toml --workspace --locked
 
       - name: Rust Agent tests
-        run: cargo test --manifest-path rust/Cargo.toml --workspace
+        run: cargo test --manifest-path rust/Cargo.toml --workspace --locked
 
 
   headless-ai:
@@ -170,7 +183,12 @@ jobs:
           test -f scripts/common/check-project-layout.mjs
           test -f scripts/common/check-xiaoyu-harness.mjs
           test -f rust/Cargo.toml
+          test -f rust/Cargo.lock
           test -f rust/crates/xiaoyu-core/src/lib.rs
+          test -f rust/crates/xiaoyu-core/src/tool_search.rs
+          test -f frontend/pnpm-lock.yaml
+          test -f desktop/electron/pnpm-lock.yaml
+          test -f docs/architecture/LANGUAGE-OWNERSHIP.md
           test -f runtime/README.md
           test -f internal/xiaoyu/host/loop.go
           test -f frontend/src/app/router.ts
@@ -179,6 +197,8 @@ jobs:
         run: |
           node scripts/common/check-source-tree.mjs
           node scripts/common/check-naming.mjs
+          node scripts/common/check-language-ownership.mjs
+          node scripts/common/check-dependency-locks.mjs
           node scripts/common/check-duplicates.mjs
           node scripts/common/check-xiaoyu-agent-bench.mjs
 
@@ -196,25 +216,27 @@ jobs:
           node scripts/common/check-web-session-security.mjs
 
       - name: Build XiaoYu headless runtime
-        run: cargo build --manifest-path rust/Cargo.toml -p xiaoyu-core --release
+        run: cargo build --manifest-path rust/Cargo.toml -p xiaoyu-core --release --locked
 
       - name: Install and build Web UI
         working-directory: frontend
         run: |
-          pnpm install --no-frozen-lockfile
+          pnpm install --frozen-lockfile
           pnpm run build
 
-      - name: Resolve Electron lock snapshot
+      - name: Verify Electron dependency lock
         working-directory: desktop/electron
-        run: pnpm install --lockfile-only --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile --lockfile-only
 
       - name: Sync Web assets
         run: node scripts/common/sync-web-assets.mjs
 
-      - name: Normalize and download Go modules
+      - name: Verify locked Go modules
         run: |
-          go mod tidy
           go mod download
+          go mod verify
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
 
       - name: Build Linux headless AGMP Core
         run: go build -tags agmp_dev_license -trimpath -o /tmp/agmp-headless ./cmd/aigame-manager-web
@@ -230,17 +252,6 @@ jobs:
           test -x /tmp/agmp-headless
           test -f cmd/aigame-manager-web/web/index.html
 
-      - name: Upload dependency lock snapshot
-        uses: actions/upload-artifact@v4
-        with:
-          name: agmp-dependency-locks
-          if-no-files-found: error
-          path: |
-            go.mod
-            go.sum
-            rust/Cargo.lock
-            frontend/pnpm-lock.yaml
-            desktop/electron/pnpm-lock.yaml
 
   windows-helper:
     name: Windows Helper + Encoding
@@ -281,5 +292,7 @@ jobs:
         run: |
           node scripts/common/check-source-tree.mjs
           node scripts/common/check-naming.mjs
+          node scripts/common/check-language-ownership.mjs
+          node scripts/common/check-dependency-locks.mjs
           node scripts/common/check-duplicates.mjs
           node scripts/common/check-xiaoyu-agent-bench.mjs

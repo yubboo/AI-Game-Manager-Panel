@@ -1,4 +1,4 @@
-# AI Game Manager Panel Scripts 0.1.88
+# AI Game Manager Panel Scripts 0.2.9
 
 Windows 开发助手自 0.1.64 起固定为：**一个 ASCII-safe BAT 启动器 + PowerShell Task Runner**。
 
@@ -97,3 +97,9 @@ Windows Rust target 使用 MSVC ABI。开发助手现在不仅检查 Rustup/Carg
 ## 0.2.8 XiaoYu Agent Bench / Dependency Snapshot
 
 GitHub Safety Job 单独执行 `go test ./internal/xiaoyu/host -run '^TestAgentBench' -count=1 -v`，当前覆盖 Domain Tool 失败后的 fallback recovery、mutation 后 read-back verification、审批后恢复原 Tool Call。Headless Job 同时上传 `agmp-dependency-locks` Artifact，收集真实联网 Runner 生成的 Go/Rust/Frontend/Electron 锁文件，下一版再切到 locked/frozen 构建。
+## 0.2.9 Rust-first Runtime / Frozen Dependencies
+
+0.2.9 将语言职责固定为 Rust XiaoYu Agent Runtime、Go AGMP Domain Host、Vue/TypeScript UI。项目检查新增 `check-language-ownership.mjs` 与 `check-dependency-locks.mjs`；Rust `tools/search` RPC 成为首个从 Go Agent 层迁移到 Rust Runtime 的通用能力。
+
+0.2.8 GitHub Runner 生成的依赖图现已正式提交：`go.mod/go.sum`、`rust/Cargo.lock`、`frontend/pnpm-lock.yaml`、`desktop/electron/pnpm-lock.yaml`。CI 和开发助手使用 Cargo `--locked`、pnpm `--frozen-lockfile` 与 Go module verify/tidy-diff，禁止在未显式更新锁文件时静默改变依赖图。0.2.8 的 dependency snapshot Artifact 只保留为历史过渡机制。
+

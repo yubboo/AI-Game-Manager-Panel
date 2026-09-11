@@ -30,7 +30,7 @@ function Install-PnpmProject {
     $store = Get-AGMPPnpmStore
     Write-Info '缓存' "$Label pnpm Store：$store"
     Write-Info '依赖' "$Label：安装 / 同步中..."
-    $args = @('install','--store-dir',$store)
+    $args = @('install','--frozen-lockfile','--store-dir',$store)
     $code = 0
     Invoke-AGMPNative -FilePath $tools.Pnpm -Arguments $args -WorkingDirectory $ProjectDir -AllowFailure -ExitCode ([ref]$code)
     if ($code -eq 0) { Write-Ok "$Label 依赖已就绪。"; return }

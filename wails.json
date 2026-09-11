@@ -3,13 +3,13 @@
   "name": "AI-Game-Manager-Panel",
   "outputfilename": "AI-Game-Manager-Panel",
   "frontend:dir": "frontend",
-  "frontend:install": "pnpm install",
+  "frontend:install": "pnpm install --frozen-lockfile",
   "frontend:build": "pnpm run build",
   "frontend:dev:watcher": "pnpm run dev",
   "frontend:dev:serverUrl": "auto",
   "wailsjsdir": "frontend/wailsjs",
   "info": {
     "productName": "AI游戏管理器面板",
-    "productVersion": "0.2.8"
+    "productVersion": "0.2.9"
   }
 }

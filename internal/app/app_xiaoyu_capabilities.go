@@ -1,12 +1,14 @@
 package app
 
 import (
+	"context"
 	"sort"
 	"strings"
 
 	"github.com/yubboo/AI-Game-Manager-Panel/internal/config"
 	xiaoyucontract "github.com/yubboo/AI-Game-Manager-Panel/internal/xiaoyu/contract"
 	xiaoyuhost "github.com/yubboo/AI-Game-Manager-Panel/internal/xiaoyu/host"
+	xiaoyuruntime "github.com/yubboo/AI-Game-Manager-Panel/internal/xiaoyu/runtime"
 )
 
 type xiaoyuCapabilitySearchResult struct {
@@ -116,23 +118,51 @@ func moduleSearchScore(query string, module config.ModuleConfig) int {
 	return score
 }
 
-func (a *Application) searchXiaoYuCapabilities(query string) xiaoyuCapabilitySearchResult {
+func (a *Application) searchXiaoYuCapabilities(ctx context.Context, query string) xiaoyuCapabilitySearchResult {
 	query = strings.TrimSpace(query)
 	result := xiaoyuCapabilitySearchResult{
 		Query: query,
-		Note:  "modules 描述 AGMP 产品功能与实现阶段；只有当前 Tool Registry 中 available=true 的 Tool 才能由 XiaoYu 直接执行。skeleton/planned 不能当作已实现能力。",
+		Note:  "modules 描述 AGMP 产品功能与实现阶段；skeleton/planned 仅表示路线图，不能当成已实现能力；Tool relevance 由 Rust XiaoYu Runtime 优先排序。available=true 只表示当前可请求，不代表已获批准。",
 	}
 	result.Modules = selectXiaoYuModules(a.platformConfig.Modules.Modules, query, 16)
 	if a.xiaoyuTools == nil {
 		return result
 	}
+
+	tools := a.xiaoyuTools.List()
+	if a.xiaoyuRuntime != nil {
+		runtimeTools := make([]xiaoyuruntime.ToolSpec, 0, len(tools))
+		for _, spec := range tools {
+			runtimeTools = append(runtimeTools, xiaoyuruntime.ToolSpec{
+				Name: spec.Name, Description: spec.Description, Risk: string(spec.Risk), Category: spec.Category,
+				Manual: spec.Manual, XiaoYu: spec.XiaoYu, Parameters: spec.Parameters, Source: spec.Source,
+			})
+		}
+		if searched, err := a.xiaoyuRuntime.SearchTools(ctx, query, runtimeTools, 16); err == nil {
+			for _, hit := range searched.Hits {
+				result.Tools = append(result.Tools, xiaoyuCapabilityToolMatch{
+					Name: hit.Tool.Name, Description: hit.Tool.Description, Category: hit.Tool.Category,
+					Risk: hit.Tool.Risk, Source: hit.Tool.Source, Available: true,
+				})
+			}
+			return result
+		}
+		result.Note += " 当前 Rust Tool Search 不可用，已使用兼容排序；执行权限不受影响。"
+	}
+
+	return searchXiaoYuCapabilitiesCompat(result, query, tools)
+}
+
+// searchXiaoYuCapabilitiesCompat is a migration-only fallback. New capability
+// ranking semantics belong in Rust xiaoyu-core and should not be expanded here.
+func searchXiaoYuCapabilitiesCompat(result xiaoyuCapabilitySearchResult, query string, tools []xiaoyucontract.ToolSpec) xiaoyuCapabilitySearchResult {
 	type scoredTool struct {
 		spec  xiaoyucontract.ToolSpec
 		score int
 	}
 	q := strings.ToLower(query)
 	matches := make([]scoredTool, 0)
-	for _, spec := range a.xiaoyuTools.List() {
+	for _, spec := range tools {
 		if !spec.XiaoYu {
 			continue
 		}

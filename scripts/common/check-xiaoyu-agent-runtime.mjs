@@ -24,6 +24,12 @@ try {
   need('internal/xiaoyu/host/intelligence.go', 'rankMemories', 'Memory 必须按目标相关性进入模型 Context')
 
   const rust = read('rust/crates/xiaoyu-core/src/lib.rs')
+  const rustSearch = read('rust/crates/xiaoyu-core/src/tool_search.rs')
+  const ownership = read('docs/architecture/LANGUAGE-OWNERSHIP.md')
+  for (const token of ['ToolSearchRequest', 'ToolSearchResponse', 'score_tool']) if (!rustSearch.includes(token)) failures.push(`Rust Tool Search 缺少 ${token}`)
+  for (const token of ['rust-agent-runtime-boundary', 'tool-search-v1']) if (!rust.includes(token)) failures.push(`Rust Agent Runtime 迁移标记缺少 ${token}`)
+  if (!read('rust/crates/xiaoyu-core/src/bin/xiaoyu.rs').includes('"tools/search"')) failures.push('Rust Agent Runtime 缺少 tools/search RPC')
+  if (!ownership.includes('Rust = XiaoYu Agent Runtime') || !ownership.includes('Go = AGMP Product Host')) failures.push('缺少 Rust/Go Language Ownership 长期边界')
   for (const token of ['Guided Autonomy', '不是能力边界', 'shell.exec', 'ToolAllowlist', '不要为了“安全”主动装傻', 'Goal State']) {
     if (!rust.includes(token)) failures.push(`XiaoYu Brain 缺少 Guided Autonomy 规则：${token}`)
   }
@@ -43,4 +49,4 @@ if (failures.length) {
   for (const failure of failures) console.error(` - ${failure}`)
   process.exit(1)
 }
-console.log('AGMP XiaoYu Agent Runtime Gate PASS (guided autonomy · general hands · approval authority · context compaction · native capability preservation)')
+console.log('AGMP XiaoYu Agent Runtime Gate PASS (Rust-first runtime · tool search · guided autonomy · approval authority · context compaction)')

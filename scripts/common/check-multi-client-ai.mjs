@@ -40,7 +40,7 @@ try {
   need(harness, 'AdvanceAsync(a.Context()', 'Web/Desktop 自主 Run 必须绑定 AGMP Application 生命周期，而不是浏览器请求生命周期')
   need(harness, 'XiaoYuTakeoverRun', 'Application 缺少人工接管能力')
   need(harness, 'XiaoYuEventStream', 'Application 缺少服务器端 XiaoYu Event Stream')
-  need(rust, 'brain-only-boundary', 'Rust XiaoYu Core 必须保持 Brain-only')
+  need(rust, 'rust-agent-runtime-boundary', 'Rust XiaoYu Core 必须保持 Agent Runtime 边界')
 
   const product = release.productArchitecture ?? {}
   if (product.model !== 'two-brains-one-body') failures.push('产品模型必须冻结为 two-brains-one-body')

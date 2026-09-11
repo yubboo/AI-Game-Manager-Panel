@@ -17,7 +17,11 @@
     "binary": "AI-Game-Manager-XiaoYu",
     "manualFallback": true,
     "integration": "internal-xiaoyu-core",
-    "userFacingProduct": false
+    "userFacingProduct": false,
+    "ownership": "rust-agent-runtime",
+    "domainHost": "go",
+    "ui": "vue-typescript",
+    "migration": "incremental"
   },
   "agentLoop": {
     "planner": "provider-plugin",

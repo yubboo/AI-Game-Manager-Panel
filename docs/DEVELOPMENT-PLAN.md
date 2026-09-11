@@ -5,6 +5,27 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.9：Rust-first Agent Runtime 与依赖冻结
+
+- 冻结语言职责：Rust = XiaoYu Agent Runtime / Native Execution / Security Boundary；Go = AGMP Domain Host；Vue/TypeScript = UI；
+- 不推翻 0.2.8 全绿基线，现有 Go Host/Process Runtime 进入渐进迁移期；
+- 第一块 Rust-first 迁移能力为 Tool Search / Capability Discovery，Go 仅保留兼容 fallback；
+- 正式提交 0.2.8 GitHub Runner 生成的 Go / Cargo / Frontend / Electron 锁文件；
+- CI 切换到 `cargo --locked`、`pnpm --frozen-lockfile`、`go mod verify + tidy diff`；
+- 新增 Language Ownership Gate 与 Dependency Lock Gate；
+- Wails 继续作为 Windows 主桌面壳，不为了 Rust 占比立即迁移 Tauri。
+
+**冻结条件：** 本地 Go test/vet 与全部 Node Gate 通过；推送后 GitHub Actions 三 Job 继续全绿；Rust `tools/search` cargo tests 通过；锁文件在 CI 不产生 diff。
+
+### 后续 Rust-first 顺序
+
+1. Session / Job Runtime；
+2. PTY / Long-running Process；
+3. Sandbox / Capability Lease；
+4. Apply Patch / Generic Files；
+5. Reflection / Experience；
+6. Subagent / Specialist Dispatch。
+
 ## 0.2.8：CI 全绿与 XiaoYu Agent Bench
 
 - 修复 Rust `cargo fmt --check` 唯一剩余红灯，让 Safety Job 能继续进入 `cargo check` / `cargo test`；

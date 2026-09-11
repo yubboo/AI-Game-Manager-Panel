@@ -93,6 +93,30 @@ pub struct BrainDecision {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ToolSearchRequest {
+    pub query: String,
+    #[serde(default)]
+    pub tools: Vec<ToolSpec>,
+    #[serde(default)]
+    pub limit: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolSearchHit {
+    pub tool: ToolSpec,
+    pub score: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolSearchResponse {
+    pub query: String,
+    pub hits: Vec<ToolSearchHit>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RuntimeStatus {
     pub name: String,
     pub version: String,

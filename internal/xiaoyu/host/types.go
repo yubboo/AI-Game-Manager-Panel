@@ -1,8 +1,8 @@
 // Package host implements AGMP's XiaoYu Agent Harness and plugin kernel.
 //
-// XiaoYu Core remains the Brain. This package is the host-side nervous system:
-// it composes capabilities, owns plugin lifecycle, routes tools and records
-// observable events without giving the Rust Brain direct OS access.
+// Package host is the Go-side compatibility/orchestration layer during the Rust-first
+// Agent Runtime migration. It composes AGMP Domain capabilities, owns plugin lifecycle
+// and records observable events. New generic runtime execution belongs in Rust.
 package host
 
 import (

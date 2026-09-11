@@ -31,8 +31,8 @@ type ToolExecution struct {
 	Data    any
 }
 
-// ToolHandler is implemented/wired by the owning AGMP domain. XiaoYu Core may
-// plan and request a Tool, but it never receives direct OS/process/file access.
+// ToolHandler is implemented/wired by the owning AGMP domain. Domain Services stay
+// in Go; generic native Agent capabilities migrate to Rust behind separate runtime contracts.
 type ToolHandler func(context.Context, map[string]any) (ToolExecution, error)
 
 type registryEntry struct {
@@ -41,8 +41,9 @@ type registryEntry struct {
 	handler ToolHandler
 }
 
-// Registry is AGMP's canonical Tool catalog and dispatch table. Tool ownership
-// stays with Go domain modules; the Rust XiaoYu Brain only consumes contracts.
+// Registry is AGMP's canonical Domain Tool catalog and dispatch table. Domain
+// ownership stays with Go modules; Rust XiaoYu Runtime consumes these contracts
+// while owning generic Agent-runtime capabilities such as Tool Search/PTY/Sandbox.
 type Registry struct {
 	mu    sync.RWMutex
 	tools map[string]registryEntry

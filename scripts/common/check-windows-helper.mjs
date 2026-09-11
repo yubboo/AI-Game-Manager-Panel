@@ -68,7 +68,7 @@ try {
   if (pushText.includes('\uFFFD')) fail('push-agmp.ps1 包含乱码 replacement char。')
   const pushWithoutCrlf = pushText.replace(/\r\n/g, '')
   if (pushWithoutCrlf.includes('\n') || pushWithoutCrlf.includes('\r')) fail('push-agmp.ps1 必须使用 CRLF。')
-  for (const token of ['Assert-SourceNotIgnored', 'Test-RepositorySafety', "Path = 'rust/crates'; MinimumFiles = 5", 'pull --rebase', 'git push']) {
+  for (const token of ['Assert-SourceNotIgnored', 'Test-RepositorySafety', "Path = 'rust/crates'; MinimumFiles = 6", 'pull --rebase', 'git push']) {
     if (!pushText.includes(token)) fail(`push-agmp.ps1 缺少 GitHub 工作台关键能力：${token}`)
   }
 } catch (error) {

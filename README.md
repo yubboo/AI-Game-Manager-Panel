@@ -4,8 +4,10 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.8**  
+当前版本：**0.2.9**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
+当前状态：[`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)  
+架构边界：[`docs/PROJECT-ARCHITECTURE.md`](docs/PROJECT-ARCHITECTURE.md) / [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)
 
 ## Windows 源码开发/发行构建入口
 
@@ -44,6 +46,18 @@ build/
 `build/bin/` **不再是正式产物目录**。Wails CLI 可能在构建瞬间创建它，脚本会把有效文件转移到 `build/work/` / `build/release/` 后自动清掉，因此 Electron-only 发布时看到 `build/bin` 为空是正常的。
 
 
+
+## 0.2.9 Rust-first XiaoYu Runtime / 可复现依赖基线
+
+0.2.8 已在 GitHub Actions 首次实现 Safety、Linux Headless + Web + XiaoYu、Windows Helper + Encoding 三个 Job 全绿。0.2.9 以这条稳定基线为起点，不做大爆炸式重写，而是正式冻结语言职责：**Rust = XiaoYu Agent Runtime / Native Execution / Security Boundary，Go = AGMP Product Host / Game Domain Services，Vue/TypeScript = UI**。
+
+本版新增 `docs/architecture/LANGUAGE-OWNERSHIP.md`，并把该规则写入 `AGENTS.md` 与架构 Gate。Rust `xiaoyu-core` 不再被定义为 Brain-only；第一块真实迁移能力是 **Tool Search / Capability Discovery**：Rust 新增 `tools/search` RPC 和确定性 Tool ranking，Go `agmp.capability.search` 优先委托 Rust，Rust 不可用时只保留迁移期兼容排序。
+
+同时正式提交 GitHub Runner 在 0.2.8 真实生成的 `go.mod/go.sum`、`rust/Cargo.lock`、Frontend/Electron `pnpm-lock.yaml`。CI 切换到 Cargo `--locked`、pnpm `--frozen-lockfile`、Go module verify + tidy diff，防止依赖图在不同机器悄悄漂移。
+
+当前 Windows 主桌面仍保持 Wails + Vue + Go Host，并内置 Rust XiaoYu Runtime。不会为了 GitHub Rust 百分比立即切换 Tauri；后续 Tool Search、Session/Job、PTY、Sandbox、Reflection、Subagent 会逐步 Rust-first。
+
+语言职责见 [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)，版本历史统一见 [`docs/PROJECT-HISTORY.md`](docs/PROJECT-HISTORY.md)。
 
 ## 0.2.8 CI 收敛 / Runtime 输出完整性
 
