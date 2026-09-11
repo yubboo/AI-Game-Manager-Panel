@@ -5,6 +5,15 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.6：可复现源码同步与命名治理
+
+- Windows 源码工作副本不再依赖 Explorer 大批量覆盖，新增 `AGMP-Sync.bat + sync-agmp.ps1`。
+- Source Tree Gate / Naming Gate 同时进入本地一键推送与 GitHub Actions。
+- 命名长期规范维护在 `docs/NAMING-CONVENTIONS.md`，避免无意义超长文件名与路径。
+- 根开发助手在关键源码缺失时必须可诊断、可停留，不允许静默闪退。
+
+**冻结条件：** 本地 Gate 通过；全新 Git 仓库可完整跟踪源码；GitHub Actions 通过源码完整性、Frontend、Rust、Go 与 Headless XiaoYu 验证。
+
 ## 0.2.3：GitHub 可复现基线与历史文档收敛
 
 - 修复 `.gitignore` 未锚定根目录导致 `internal/ops/logs`、前端 `logs/instances` 源码被 Git 静默忽略的问题；

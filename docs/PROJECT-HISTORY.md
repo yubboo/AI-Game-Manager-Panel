@@ -4,6 +4,76 @@
 
 > 版本顺序采用 `0.2.1 ... 0.2.100 -> 0.3.0`。新版本记录追加到本文件顶部。
 
+## AI-Game-Manager-Panel 0.2.6
+
+### 修复
+
+- 修复 `push-agmp.ps1` 项目完整性检查与 `check-source-tree.mjs` 的 Rust 最小文件数不一致：实际 `rust/crates` 当前为 5 个源码/配置文件，PowerShell 错误要求 6 个，导致 `AGMP-GitHub.bat` 启动后立即红色失败并退出。
+- `AGMP-GitHub.bat` 现在捕获 PowerShell 非零退出代码；发生错误时会 `pause` 保留窗口，不再“一闪而过”，便于直接查看并反馈真实错误。
+- `AGMP-Sync.bat` 作为一次性同步入口，无论成功或失败都会停留显示结果；`sync-agmp.ps1` 在脚本已经位于目标工作副本时明确提示“无需同步，直接运行 AGMP-GitHub.bat”。
+- BAT 继续严格保持 ASCII + CRLF + 无 BOM；中文交互仅由 UTF-8 BOM + CRLF 的 PowerShell 脚本输出。
+
+### 验证
+
+- `scripts/common/check-source-tree.mjs` 与 PowerShell Project Integrity Guard 的 Rust 源码树阈值统一为 5。
+- 根 BAT 编码重新验证为 ASCII / CRLF / 无 BOM。
+- 重新执行 Source Tree、Naming、GitHub Safety、Windows Helper 等项目 Gate。
+- 重新执行非 Wails Go `go test` / `go vet`；联网 Frontend/Rust/Wails/Linux Headless 继续由 GitHub Actions 验证。
+
+### 下一阶段
+
+- 推送 0.2.6 后以 GitHub Actions 的真实结果继续修复，直到 Safety、Linux Headless + Web + XiaoYu、Windows Helper + Encoding 全绿。
+
+---
+
+## AI-Game-Manager-Panel 0.2.5
+
+### 修复与优化
+
+- 强化根 `AI-Game-Manager-Panel.bat`：关键 PowerShell 入口缺失时明确提示源码树不完整并暂停，错误不再一闪而过；继续坚持 BAT ASCII + CRLF + 无 BOM。
+- 新增 `AGMP-Sync.bat + sync-agmp.ps1`，使用 Windows `robocopy` 从完整解压目录同步源码到专用 Git 工作副本，保留 `.git` 与未跟踪本机数据，并移除新版已不存在的旧 Git 跟踪源码。用于替代 Explorer 手工覆盖数百文件，降低 `0x80004005`、跳过文件和漏目录风险。
+- 新增 `docs/NAMING-CONVENTIONS.md`，正式规定源码文件、测试文件、路径、脚本、文档和版本包命名规则。
+- 将 `internal/bridge/httpapi/server_xiaoyu_models_release_test.go` / `server_xiaoyu_models_test.go` 收敛为 `models_release_test.go` / `models_test.go`，示范“目录承担命名空间，文件名只表达职责”的规则。
+- 新增 `scripts/common/check-naming.mjs`：普通文件名 >40 字符、测试文件名 >48 字符失败；仓库相对路径 >180 字符告警、>220 字符失败。
+- 新增 `scripts/common/check-source-tree.mjs`：关键源码文件/目录缺失时，本地 Gate 与 GitHub Actions 均在构建前失败。
+- `push-agmp.ps1` 将 Source Tree Gate / Naming Gate / GitHub Safety Gate 纳入一键推送前检查，并要求同步助手、命名规范与核心源码完整存在。
+
+### 验证
+
+- 本地 Node 项目 Gate：全部非 Publisher Gate 重新执行。
+- Windows Helper Gate 覆盖三个根 BAT/PS1 工作流的编码与关键入口。
+- 使用全新临时 Git 仓库验证源码包可完整 `git add`，`scripts/`、`rust/`、`runtime/README.md`、Frontend logs/instances 与 internal ops logs 不再丢失。
+- Go 非 Wails 包执行 `go test` / `go vet`；联网 Frontend/Rust/Wails/Linux Headless 继续由本版 GitHub Actions 最终验证。
+
+### 下一阶段
+
+- 以 GitHub Actions 全绿为当前第一目标；再推进 Windows Wails/Electron CI 与 XiaoYu Agent Bench。
+
+---
+
+## AI-Game-Manager-Panel 0.2.4
+
+### 修复
+
+- 修复 0.2.3 推送后的 GitHub 工作副本完整性问题：实际 commit 中 `scripts/`、`rust/` 与 `runtime/README.md` 被删除，导致两个 GitHub Actions Job 在第一批 Node Gate 处全部失败。
+- 经重新检查，0.2.3 交付 ZIP 本身包含上述目录；问题发生在 Git 工作副本更新/推送链路没有检查“关键源码是否完整”。0.2.4 因此把完整性检查放到 Commit 之前，而不是等 CI 才发现。
+- `push-agmp.ps1` 新增 Project Integrity Guard：检查 `.github/workflows/safety.yml`、Rust XiaoYu Runtime、核心 scripts Gate、Frontend/Go/XiaoYu 关键入口及关键源码树最小文件数量。
+- 新增 Staged Deletion Guard：关键源码删除默认直接拒绝；超过阈值的非历史大规模删除默认拒绝，避免覆盖源码时漏目录后被 `git add -A` 误提交。历史文档收敛产生的预期删除不计入误删保护。
+- GitHub Actions 的 `safety` 与 `Linux Headless + Web + XiaoYu` 两个 Job 都增加 Source tree integrity guard，在运行 Node/Rust/Frontend Gate 前先验证完整源码树。
+- 继续保持 BAT 为 ASCII + CRLF + 无 BOM，PowerShell 为 UTF-8 BOM + CRLF。
+
+### 验证
+
+- 0.2.3 GitHub Actions 的全红已定位为缺失 `scripts/common/*.mjs` 等文件导致的 `MODULE_NOT_FOUND`，不是 XiaoYu Agent Runtime 本身测试失败。
+- 0.2.4 本地重新执行项目非 Publisher Gates、Go test / Go vet，并验证完整 ZIP 中包含 `scripts/`、`rust/`、`runtime/README.md`、Frontend logs/instances 与 internal ops logs 源码。
+- Frontend 完整联网构建、Rust Cargo 全套与 Linux Headless 集成继续由本版推送后的 GitHub Actions 进行最终联网验证。
+
+### 下一阶段
+
+- 以 GitHub Actions 全绿为 0.2.4 验收目标；再继续补 Windows Wails/Electron CI 与 XiaoYu Agent Bench。
+
+---
+
 ## AI-Game-Manager-Panel 0.2.3
 
 ### 更新

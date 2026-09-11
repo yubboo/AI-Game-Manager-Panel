@@ -341,3 +341,7 @@ AI 权限名称固定为 **请求批准 / 帮我批准 / 完全访问权限**。
 ## 18. 0.1.81 架构冻结
 
 0.1.81 完成核心目录聚合后冻结骨架。后续新增能力优先进入既有领域，禁止为了单一小功能新增一级业务域。
+
+## Naming and path convention
+
+All contributors and AI agents must follow `docs/NAMING-CONVENTIONS.md` before creating or renaming files. Directory context is part of the namespace: do not repeat parent-directory meaning in filenames. Prefer short, conventional names; repository-relative paths over 180 characters require review, and paths over 220 characters are forbidden by CI. Version source bundles use `agmp-<version>.zip`.

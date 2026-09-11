@@ -26,6 +26,23 @@ jobs:
           go-version-file: go.mod
           cache: false
 
+      - name: Source tree integrity guard
+        run: |
+          test -f scripts/common/check-github-safety.mjs
+          test -f scripts/common/check-project-layout.mjs
+          test -f scripts/common/check-xiaoyu-harness.mjs
+          test -f rust/Cargo.toml
+          test -f rust/crates/xiaoyu-core/src/lib.rs
+          test -f runtime/README.md
+          test -f internal/xiaoyu/host/loop.go
+          test -f frontend/src/app/router.ts
+
+      - name: Source tree gate
+        run: node scripts/common/check-source-tree.mjs
+
+      - name: Naming and path gate
+        run: node scripts/common/check-naming.mjs
+
       - name: GitHub secret/file safety gate
         run: node scripts/common/check-github-safety.mjs
 
@@ -136,6 +153,22 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Source tree integrity guard
+        run: |
+          test -f scripts/common/check-github-safety.mjs
+          test -f scripts/common/check-project-layout.mjs
+          test -f scripts/common/check-xiaoyu-harness.mjs
+          test -f rust/Cargo.toml
+          test -f rust/crates/xiaoyu-core/src/lib.rs
+          test -f runtime/README.md
+          test -f internal/xiaoyu/host/loop.go
+          test -f frontend/src/app/router.ts
+
+      - name: Source tree and naming gates
+        run: |
+          node scripts/common/check-source-tree.mjs
+          node scripts/common/check-naming.mjs
+
       - name: Enforce headless AI parity
         run: |
           node scripts/common/check-xiaoyu-harness.mjs
@@ -176,3 +209,43 @@ jobs:
           test -x rust/target/release/xiaoyu
           test -x /tmp/agmp-headless
           test -f cmd/aigame-manager-web/web/index.html
+
+  windows-helper:
+    name: Windows Helper + Encoding
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Parse PowerShell scripts
+        shell: powershell
+        run: |
+          $failed = $false
+          Get-ChildItem -Recurse -Filter *.ps1 | ForEach-Object {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              $failed = $true
+              Write-Host "PowerShell parse failure: $($_.FullName)" -ForegroundColor Red
+              $errors | ForEach-Object { Write-Host $_.Message -ForegroundColor Red }
+            }
+          }
+          if ($failed) { exit 1 }
+
+      - name: Windows helper structure test
+        shell: powershell
+        run: powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/windows/Test-WindowsHelper.ps1
+
+      - name: Windows helper Node gate
+        run: node scripts/common/check-windows-helper.mjs
+
+      - name: Source tree and naming gates
+        run: |
+          node scripts/common/check-source-tree.mjs
+          node scripts/common/check-naming.mjs

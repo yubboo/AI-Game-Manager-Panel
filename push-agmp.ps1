@@ -5,7 +5,8 @@ param(
     [string]$ProjectRoot = '',
     [string]$RepoUrl = 'https://github.com/yubboo/AI-Game-Manager-Panel.git',
     [string]$Branch = 'main',
-    [string]$CommitMessage = ''
+    [string]$CommitMessage = '',
+    [switch]$AllowMassDeletion
 )
 
 $ErrorActionPreference = 'Stop'
@@ -85,6 +86,126 @@ function Initialize-Repository {
     }
 }
 
+
+function Assert-ProjectIntegrity {
+    Write-Step '项目完整性检查'
+
+    $requiredFiles = @(
+        '.github/workflows/safety.yml',
+        'go.mod',
+        'go.sum',
+        'main.go',
+        'wails.json',
+        'frontend/package.json',
+        'frontend/src/app/router.ts',
+        'frontend/src/features/xiaoyu/AIWorkbenchView.vue',
+        'internal/xiaoyu/host/loop.go',
+        'internal/xiaoyu/host/brain_model.go',
+        'internal/app/app_xiaoyu_tools.go',
+        'runtime/README.md',
+        'rust/Cargo.toml',
+        'rust/crates/xiaoyu-core/Cargo.toml',
+        'rust/crates/xiaoyu-core/src/lib.rs',
+        'rust/crates/xiaoyu-protocol/Cargo.toml',
+        'scripts/common/check-github-safety.mjs',
+        'scripts/common/check-source-tree.mjs',
+        'scripts/common/check-naming.mjs',
+        'scripts/common/check-project-layout.mjs',
+        'scripts/common/check-xiaoyu-harness.mjs',
+        'scripts/common/check-xiaoyu-agent-runtime.mjs',
+        'scripts/windows/AIGameManagerPanel.ps1',
+        'scripts/windows/tasks/Tasks.ps1',
+        'docs/NAMING-CONVENTIONS.md',
+        'AGMP-Sync.bat',
+        'sync-agmp.ps1'
+    )
+
+    $missing = New-Object System.Collections.Generic.List[string]
+    foreach ($rel in $requiredFiles) {
+        $full = Join-Path $ProjectRoot ($rel -replace '/', '\')
+        if (-not (Test-Path -LiteralPath $full -PathType Leaf)) {
+            $missing.Add($rel)
+        }
+    }
+
+    $requiredTrees = @(
+        @{ Path = 'scripts/common'; MinimumFiles = 15 },
+        @{ Path = 'scripts/windows'; MinimumFiles = 8 },
+        @{ Path = 'rust/crates'; MinimumFiles = 5 },
+        @{ Path = 'internal/xiaoyu'; MinimumFiles = 20 },
+        @{ Path = 'frontend/src'; MinimumFiles = 25 }
+    )
+
+    foreach ($tree in $requiredTrees) {
+        $full = Join-Path $ProjectRoot ($tree.Path -replace '/', '\')
+        if (-not (Test-Path -LiteralPath $full -PathType Container)) {
+            $missing.Add($tree.Path + '/ (目录缺失)')
+            continue
+        }
+        $count = @(Get-ChildItem -LiteralPath $full -File -Recurse -ErrorAction SilentlyContinue).Count
+        if ($count -lt [int]$tree.MinimumFiles) {
+            $missing.Add(('{0}/ (文件数量异常：{1} < {2})' -f $tree.Path, $count, $tree.MinimumFiles))
+        }
+    }
+
+    if ($missing.Count -gt 0) {
+        Write-Host ''
+        Write-Host '检测到源码工作副本不完整。本次禁止 Commit/Push：' -ForegroundColor Red
+        foreach ($item in $missing) { Write-Host ('  - ' + $item) -ForegroundColor Red }
+        Write-Host ''
+        Write-Host '请重新完整解压/复制 AGMP 源码包到当前目录，并保留 .git 目录，然后重试。' -ForegroundColor Yellow
+        Stop-Fail '项目完整性检查失败。'
+    }
+
+    Write-Ok '项目完整性检查通过。'
+}
+
+function Test-StagedDeletionSafety {
+    $rows = @(& git diff --cached --name-status --diff-filter=D)
+    if ($rows.Count -eq 0) { return }
+
+    $criticalDeleted = New-Object System.Collections.Generic.List[string]
+    $nonHistoryDeleted = New-Object System.Collections.Generic.List[string]
+
+    foreach ($row in $rows) {
+        if ([string]::IsNullOrWhiteSpace($row)) { continue }
+        $parts = $row -split "`t", 2
+        if ($parts.Count -lt 2) { continue }
+        $file = $parts[1].Replace('\','/')
+
+        $isLegacyHistory = (
+            $file -match '^AGMP-\d+\.\d+\.\d+-(?:Release-Notes|Validation)\.md$' -or
+            $file -match '^docs/(?:releases|prompts)/' -or
+            $file -match '^docs/development/(?:VALIDATION|COMPLETION)-.*\.md$' -or
+            $file -eq 'docs/BUILD-HOTFIX-0.1.37.md'
+        )
+        if ($isLegacyHistory) { continue }
+
+        $nonHistoryDeleted.Add($file)
+        if ($file -match '^(?:scripts/|rust/|\.github/|internal/xiaoyu/|frontend/src/|cmd/)') {
+            $criticalDeleted.Add($file)
+        }
+    }
+
+    if ($criticalDeleted.Count -gt 0) {
+        Write-Host ''
+        Write-Host '发现关键源码删除，默认拒绝推送：' -ForegroundColor Red
+        $criticalDeleted | Select-Object -First 25 | ForEach-Object { Write-Host ('  - ' + $_) -ForegroundColor Red }
+        if ($criticalDeleted.Count -gt 25) { Write-Host ('  ... 另有 ' + ($criticalDeleted.Count - 25) + ' 个') -ForegroundColor Red }
+        Stop-Fail '关键源码删除保护已触发。若这是经过确认的大型重构，请先人工检查，不要直接一键推送。'
+    }
+
+    if ($nonHistoryDeleted.Count -gt 25 -and -not $AllowMassDeletion) {
+        Write-Host ''
+        Write-Host ('检测到 {0} 个非历史文件将被删除。' -f $nonHistoryDeleted.Count) -ForegroundColor Red
+        $nonHistoryDeleted | Select-Object -First 25 | ForEach-Object { Write-Host ('  - ' + $_) -ForegroundColor Red }
+        Write-Host ''
+        Write-Host '为防止“覆盖源码时漏目录”导致整批源码被删，一键推送默认停止。' -ForegroundColor Yellow
+        Write-Host '只有确认这是有意的大规模删除时，才可手动使用 -AllowMassDeletion。' -ForegroundColor Yellow
+        Stop-Fail '大规模删除保护已触发。'
+    }
+}
+
 function Remove-LegacyHistoryFiles {
     $history = Join-Path $ProjectRoot 'docs\PROJECT-HISTORY.md'
     if (-not (Test-Path -LiteralPath $history -PathType Leaf)) { return }
@@ -148,6 +269,7 @@ function Get-SafetyFiles([ValidateSet('tracked','staged','candidate')] [string]$
 
 function Test-RepositorySafety([ValidateSet('tracked','staged','candidate')] [string]$Mode) {
     Write-Step ('安全检查：' + $Mode)
+    Assert-ProjectIntegrity
     Assert-SourceNotIgnored
 
     $files = @(Get-SafetyFiles $Mode)
@@ -211,10 +333,19 @@ function Test-RepositorySafety([ValidateSet('tracked','staged','candidate')] [st
 
     foreach ($warning in ($warnings | Select-Object -Unique)) { Write-Warn2 $warning }
 
-    $gate = Join-Path $ProjectRoot 'scripts\common\check-github-safety.mjs'
-    if ((Get-Command node -ErrorAction SilentlyContinue) -and (Test-Path -LiteralPath $gate)) {
-        & node $gate
-        if ($LASTEXITCODE -ne 0) { $failures.Add('项目 GitHub Safety Gate 未通过。') }
+    if (Get-Command node -ErrorAction SilentlyContinue) {
+        $nodeGates = @(
+            @{ Path = 'scripts\common\check-source-tree.mjs'; Name = 'Source Tree Gate' },
+            @{ Path = 'scripts\common\check-naming.mjs'; Name = 'Naming Gate' },
+            @{ Path = 'scripts\common\check-github-safety.mjs'; Name = 'GitHub Safety Gate' }
+        )
+        foreach ($item in $nodeGates) {
+            $gate = Join-Path $ProjectRoot $item.Path
+            if (Test-Path -LiteralPath $gate) {
+                & node $gate
+                if ($LASTEXITCODE -ne 0) { $failures.Add(('项目 ' + $item.Name + ' 未通过。')) }
+            }
+        }
     }
 
     $uniqueFailures = @($failures | Select-Object -Unique)
@@ -246,6 +377,7 @@ function Stage-And-Commit([string]$Message) {
     Test-RepositorySafety 'candidate'
     Write-Step '暂存源码'
     Invoke-Git @('add','-A') | Out-Null
+    Test-StagedDeletionSafety
     Test-RepositorySafety 'staged'
 
     $staged = @(& git diff --cached --name-only)
@@ -321,7 +453,7 @@ function Show-Menu {
         Write-Host '  2. [查看状态]  查看修改、分支与最近提交'
         Write-Host '  3. [同步远端]  Fetch + Pull --rebase --autostash'
         Write-Host '  4. [仅提交]    安全检查 + Commit，不 Push'
-        Write-Host '  5. [安全检查]  检查误忽略源码、敏感文件、私钥、Token、大文件'
+        Write-Host '  5. [安全检查]  检查源码完整性、误删除、敏感文件、私钥、Token、大文件'
         Write-Host '  6. [提交历史]  查看最近 Git 提交'
         Write-Host '  7. [打开仓库]  打开 GitHub 项目页面'
         Write-Host '  8. [自定义推送] 输入本次 Commit Message 后推送'
@@ -352,4 +484,5 @@ function Show-Menu {
 }
 
 Initialize-Repository
+Assert-ProjectIntegrity
 if ($Action -eq 'menu') { Show-Menu } else { Invoke-Action $Action $CommitMessage }

@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.3**  
+当前版本：**0.2.6**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 
 ## Windows 源码开发/发行构建入口
@@ -45,13 +45,17 @@ build/
 
 
 
-## 0.2.3 源码/GitHub 基线修复
+## 0.2.6 Windows 启动 / 源码同步 / 命名规范
 
-0.2.3 保留 0.2.2 XiaoYu Agent Runtime / Guided Autonomy 的智能化重构，并修复第一次 GitHub CI 暴露的源码跟踪问题：`.gitignore` 的运行数据规则现在只匹配项目根目录，不再误忽略 `internal/ops/logs/` 与前端 `logs/instances` 源码。
+0.2.6 在 0.2.4 完整源码保护基础上继续修复 Windows 源码工作流：根 `AI-Game-Manager-Panel.bat` 在关键 PowerShell 入口缺失时会明确报错并暂停，不再双击后一闪而过；`AGMP-GitHub.bat` 继续保持 ASCII + CRLF + 无 BOM。
 
-版本历史统一维护在 [`docs/PROJECT-HISTORY.md`](docs/PROJECT-HISTORY.md)。从本版起不再新增每版本独立 Release Notes / Validation / Completion / Prompt 历史文件。
+新增 `AGMP-Sync.bat + sync-agmp.ps1`。推荐把新版源码完整解压到临时目录后运行 `AGMP-Sync.bat`，由 `robocopy` 稳定同步到 `H:\一键部署\AI-Game-Manager-Panel`，保留目标 `.git` 和未跟踪的 runtime/实例/备份/日志等本机数据，同时清理新版已经删除的旧 Git 跟踪源码。这样不再依赖 Windows Explorer 拖拽覆盖数百个文件。
 
-XiaoYu Agent Runtime 当前设计说明见 [`docs/development/XIAOYU-AGENT-RUNTIME.md`](docs/development/XIAOYU-AGENT-RUNTIME.md)。
+新增 [`docs/NAMING-CONVENTIONS.md`](docs/NAMING-CONVENTIONS.md) 与 Naming Gate：普通源码文件名默认上限 40 字符、测试文件 48 字符；仓库相对路径超过 180 字符告警、超过 220 字符直接失败。目录本身视为命名空间，禁止为了“描述完整”重复父目录语义。源码包继续统一为 `agmp-<version>.zip`。
+
+GitHub/本地检查新增 `check-source-tree.mjs` 与 `check-naming.mjs`。一键推送前会同时检查源码完整性、关键删除、命名路径、安全凭据与 GitHub Safety Gate。
+
+版本历史统一维护在 [`docs/PROJECT-HISTORY.md`](docs/PROJECT-HISTORY.md)。XiaoYu Agent Runtime 当前设计说明见 [`docs/development/XIAOYU-AGENT-RUNTIME.md`](docs/development/XIAOYU-AGENT-RUNTIME.md)。
 
 ## Electron 与 Wails 体积
 
