@@ -47,12 +47,12 @@ AI Game Manager Panel（AI游戏管理器面板）定位为：**现代化、智�
 
 ## 4. 版本规范
 
-按连续小版本推进：`0.1.0 -> ... -> 0.1.100 -> 0.1.100 -> 0.2.0`。
+按连续小版本推进：`0.1.0 -> ... -> 0.1.99 -> 0.1.100 -> 0.2.0`。
 
 每次交付：
 
-- 源码：`AI-Game-Manager-Panel-<version>-source.zip`；
-- 更新记录：`docs/releases/<version>.md`；
+- 源码：`agmp-<version>.zip`；
+- 更新记录：统一追加到 `docs/PROJECT-HISTORY.md`；
 - Go / frontend / Wails / BAT / Installer 版本必须一致。
 
 ## 5. 阶段制开发
@@ -210,7 +210,7 @@ Linux Release（涉及 Linux 代码/发布脚本时）
 
 ## 16. 更新记录
 
-每版 `docs/releases/<version>.md` 至少包含：新增、修复、优化、架构调整、测试、已知问题、下一阶段。
+每版统一在 `docs/PROJECT-HISTORY.md` 顶部追加 `## AI-Game-Manager-Panel <version>`；至少记录新增/修复、验证结果、已知问题和下一阶段。禁止继续为 Release Notes / Validation / Completion 新建每版本历史文件。
 
 ## Linux Server Edition 规范（0.1.43 起）
 
@@ -272,14 +272,12 @@ Linux Release（涉及 Linux 代码/发布脚本时）
 - 每次交付 Windows Helper 变更，必须执行菜单 1-10 Dry-Run 自检；在 Windows 实机上还必须至少验证菜单 1、3（完整检查）、4、5、8、10。
 - 任何 Windows Helper 交付包若出现 `�`、乱码菜单、CMD 把中文残片当命令、路径被空格截断或 native command 输出编码错误，必须立即判定该版本不可交付；禁止以“用户环境差异”绕过编码 Gate。
 
-## 0.1.63 开发提示词归档硬规则
+## 0.1.63+ 历史记录收敛规则（0.2.3 起）
 
-- `docs/prompts/` 是 AI Game Manager Panel 唯一正式开发提示词归档目录。进入正式开发、重构、修复或阶段任务前，只要存在用户确认的提示词/实施约束，就必须先归档到该目录。
-- 文件命名统一使用 `<version>-<topic>.md`；例如 `docs/prompts/0.1.63-five-foundation-fixes.md`。
-- 提示词归档用于追溯“为什么改、按什么要求改”；`AGENTS.md` 继续负责长期有效的永久开发规范，两者职责不得混淆。
-- 已归档提示词视为历史需求证据，禁止在后续版本直接覆盖改写。新增或变更需求必须新建新的版本/主题提示词文件。
-- 每版 `validation.md` 必须明确写出对应提示词路径，并逐项核对提示词中的验收要求。
-- 禁止只在聊天中保留正式需求而不进入仓库；未归档的正式提示词视为开发流程未开始，不得冻结版本基线。
+- 历史 Release Notes、Validation、Completion、开发 Prompt 已统一归并到 `docs/PROJECT-HISTORY.md`。
+- 新版本不再创建 `docs/releases/<version>.md`、`docs/prompts/<version>-*.md`、`VALIDATION-*` 或 `COMPLETION-*`。
+- 用户确认的长期开发约束应更新到 `AGENTS.md` / 当前架构与开发规范；仅用于追溯的版本背景摘要追加到 `docs/PROJECT-HISTORY.md`。
+- `docs/PROJECT-HISTORY.md` 是唯一历史入口，历史条目不得改写成当前规范；当前规范也不得只存在于历史记录中。
 
 ## 0.1.64 工作台、PowerShell 与 Electron 发布回归硬规则
 
@@ -290,7 +288,7 @@ Linux Release（涉及 Linux 代码/发布脚本时）
 - AI Game Manager Panel 主界面采用可拖拽工作台能力：左右侧栏可独立调整宽度并完全收起；底部面板可调整高度并完全收起；布局状态持久化。终端入口归属 Bottom Panel，不得重新放回左侧一级导航。
 - Theme 必须覆盖 `html/body/#app`、左右侧栏、Topbar、Bottom Panel 和全部主要 Surface。任何“浅色卡片 + 深色外围壳”的混合状态都判定 Theme Gate FAIL。
 - 设置/功能页不得通过窄 `max-width` 人为浪费工作区；大屏中央区域默认只保留约 24~32px 安全边距，并使用统一 Typography/Spacing Token。
-- 0.1.64 十项统一修复的正式需求以 `docs/prompts/0.1.64-ten-issue-consolidated-fix.md` 为准；后续不得覆盖该历史提示词。
+- 0.1.64 十项统一修复的历史需求已归并到 `docs/PROJECT-HISTORY.md`；长期有效规则以当前 `AGENTS.md` 与 Gate 为准。
 
 ## 0.1.74 Agent-first / Rust Runtime 规则
 

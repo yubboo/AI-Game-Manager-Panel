@@ -5,6 +5,16 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.3：GitHub 可复现基线与历史文档收敛
+
+- 修复 `.gitignore` 未锚定根目录导致 `internal/ops/logs`、前端 `logs/instances` 源码被 Git 静默忽略的问题；
+- GitHub 推送工作台改为 ASCII BAT 启动 UTF-8 BOM PowerShell，禁止再出现 BOM/代码页导致的 CMD 乱码；
+- 版本历史统一到 `docs/PROJECT-HISTORY.md`，不再为每个版本增加 Release/Validation/Completion/Prompt 历史文件；
+- 推送前自动检查源码误忽略、敏感凭据、运行数据、构建产物与大文件；同步远端使用 rebase，不允许脚本自动 force push；
+- 以 GitHub Actions 作为 Frontend / Rust / Linux / 后续 Windows 的联网可复现验证环境。
+
+**冻结条件：** 本地非 Publisher Gates + 非 Wails Go tests/vet 全部通过；GitHub Actions 重新验证 Frontend、Rust 与 Headless；后续补 Windows Wails/Electron 矩阵。
+
 ## 0.2.2：XiaoYu Agent Runtime / Guided Autonomy
 
 - 把“模型智能”正式作为 XiaoYu 的通用智能来源，Expert / Skill / Memory / Experience 只做优先专业指导；

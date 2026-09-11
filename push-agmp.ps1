@@ -1,217 +1,355 @@
 ﻿[CmdletBinding()]
 param(
-    [string]$RepoUrl = "https://github.com/yubboo/AI-Game-Manager-Panel.git",
-    [string]$Branch = "main",
-    [string]$Version = "0.2.2",
-    [string]$CommitMessage = "",
-    [switch]$NoPush
+    [ValidateSet('menu','push','status','pull','commit','scan','log','open')]
+    [string]$Action = 'menu',
+    [string]$ProjectRoot = '',
+    [string]$RepoUrl = 'https://github.com/yubboo/AI-Game-Manager-Panel.git',
+    [string]$Branch = 'main',
+    [string]$CommitMessage = ''
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = 'Stop'
 
-function Write-Step($msg) {
-    Write-Host ""
-    Write-Host "==> $msg" -ForegroundColor Cyan
+# Windows PowerShell 5.1 / PowerShell 7 都统一使用 UTF-8 控制台输出。
+try {
+    $utf8 = New-Object System.Text.UTF8Encoding($false)
+    [Console]::InputEncoding = $utf8
+    [Console]::OutputEncoding = $utf8
+    $OutputEncoding = $utf8
+} catch {
 }
 
-function Write-Ok($msg) {
-    Write-Host "[OK] $msg" -ForegroundColor Green
+function Write-Title([string]$Text) {
+    Write-Host ''
+    Write-Host '====================================================================' -ForegroundColor DarkGray
+    Write-Host ('  ' + $Text) -ForegroundColor White
+    Write-Host '====================================================================' -ForegroundColor DarkGray
 }
 
-function Write-Warn2($msg) {
-    Write-Host "[WARN] $msg" -ForegroundColor Yellow
+function Write-Step([string]$Text) { Write-Host ('[进行] ' + $Text) -ForegroundColor Cyan }
+function Write-Ok([string]$Text) { Write-Host ('[完成] ' + $Text) -ForegroundColor Green }
+function Write-Warn2([string]$Text) { Write-Host ('[注意] ' + $Text) -ForegroundColor Yellow }
+function Stop-Fail([string]$Text) { Write-Host ('[失败] ' + $Text) -ForegroundColor Red; exit 1 }
+
+function Invoke-Git([string[]]$Arguments, [switch]$AllowFailure) {
+    & git @Arguments
+    $code = $LASTEXITCODE
+    if (-not $AllowFailure -and $code -ne 0) {
+        Stop-Fail ('Git 命令失败：git ' + ($Arguments -join ' '))
+    }
+    return $code
 }
 
-function Fail($msg) {
-    Write-Host "[FAIL] $msg" -ForegroundColor Red
-    exit 1
+if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
+    $ProjectRoot = Split-Path -Parent $PSCommandPath
 }
+$ProjectRoot = [System.IO.Path]::GetFullPath($ProjectRoot)
 
-# 默认以脚本所在目录作为项目根目录。
-$ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location $ProjectRoot
+if (-not (Test-Path -LiteralPath $ProjectRoot -PathType Container)) {
+    Stop-Fail ('项目目录不存在：' + $ProjectRoot)
+}
+Set-Location -LiteralPath $ProjectRoot
 
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  AGMP GitHub Push Helper" -ForegroundColor White
-Write-Host "  Project: $ProjectRoot"
-Write-Host "  Remote : $RepoUrl"
-Write-Host "  Branch : $Branch"
-Write-Host "============================================================" -ForegroundColor DarkGray
-
-Write-Step "检查 Git"
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    Fail "未找到 Git。请先安装 Git for Windows，然后重新运行本脚本。"
-}
-$gitVersion = git --version
-Write-Ok $gitVersion
-
-# 防止把下载 ZIP / 构建包当源码提交。
-Write-Step "检查不应提交的文件"
-$zipFiles = Get-ChildItem -Path $ProjectRoot -File -Recurse -Filter "*.zip" -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -notmatch '\\\.git\\' }
-
-if ($zipFiles.Count -gt 0) {
-    Write-Warn2 "发现 ZIP 文件；脚本会在暂存后自动取消暂存这些文件："
-    $zipFiles | ForEach-Object { Write-Host "  - $($_.FullName.Substring($ProjectRoot.Length + 1))" }
+    Stop-Fail '未找到 Git。请先安装 Git for Windows。'
 }
 
-# 常见敏感文件只做阻止，不自动删除。
-$sensitivePatterns = @(
-    ".env",
-    ".env.local",
-    ".env.production",
-    ".env.development",
-    "*.pem",
-    "*.pfx",
-    "*.p12",
-    "*.key"
-)
-
-$sensitiveFiles = @()
-foreach ($pattern in $sensitivePatterns) {
-    $sensitiveFiles += Get-ChildItem -Path $ProjectRoot -File -Recurse -Filter $pattern -ErrorAction SilentlyContinue |
-        Where-Object { $_.FullName -notmatch '\\\.git\\' -and $_.FullName -notmatch '\\node_modules\\' }
+function Get-AGMPVersion {
+    $packagePath = Join-Path $ProjectRoot 'frontend\package.json'
+    if (Test-Path -LiteralPath $packagePath) {
+        try {
+            $pkg = Get-Content -LiteralPath $packagePath -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($pkg.version) { return [string]$pkg.version }
+        } catch {
+        }
+    }
+    return 'unknown'
 }
 
-if ($sensitiveFiles.Count -gt 0) {
-    Write-Warn2 "发现可能包含凭据的文件。脚本不会自动提交这些文件："
-    $sensitiveFiles | Sort-Object FullName -Unique | ForEach-Object {
-        Write-Host "  - $($_.FullName.Substring($ProjectRoot.Length + 1))"
+function Initialize-Repository {
+    if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot '.git'))) {
+        Write-Step '初始化 Git 仓库'
+        Invoke-Git @('init') | Out-Null
+    }
+
+    Invoke-Git @('branch','-M',$Branch) | Out-Null
+
+    $origin = & git remote get-url origin 2>$null
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($origin)) {
+        Invoke-Git @('remote','add','origin',$RepoUrl) | Out-Null
+        Write-Ok ('已设置 origin：' + $RepoUrl)
+    } elseif ($origin.Trim() -ne $RepoUrl) {
+        Write-Warn2 ('origin 原地址：' + $origin.Trim())
+        Invoke-Git @('remote','set-url','origin',$RepoUrl) | Out-Null
+        Write-Ok ('origin 已更新：' + $RepoUrl)
     }
 }
 
-Write-Step "初始化 / 检查 Git 仓库"
-if (-not (Test-Path (Join-Path $ProjectRoot ".git"))) {
-    git init | Out-Host
-    if ($LASTEXITCODE -ne 0) { Fail "git init 失败。" }
-    Write-Ok "已初始化 Git 仓库。"
-} else {
-    Write-Ok "当前目录已经是 Git 仓库。"
+function Remove-LegacyHistoryFiles {
+    $history = Join-Path $ProjectRoot 'docs\PROJECT-HISTORY.md'
+    if (-not (Test-Path -LiteralPath $history -PathType Leaf)) { return }
+
+    $targets = New-Object System.Collections.Generic.List[string]
+    Get-ChildItem -LiteralPath $ProjectRoot -File -Filter 'AGMP-*.md' -ErrorAction SilentlyContinue | ForEach-Object {
+        if ($_.Name -match '^AGMP-\d+\.\d+\.\d+-(?:Release-Notes|Validation)\.md$') { $targets.Add($_.FullName) }
+    }
+    $dev = Join-Path $ProjectRoot 'docs\development'
+    if (Test-Path -LiteralPath $dev) {
+        Get-ChildItem -LiteralPath $dev -File -ErrorAction SilentlyContinue | ForEach-Object {
+            if ($_.Name -match '^(?:VALIDATION|COMPLETION)-.*\.md$') { $targets.Add($_.FullName) }
+        }
+    }
+    foreach ($dir in @('docs\releases','docs\prompts')) {
+        $full = Join-Path $ProjectRoot $dir
+        if (Test-Path -LiteralPath $full -PathType Container) { $targets.Add($full) }
+    }
+    $hotfix = Join-Path $ProjectRoot 'docs\BUILD-HOTFIX-0.1.37.md'
+    if (Test-Path -LiteralPath $hotfix -PathType Leaf) { $targets.Add($hotfix) }
+
+    if ($targets.Count -gt 0) {
+        Write-Step '清理已经合并到 PROJECT-HISTORY.md 的旧历史文件'
+        foreach ($target in ($targets | Select-Object -Unique)) {
+            Remove-Item -LiteralPath $target -Recurse -Force
+            Write-Host ('  - 删除旧历史：' + $target.Substring($ProjectRoot.Length).TrimStart('\')) -ForegroundColor DarkGray
+        }
+    }
 }
 
-Write-Step "设置主分支为 $Branch"
-git branch -M $Branch
-if ($LASTEXITCODE -ne 0) { Fail "无法切换/重命名主分支。" }
-Write-Ok "当前主分支：$Branch"
+function Assert-SourceNotIgnored {
+    # 这些目录名称同时也是运行数据名称，最容易被错误的 .gitignore 规则误伤。
+    $critical = @(
+        'internal/ops/logs/service.go',
+        'frontend/src/features/logs/LogsView.vue',
+        'frontend/src/features/logs/useLogHub.ts',
+        'frontend/src/features/instances/InstancesView.vue'
+    )
+    foreach ($rel in $critical) {
+        $full = Join-Path $ProjectRoot ($rel -replace '/', '\')
+        if (-not (Test-Path -LiteralPath $full -PathType Leaf)) {
+            Stop-Fail ('关键源码文件缺失：' + $rel)
+        }
+        & git check-ignore -q --no-index -- $rel
+        if ($LASTEXITCODE -eq 0) {
+            Stop-Fail ('.gitignore 错误忽略了源码：' + $rel + '。运行数据目录规则必须使用 /logs/、/instances/ 等根目录锚点。')
+        }
+    }
+    Write-Ok '关键源码未被 .gitignore 误忽略。'
+}
 
-Write-Step "配置远程仓库"
-$origin = git remote get-url origin 2>$null
-if ($LASTEXITCODE -eq 0 -and $origin) {
-    if ($origin.Trim() -ne $RepoUrl) {
-        Write-Warn2 "origin 当前为：$origin"
-        git remote set-url origin $RepoUrl
-        if ($LASTEXITCODE -ne 0) { Fail "更新 origin 失败。" }
-        Write-Ok "origin 已更新为：$RepoUrl"
+function Get-SafetyFiles([ValidateSet('tracked','staged','candidate')] [string]$Mode) {
+    if ($Mode -eq 'staged') {
+        return @(& git diff --cached --name-only --diff-filter=ACMR)
+    }
+    if ($Mode -eq 'candidate') {
+        return @(& git ls-files --cached --others --exclude-standard)
+    }
+    return @(& git ls-files)
+}
+
+function Test-RepositorySafety([ValidateSet('tracked','staged','candidate')] [string]$Mode) {
+    Write-Step ('安全检查：' + $Mode)
+    Assert-SourceNotIgnored
+
+    $files = @(Get-SafetyFiles $Mode)
+    $failures = New-Object System.Collections.Generic.List[string]
+    $warnings = New-Object System.Collections.Generic.List[string]
+
+    $forbiddenRoot = '^(?:data|log|logs|backups|instances|temp|exports|plugins|cache|build)/'
+    $forbiddenExt = '\.(?:exe|test|zip|7z|rar|dmp|stackdump|tmp|bak|key|priv|seed|pem|p12|pfx|jks|keystore|cdk|lic|license|bflc)$'
+    $forbiddenNames = '(^|/)(?:activation\.json|install\.id|device\.id|accounts\.json|bootstrap\.lock|credentials\.json|secrets\.json|cluster_token\.txt|server_token\.txt|adminlist\.txt|whitelist\.txt|blocklist\.txt)$'
+
+    $secretPatterns = @(
+        '(?<![A-Za-z0-9])sk-(?:proj-|ant-)?[A-Za-z0-9_-]{20,}',
+        'github_pat_[A-Za-z0-9_]{20,}',
+        'gh[pousr]_[A-Za-z0-9]{30,}',
+        'AIza[0-9A-Za-z_-]{30,}',
+        'xox[baprs]-[0-9A-Za-z-]{20,}',
+        'AKIA[0-9A-Z]{16}',
+        '-----BEGIN(?: RSA| EC| OPENSSH)? PRIVATE KEY-----'
+    )
+    $textExtensions = @('.go','.rs','.ts','.tsx','.js','.mjs','.cjs','.vue','.json','.yaml','.yml','.toml','.md','.txt','.ps1','.bat','.cmd','.sh','.html','.css','.ini','.conf','.xml','.iss')
+
+    foreach ($file in $files) {
+        if ([string]::IsNullOrWhiteSpace($file)) { continue }
+        $rel = $file.Replace('\','/')
+        $lower = $rel.ToLowerInvariant()
+
+        if ($lower -eq '.env.example') { continue }
+        if ($lower -eq '.env' -or $lower.StartsWith('.env.') -or $lower -match '(^|/)\.env($|\.)') {
+            $failures.Add('环境变量文件禁止提交：' + $file); continue
+        }
+        if ($lower -match $forbiddenRoot) { $failures.Add('运行/构建数据禁止提交：' + $file); continue }
+        if ($lower.StartsWith('runtime/') -and $lower -ne 'runtime/readme.md') { $failures.Add('runtime 运行数据禁止提交：' + $file); continue }
+        if ($lower -match '(^|/)(?:node_modules|target|\.pnpm-store)/') { $failures.Add('依赖/缓存目录禁止提交：' + $file); continue }
+        if ($lower -match $forbiddenExt) { $failures.Add('构建产物/密钥材料禁止提交：' + $file); continue }
+        if ($lower -match $forbiddenNames) { $failures.Add('本机凭据/游戏私密状态禁止提交：' + $file); continue }
+
+        $full = Join-Path $ProjectRoot ($file -replace '/', '\')
+        if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { continue }
+        $item = Get-Item -LiteralPath $full
+        if ($item.Length -ge 95MB) {
+            $failures.Add(('文件超过/接近 GitHub 单文件限制：{0} ({1:N1} MB)' -f $file, ($item.Length / 1MB)))
+            continue
+        } elseif ($item.Length -ge 20MB) {
+            $warnings.Add(('较大的仓库文件：{0} ({1:N1} MB)' -f $file, ($item.Length / 1MB)))
+        }
+
+        $ext = [System.IO.Path]::GetExtension($full).ToLowerInvariant()
+        if ($textExtensions -contains $ext -and $item.Length -le 5MB) {
+            try {
+                $content = Get-Content -LiteralPath $full -Raw -Encoding UTF8
+                foreach ($pattern in $secretPatterns) {
+                    if ($content -match $pattern) {
+                        $failures.Add('发现疑似真实凭据：' + $file)
+                        break
+                    }
+                }
+            } catch {
+            }
+        }
+    }
+
+    foreach ($warning in ($warnings | Select-Object -Unique)) { Write-Warn2 $warning }
+
+    $gate = Join-Path $ProjectRoot 'scripts\common\check-github-safety.mjs'
+    if ((Get-Command node -ErrorAction SilentlyContinue) -and (Test-Path -LiteralPath $gate)) {
+        & node $gate
+        if ($LASTEXITCODE -ne 0) { $failures.Add('项目 GitHub Safety Gate 未通过。') }
+    }
+
+    $uniqueFailures = @($failures | Select-Object -Unique)
+    if ($uniqueFailures.Count -gt 0) {
+        Write-Host ''
+        foreach ($failure in $uniqueFailures) { Write-Host ('  - ' + $failure) -ForegroundColor Red }
+        Stop-Fail '安全检查未通过，本次不会提交/推送。'
+    }
+    Write-Ok '安全检查通过。'
+}
+
+function Sync-Remote {
+    Write-Step '同步 GitHub 远端'
+    Invoke-Git @('fetch','origin',$Branch) | Out-Null
+    & git show-ref --verify --quiet ('refs/remotes/origin/' + $Branch)
+    if ($LASTEXITCODE -eq 0) {
+        & git pull --rebase --autostash origin $Branch
+        if ($LASTEXITCODE -ne 0) {
+            Stop-Fail 'Pull/Rebase 发生冲突。脚本不会 force push；请解决冲突后重试。'
+        }
     } else {
-        Write-Ok "origin 已正确配置。"
+        Write-Warn2 ('远端 origin/' + $Branch + ' 尚不存在，跳过 Pull。')
     }
-} else {
-    git remote add origin $RepoUrl
-    if ($LASTEXITCODE -ne 0) { Fail "添加 origin 失败。" }
-    Write-Ok "已添加 origin：$RepoUrl"
+    Write-Ok '远端同步完成。'
 }
 
-Write-Step "暂存源码"
-git add -A
-if ($LASTEXITCODE -ne 0) { Fail "git add 失败。" }
+function Stage-And-Commit([string]$Message) {
+    Remove-LegacyHistoryFiles
+    Test-RepositorySafety 'candidate'
+    Write-Step '暂存源码'
+    Invoke-Git @('add','-A') | Out-Null
+    Test-RepositorySafety 'staged'
 
-# 取消暂存 ZIP。
-$staged = @(git diff --cached --name-only)
-foreach ($file in $staged) {
-    if ($file -match '\.zip$') {
-        git restore --staged -- "$file" 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            git reset -- "$file" 2>$null | Out-Null
+    $staged = @(& git diff --cached --name-only)
+    if ($staged.Count -eq 0) {
+        Write-Warn2 '没有新的项目变更需要提交。'
+        return $false
+    }
+
+    Write-Host ('即将提交 {0} 个文件：' -f $staged.Count) -ForegroundColor Gray
+    $staged | Select-Object -First 40 | ForEach-Object { Write-Host ('  + ' + $_) }
+    if ($staged.Count -gt 40) { Write-Host ('  ... 另有 {0} 个文件' -f ($staged.Count - 40)) -ForegroundColor DarkGray }
+
+    $name = & git config user.name
+    $mail = & git config user.email
+    if ([string]::IsNullOrWhiteSpace($name) -or [string]::IsNullOrWhiteSpace($mail)) {
+        Stop-Fail 'Git user.name / user.email 尚未配置。'
+    }
+
+    if ([string]::IsNullOrWhiteSpace($Message)) {
+        $version = Get-AGMPVersion
+        if ($version -eq 'unknown') { $Message = 'AGMP 更新' } else { $Message = 'AGMP ' + $version + ' 更新' }
+    }
+
+    Write-Step ('创建提交：' + $Message)
+    & git commit -m $Message
+    if ($LASTEXITCODE -ne 0) { Stop-Fail 'git commit 失败。' }
+    Write-Ok '提交完成。'
+    return $true
+}
+
+function Show-Status {
+    Write-Title 'AGMP GitHub 状态'
+    Write-Host ('项目目录：' + $ProjectRoot)
+    Write-Host ('项目版本：' + (Get-AGMPVersion))
+    Write-Host ('远程仓库：' + $RepoUrl)
+    Write-Host ''
+    & git status -sb
+    Write-Host ''
+    Write-Host '最近提交：' -ForegroundColor Gray
+    & git log --oneline --decorate -5
+}
+
+function Invoke-Action([string]$Name, [string]$Message = '') {
+    switch ($Name) {
+        'status' { Show-Status; return }
+        'pull' { Sync-Remote; Show-Status; return }
+        'scan' { Test-RepositorySafety 'tracked'; return }
+        'log' { Write-Title 'AGMP 最近 Git 提交'; & git log --oneline --decorate --graph -15; return }
+        'open' { Start-Process 'https://github.com/yubboo/AI-Game-Manager-Panel'; return }
+        'commit' { [void](Stage-And-Commit $Message); Show-Status; return }
+        'push' {
+            Sync-Remote
+            [void](Stage-And-Commit $Message)
+            Test-RepositorySafety 'tracked'
+            Write-Step '推送到 GitHub'
+            & git push -u origin $Branch
+            if ($LASTEXITCODE -ne 0) { Stop-Fail 'git push 失败。脚本不会 force push。' }
+            Write-Title '[一键推送] 完成'
+            Write-Host 'https://github.com/yubboo/AI-Game-Manager-Panel' -ForegroundColor Cyan
+            return
         }
-        Write-Warn2 "已取消暂存：$file"
     }
 }
 
-# 取消暂存明显的凭据文件。
-$staged = @(git diff --cached --name-only)
-$blocked = @()
-foreach ($file in $staged) {
-    $name = [System.IO.Path]::GetFileName($file)
-    if (
-        $name -eq ".env" -or
-        $name -like ".env.*" -or
-        $name -like "*.pem" -or
-        $name -like "*.pfx" -or
-        $name -like "*.p12" -or
-        $name -like "*.key"
-    ) {
-        $blocked += $file
-        git restore --staged -- "$file" 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            git reset -- "$file" 2>$null | Out-Null
+function Show-Menu {
+    while ($true) {
+        Clear-Host
+        Write-Title 'AGMP GitHub 一键推送助手'
+        Write-Host ('项目：' + $ProjectRoot)
+        Write-Host ('版本：' + (Get-AGMPVersion))
+        Write-Host ''
+        Write-Host '  1. [一键推送]  同步远端 > 安全检查 > 提交 > Push'
+        Write-Host '  2. [查看状态]  查看修改、分支与最近提交'
+        Write-Host '  3. [同步远端]  Fetch + Pull --rebase --autostash'
+        Write-Host '  4. [仅提交]    安全检查 + Commit，不 Push'
+        Write-Host '  5. [安全检查]  检查误忽略源码、敏感文件、私钥、Token、大文件'
+        Write-Host '  6. [提交历史]  查看最近 Git 提交'
+        Write-Host '  7. [打开仓库]  打开 GitHub 项目页面'
+        Write-Host '  8. [自定义推送] 输入本次 Commit Message 后推送'
+        Write-Host ''
+        Write-Host '  0. 退出'
+        Write-Host ''
+        Write-Host '原则：除敏感、本机运行数据、缓存和构建产物外，项目源码/公开配置/文档/CI/锁文件全部推送。' -ForegroundColor DarkGray
+        $choice = Read-Host '请选择 [0-8]'
+        try {
+            switch ($choice) {
+                '1' { Invoke-Action 'push' }
+                '2' { Invoke-Action 'status' }
+                '3' { Invoke-Action 'pull' }
+                '4' { Invoke-Action 'commit' }
+                '5' { Invoke-Action 'scan' }
+                '6' { Invoke-Action 'log' }
+                '7' { Invoke-Action 'open' }
+                '8' { $msg = Read-Host '请输入 Commit Message'; Invoke-Action 'push' $msg }
+                '0' { return }
+                default { Write-Warn2 '无效选项。' }
+            }
+        } catch {
+            Write-Host ('[异常] ' + $_.Exception.Message) -ForegroundColor Red
         }
+        Write-Host ''
+        Read-Host '按 Enter 返回菜单' | Out-Null
     }
 }
 
-if ($blocked.Count -gt 0) {
-    Write-Warn2 "以下敏感文件已自动取消暂存："
-    $blocked | ForEach-Object { Write-Host "  - $_" }
-}
-
-Write-Step "显示即将提交的文件"
-$staged = @(git diff --cached --name-only)
-if ($staged.Count -eq 0) {
-    Write-Warn2 "当前没有新的文件需要提交。"
-} else {
-    $staged | ForEach-Object { Write-Host "  + $_" }
-}
-
-if ([string]::IsNullOrWhiteSpace($CommitMessage)) {
-    $CommitMessage = "AGMP $Version"
-}
-
-if ($staged.Count -gt 0) {
-    Write-Step "创建提交：$CommitMessage"
-
-    # 如果 Git 身份未配置，给出清晰提示。
-    $userName = git config user.name
-    $userEmail = git config user.email
-
-    if ([string]::IsNullOrWhiteSpace($userName) -or [string]::IsNullOrWhiteSpace($userEmail)) {
-        Write-Warn2 "Git 尚未配置 user.name / user.email。"
-        Write-Host ""
-        Write-Host "请先执行，例如：" -ForegroundColor Yellow
-        Write-Host '  git config --global user.name "你的 GitHub 用户名"'
-        Write-Host '  git config --global user.email "你的 GitHub 邮箱"'
-        Write-Host ""
-        Fail "配置 Git 身份后重新运行本脚本。"
-    }
-
-    git commit -m $CommitMessage
-    if ($LASTEXITCODE -ne 0) { Fail "git commit 失败。" }
-
-    Write-Ok "提交完成。"
-}
-
-Write-Step "当前状态"
-git status --short | Out-Host
-
-if ($NoPush) {
-    Write-Warn2 "已指定 -NoPush，本次不推送。"
-    exit 0
-}
-
-Write-Step "推送到 GitHub"
-Write-Host "如果 GitHub 要求登录，请按照 Git Credential Manager / 浏览器提示完成授权。" -ForegroundColor DarkGray
-
-git push -u origin $Branch
-if ($LASTEXITCODE -ne 0) {
-    Write-Host ""
-    Write-Warn2 "推送失败。常见原因："
-    Write-Host "  1. 尚未登录 GitHub / Git Credential Manager"
-    Write-Host "  2. GitHub 账号没有该仓库写入权限"
-    Write-Host "  3. 网络或代理阻止 GitHub"
-    Write-Host "  4. 远程 main 已有提交，需要先拉取并处理历史"
-    Fail "git push 未成功。"
-}
-
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  推送完成。" -ForegroundColor Green
-Write-Host "  https://github.com/yubboo/AI-Game-Manager-Panel" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor DarkGray
+Initialize-Repository
+if ($Action -eq 'menu') { Show-Menu } else { Invoke-Action $Action $CommitMessage }

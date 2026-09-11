@@ -69,3 +69,12 @@ node scripts/common/check-github-safety.mjs
 ## 仓库端二次门禁
 
 `.github/workflows/safety.yml` 会在 Push/PR 后自动执行安全扫描、结构检查和 Go Test/Vet。本地门禁用于阻止“准备提交”的秘密，Actions 用于防止团队成员或其他入口绕过本地检查。
+
+
+## 0.2.3 推送原则
+
+除真实密钥/凭据、本机运行数据、用户服务器数据、依赖缓存和构建产物外，AGMP 项目内容默认进入 GitHub，包括源码、公开配置、CI、测试、Gate、文档、安装/发布脚本以及 `Cargo.lock` / `pnpm-lock.yaml` 等可复现构建锁文件。
+
+根运行数据兼容规则必须使用 `/logs/`、`/instances/` 这类根目录锚点；禁止使用会误伤 `internal/ops/logs/` 或 `frontend/src/features/instances/` 的全局 `logs/` / `instances/` 规则。
+
+`AGMP-GitHub.bat` 必须保持 ASCII + CRLF + 无 BOM；中文菜单由 `push-agmp.ps1`（UTF-8 BOM + CRLF）输出。

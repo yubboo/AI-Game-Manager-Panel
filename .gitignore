@@ -36,15 +36,16 @@ runtime/*
 !runtime/README.md
 
 # Legacy 0.1.64 and earlier runtime paths: never commit local user/server state.
-data/
-log/
-logs/
-backups/
-instances/
-temp/
-exports/
-plugins/
-cache/
+# IMPORTANT: root-anchored rules avoid hiding source folders such as internal/ops/logs and frontend/src/features/instances.
+/data/
+/log/
+/logs/
+/backups/
+/instances/
+/temp/
+/exports/
+/plugins/
+/cache/
 
 # License / CDK / cryptographic private material
 # Public verification key must be embedded as source code or an explicitly reviewed *.pub file; generated *.key files stay local.

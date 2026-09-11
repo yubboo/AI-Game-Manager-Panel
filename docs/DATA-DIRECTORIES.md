@@ -4,7 +4,7 @@ AI Game Manager Panel 0.1.65 将**源码目录**与**可写运行数据**明确�
 
 ## SourceRoot（源码）
 
-源码根目录只保留稳定工程边界。安装器、Docker、第三方许可位于 `distribution/`；版本记录位于 `docs/releases/`。
+源码根目录只保留稳定工程边界。安装器、Docker、第三方许可位于 `distribution/`；版本历史统一位于 `docs/PROJECT-HISTORY.md`。
 
 ## InstallRoot（程序安装目录）
 
