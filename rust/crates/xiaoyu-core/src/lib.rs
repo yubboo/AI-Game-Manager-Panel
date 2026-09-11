@@ -1,11 +1,11 @@
-use xiaoyu_protocol::{
-    ApprovalDecision, ApprovalMode, BrainDecision, BrainDecisionKind, BrainPrompt, ModelTurn,
-    RiskLevel, RuntimeStatus, SessionInfo, ToolSpec, PROTOCOL_VERSION,
-};
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
+use serde_json::Value;
 use std::path::PathBuf;
 use uuid::Uuid;
-use serde_json::Value;
+use xiaoyu_protocol::{
+    ApprovalDecision, ApprovalMode, BrainDecision, BrainDecisionKind, BrainPrompt, ModelTurn,
+    PROTOCOL_VERSION, RiskLevel, RuntimeStatus, SessionInfo, ToolSpec,
+};
 
 pub const RUNTIME_NAME: &str = "小鱼 · XiaoYu Intelligence Core";
 pub const RUNTIME_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -172,7 +172,11 @@ frame.intelligence 可能包含 Host 按当前用户、目标和 Run scope 过�
             return Ok(BrainDecision {
                 kind: BrainDecisionKind::Tool,
                 tool: Some(name.to_string()),
-                arguments: if tool.arguments.is_null() { serde_json::json!({}) } else { tool.arguments },
+                arguments: if tool.arguments.is_null() {
+                    serde_json::json!({})
+                } else {
+                    tool.arguments
+                },
                 message: public_action_summary(&turn.text),
             });
         }
@@ -186,9 +190,14 @@ frame.intelligence 可能包含 Host 按当前用户、目标和 Run scope 过�
             bail!("tool decisions must use the provider tool-call channel");
         }
         if decision.kind == BrainDecisionKind::Wait && is_procedural_wait(&decision.message) {
-            bail!("xiaoyu must not wait for a procedural continue decision; continue autonomously or request a concrete missing input");
+            bail!(
+                "xiaoyu must not wait for a procedural continue decision; continue autonomously or request a concrete missing input"
+            );
         }
-        if !matches!(decision.kind, BrainDecisionKind::Complete | BrainDecisionKind::Wait | BrainDecisionKind::Fail) {
+        if !matches!(
+            decision.kind,
+            BrainDecisionKind::Complete | BrainDecisionKind::Wait | BrainDecisionKind::Fail
+        ) {
             bail!("unsupported brain decision");
         }
         Ok(decision)
@@ -214,34 +223,55 @@ frame.intelligence 可能包含 Host 按当前用户、目标和 Run scope 过�
     }
 }
 
-
 fn is_procedural_wait(message: &str) -> bool {
     let value = message.trim().to_lowercase();
     if value.is_empty() {
         return true;
     }
     let concrete_missing = [
-        "请提供", "需要提供", "缺少 token", "缺少token", "缺少密码", "缺少凭据",
-        "请输入", "请选择", "provide the", "missing token", "missing password", "missing credential",
+        "请提供",
+        "需要提供",
+        "缺少 token",
+        "缺少token",
+        "缺少密码",
+        "缺少凭据",
+        "请输入",
+        "请选择",
+        "provide the",
+        "missing token",
+        "missing password",
+        "missing credential",
     ];
     if concrete_missing.iter().any(|needle| value.contains(needle)) {
         return false;
     }
     let procedural = [
-        "是否继续", "要不要继续", "要继续吗", "是否要我", "要不要我", "是否需要我",
-        "是否安装", "是否修复", "是否处理", "继续吗", "shall i continue", "should i continue",
+        "是否继续",
+        "要不要继续",
+        "要继续吗",
+        "是否要我",
+        "要不要我",
+        "是否需要我",
+        "是否安装",
+        "是否修复",
+        "是否处理",
+        "继续吗",
+        "shall i continue",
+        "should i continue",
     ];
     procedural.iter().any(|needle| value.contains(needle))
 }
 
 fn public_action_summary(text: &str) -> String {
-    let value = strip_code_fence(text).split_whitespace().collect::<Vec<_>>().join(" ");
+    let value = strip_code_fence(text)
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
     if value.is_empty() {
         return String::new();
     }
     value.chars().take(240).collect()
 }
-
 
 fn strip_code_fence(text: &str) -> &str {
     let mut value = text.trim();
@@ -281,18 +311,21 @@ mod tests {
     fn brain_owns_no_executable_domain_tools() {
         let runtime = Runtime::new(std::env::current_dir().unwrap());
         assert!(runtime.tools().is_empty());
-        assert!(runtime
-            .status()
-            .capabilities
-            .iter()
-            .any(|item| item == "brain-only-boundary"));
+        assert!(
+            runtime
+                .status()
+                .capabilities
+                .iter()
+                .any(|item| item == "brain-only-boundary")
+        );
     }
-
 
     #[test]
     fn brain_policy_prepares_prompt_and_resolves_tool() {
         let runtime = Runtime::new(std::env::current_dir().unwrap());
-        let prompt = runtime.prepare_brain(serde_json::json!({"goal":"inspect","step":1})).unwrap();
+        let prompt = runtime
+            .prepare_brain(serde_json::json!({"goal":"inspect","step":1}))
+            .unwrap();
         assert!(prompt.system.contains("小鱼 XiaoYu"));
         assert!(prompt.system.contains("frame.intelligence"));
         assert!(prompt.system.contains("Memory"));
@@ -304,7 +337,15 @@ mod tests {
         assert!(prompt.system.contains("Goal-first"));
         assert!(prompt.system.contains("不要输出隐藏思维链"));
         assert!(prompt.system.contains("settings.*"));
-        let decision = runtime.resolve_brain(ModelTurn { tool: Some(xiaoyu_protocol::ModelToolCall { name: "system.info".into(), arguments: serde_json::json!({}) }), text: "先读取当前运行状态，再判断下一步。".into() }).unwrap();
+        let decision = runtime
+            .resolve_brain(ModelTurn {
+                tool: Some(xiaoyu_protocol::ModelToolCall {
+                    name: "system.info".into(),
+                    arguments: serde_json::json!({}),
+                }),
+                text: "先读取当前运行状态，再判断下一步。".into(),
+            })
+            .unwrap();
         assert_eq!(decision.kind, BrainDecisionKind::Tool);
         assert_eq!(decision.tool.as_deref(), Some("system.info"));
         assert_eq!(decision.message, "先读取当前运行状态，再判断下一步。");
@@ -313,15 +354,31 @@ mod tests {
     #[test]
     fn free_text_cannot_become_executable_intent() {
         let runtime = Runtime::new(std::env::current_dir().unwrap());
-        assert!(runtime.resolve_brain(ModelTurn { tool: None, text: "please run shell".into() }).is_err());
-        let decision = runtime.resolve_brain(ModelTurn { tool: None, text: r#"{"kind":"complete","message":"done"}"#.into() }).unwrap();
+        assert!(
+            runtime
+                .resolve_brain(ModelTurn {
+                    tool: None,
+                    text: "please run shell".into()
+                })
+                .is_err()
+        );
+        let decision = runtime
+            .resolve_brain(ModelTurn {
+                tool: None,
+                text: r#"{"kind":"complete","message":"done"}"#.into(),
+            })
+            .unwrap();
         assert_eq!(decision.kind, BrainDecisionKind::Complete);
     }
     #[test]
     fn rejects_procedural_wait_that_pushes_normal_next_step_to_user() {
         let runtime = Runtime::new(std::env::current_dir().unwrap());
-        let error = runtime.resolve_brain(ModelTurn { tool: None, text: r#"{"kind":"wait","message":"是否继续帮你修复？"}"#.into() }).unwrap_err();
+        let error = runtime
+            .resolve_brain(ModelTurn {
+                tool: None,
+                text: r#"{"kind":"wait","message":"是否继续帮你修复？"}"#.into(),
+            })
+            .unwrap_err();
         assert!(error.to_string().contains("must not wait"));
     }
-
 }

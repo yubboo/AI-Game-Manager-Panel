@@ -93,3 +93,7 @@ Windows Rust target 使用 MSVC ABI。开发助手现在不仅检查 Rustup/Carg
 ## 0.1.85 Shared Runtime Gate
 
 0.1.85 起 `internal/platform/runtime` 是唯一子进程/stdio 边界。Module Gate 会拒绝业务域新增 `exec.Command/CommandContext` 或直接创建 stdin/stdout/stderr pipe。长生命周期使用 Session，一次性内部调用使用 Run，非交互外部启动使用 StartDetached。
+
+## 0.2.8 XiaoYu Agent Bench / Dependency Snapshot
+
+GitHub Safety Job 单独执行 `go test ./internal/xiaoyu/host -run '^TestAgentBench' -count=1 -v`，当前覆盖 Domain Tool 失败后的 fallback recovery、mutation 后 read-back verification、审批后恢复原 Tool Call。Headless Job 同时上传 `agmp-dependency-locks` Artifact，收集真实联网 Runner 生成的 Go/Rust/Frontend/Electron 锁文件，下一版再切到 locked/frozen 构建。

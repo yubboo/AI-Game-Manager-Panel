@@ -16,6 +16,7 @@ const requiredFiles = [
   'frontend/src/app/router.ts',
   'frontend/src/features/xiaoyu/AIWorkbenchView.vue',
   'internal/xiaoyu/host/loop.go',
+  'internal/xiaoyu/host/bench_test.go',
   'internal/xiaoyu/host/brain_model.go',
   'internal/app/app_xiaoyu_tools.go',
   'runtime/README.md',
@@ -28,6 +29,7 @@ const requiredFiles = [
   'scripts/common/check-project-layout.mjs',
   'scripts/common/check-xiaoyu-harness.mjs',
   'scripts/common/check-xiaoyu-agent-runtime.mjs',
+  'scripts/common/check-xiaoyu-agent-bench.mjs',
   'scripts/windows/AIGameManagerPanel.ps1',
   'scripts/windows/tasks/Tasks.ps1',
   'docs/NAMING-CONVENTIONS.md',
@@ -43,10 +45,10 @@ for (const rel of requiredFiles) {
 }
 
 const requiredTrees = [
-  ['scripts/common', 16],
+  ['scripts/common', 17],
   ['scripts/windows', 8],
   ['rust/crates', 5],
-  ['internal/xiaoyu', 20],
+  ['internal/xiaoyu', 21],
   ['frontend/src', 25],
 ]
 

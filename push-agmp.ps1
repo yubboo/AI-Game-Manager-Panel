@@ -100,6 +100,7 @@ function Assert-ProjectIntegrity {
         'frontend/src/app/router.ts',
         'frontend/src/features/xiaoyu/AIWorkbenchView.vue',
         'internal/xiaoyu/host/loop.go',
+        'internal/xiaoyu/host/bench_test.go',
         'internal/xiaoyu/host/brain_model.go',
         'internal/app/app_xiaoyu_tools.go',
         'runtime/README.md',
@@ -114,6 +115,7 @@ function Assert-ProjectIntegrity {
         'scripts/common/check-project-layout.mjs',
         'scripts/common/check-xiaoyu-harness.mjs',
         'scripts/common/check-xiaoyu-agent-runtime.mjs',
+        'scripts/common/check-xiaoyu-agent-bench.mjs',
         'scripts/windows/AIGameManagerPanel.ps1',
         'scripts/windows/tasks/Tasks.ps1',
         'docs/NAMING-CONVENTIONS.md',
@@ -130,10 +132,10 @@ function Assert-ProjectIntegrity {
     }
 
     $requiredTrees = @(
-        @{ Path = 'scripts/common'; MinimumFiles = 16 },
+        @{ Path = 'scripts/common'; MinimumFiles = 17 },
         @{ Path = 'scripts/windows'; MinimumFiles = 8 },
         @{ Path = 'rust/crates'; MinimumFiles = 5 },
-        @{ Path = 'internal/xiaoyu'; MinimumFiles = 20 },
+        @{ Path = 'internal/xiaoyu'; MinimumFiles = 21 },
         @{ Path = 'frontend/src'; MinimumFiles = 25 }
     )
 

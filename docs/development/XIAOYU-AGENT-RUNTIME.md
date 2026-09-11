@@ -87,3 +87,13 @@ The following are intentionally not claimed as complete in 0.2.2:
 5. Provider-native hosted capabilities (web/computer/search) where an API exposes them.
 6. Subagent runtime and, later, XiaoYu Studio/Agent Teams.
 7. AGMP Agent Bench for task success, false-complete rate, intervention rate and recovery success.
+
+## 0.2.8 Agent Bench foundation
+
+Static Gates prove that contracts and capabilities exist; they do not prove that an autonomous run behaves well. The first deterministic Agent Bench therefore measures observable runtime behavior:
+
+- **fallback recovery**: a failed Domain Tool must not automatically end the task when a controlled general fallback can continue;
+- **mutation verification**: a successful state-changing Tool is not enough to declare success when a read/status Tool exists for the same domain;
+- **approval resume**: an approved action must resume the exact suspended Tool call and approval ID instead of silently replanning a different mutation.
+
+The benchmark entry point is `go test ./internal/xiaoyu/host -run '^TestAgentBench' -count=1 -v`. New Agent Runtime behavior should add a repeatable benchmark scenario when possible. The long-term metrics remain task success rate, false-complete rate, recovery success and unnecessary-human-intervention rate; Tool count, prompt length and agent-role count are not intelligence metrics.

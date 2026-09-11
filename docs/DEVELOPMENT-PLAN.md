@@ -5,6 +5,16 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.8：CI 全绿与 XiaoYu Agent Bench
+
+- 修复 Rust `cargo fmt --check` 唯一剩余红灯，让 Safety Job 能继续进入 `cargo check` / `cargo test`；
+- 建立首批 XiaoYu Agent Bench：fallback recovery、mutation verification、approval resume；
+- Agent Bench 作为单独 CI 步骤显示，不再只依赖静态 Gate 或“Tool 数量”；
+- Headless 联网 Runner 产出 `go.sum`、`Cargo.lock`、Frontend/Electron `pnpm-lock.yaml` 依赖快照 Artifact，为下一版冻结依赖；
+- 保持 0.2.7 已通过的 Windows Helper、Frontend Build、Linux Headless、Go test/vet 不回退。
+
+**冻结条件：** GitHub Actions 三个 Job 全绿；`XiaoYu Agent Bench` 独立 PASS；成功生成 `agmp-dependency-locks` Artifact。
+
 ## 0.2.7：可复现源码同步与命名治理
 
 - Windows 源码工作副本不再依赖 Explorer 大批量覆盖，新增 `AGMP-Sync.bat + sync-agmp.ps1`。

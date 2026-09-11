@@ -40,7 +40,7 @@ const (
 	// Name 与 Slogan 仅作为 configs/app.json 无法读取时的安全回退。
 	// 正常运行时，产品名称与标语均从统一配置中心读取，避免散落硬编码。
 	Name    = "AI游戏管理器面板"
-	Version = "0.2.7"
+	Version = "0.2.8"
 	Slogan  = "现代化智能 AI 一键游戏服务器部署与管理平台"
 )
 

@@ -79,6 +79,9 @@ jobs:
       - name: XiaoYu Agent Runtime gate
         run: node scripts/common/check-xiaoyu-agent-runtime.mjs
 
+      - name: XiaoYu Agent Bench gate
+        run: node scripts/common/check-xiaoyu-agent-bench.mjs
+
       - name: Multi-client AI parity gate
         run: node scripts/common/check-multi-client-ai.mjs
 
@@ -116,6 +119,9 @@ jobs:
 
       - name: Go vet
         run: go vet ./internal/... ./cmd/...
+
+      - name: XiaoYu Agent Bench
+        run: go test ./internal/xiaoyu/host -run '^TestAgentBench' -count=1 -v
 
       - name: Development license build-tag test
         run: go test -tags agmp_dev_license ./internal/system/license
@@ -174,7 +180,7 @@ jobs:
           node scripts/common/check-source-tree.mjs
           node scripts/common/check-naming.mjs
           node scripts/common/check-duplicates.mjs
-          node scripts/common/check-duplicates.mjs
+          node scripts/common/check-xiaoyu-agent-bench.mjs
 
       - name: Enforce headless AI parity
         run: |
@@ -182,6 +188,7 @@ jobs:
           node scripts/common/check-xiaoyu-model-center.mjs
           node scripts/common/check-xiaoyu-intelligence.mjs
           node scripts/common/check-xiaoyu-agent-runtime.mjs
+          node scripts/common/check-xiaoyu-agent-bench.mjs
           node scripts/common/check-multi-client-ai.mjs
           node scripts/common/check-headless-xiaoyu.mjs
           node scripts/common/check-organization-security.mjs
@@ -196,6 +203,10 @@ jobs:
         run: |
           pnpm install --no-frozen-lockfile
           pnpm run build
+
+      - name: Resolve Electron lock snapshot
+        working-directory: desktop/electron
+        run: pnpm install --lockfile-only --no-frozen-lockfile
 
       - name: Sync Web assets
         run: node scripts/common/sync-web-assets.mjs
@@ -218,6 +229,18 @@ jobs:
           test -x rust/target/release/xiaoyu
           test -x /tmp/agmp-headless
           test -f cmd/aigame-manager-web/web/index.html
+
+      - name: Upload dependency lock snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: agmp-dependency-locks
+          if-no-files-found: error
+          path: |
+            go.mod
+            go.sum
+            rust/Cargo.lock
+            frontend/pnpm-lock.yaml
+            desktop/electron/pnpm-lock.yaml
 
   windows-helper:
     name: Windows Helper + Encoding
@@ -259,3 +282,4 @@ jobs:
           node scripts/common/check-source-tree.mjs
           node scripts/common/check-naming.mjs
           node scripts/common/check-duplicates.mjs
+          node scripts/common/check-xiaoyu-agent-bench.mjs

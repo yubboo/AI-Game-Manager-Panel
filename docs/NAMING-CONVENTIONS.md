@@ -226,7 +226,7 @@ docs/PROJECT-HISTORY.md
 
 ```text
 agmp-0.2.4.zip
-agmp-0.2.7.zip
+agmp-0.2.8.zip
 ```
 
 禁止长描述包名：
@@ -288,9 +288,9 @@ CI
 Public build artifacts should also remain short and machine-friendly. Prefer:
 
 ```text
-agmp-0.2.7-win-x64-setup.exe
-agmp-0.2.7-win-x64-portable.zip
-agmp-0.2.7-linux-amd64.tar.gz
+agmp-0.2.8-win-x64-setup.exe
+agmp-0.2.8-win-x64-portable.zip
+agmp-0.2.8-linux-amd64.tar.gz
 ```
 
 Do not embed long marketing descriptions in filenames. Put descriptive text in Release Notes / GitHub Release metadata instead.

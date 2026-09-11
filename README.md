@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.7**  
+当前版本：**0.2.8**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 
 ## Windows 源码开发/发行构建入口
@@ -45,9 +45,9 @@ build/
 
 
 
-## 0.2.7 CI 收敛 / Runtime 输出完整性
+## 0.2.8 CI 收敛 / Runtime 输出完整性
 
-0.2.7 聚焦 GitHub Actions 的真实失败，不扩展新业务功能。修复 Process Runtime 在 `StdoutPipe/StderrPipe` 尚未完全读取时提前 `cmd.Wait()` 的竞态：现在先等待输出读取 goroutine 完成，再回收进程，确保 `Session.Wait()` 返回后 `History()` 已包含最终输出。对应 Runtime Manager 测试增加显式 ready 同步并进行重复压力验证。
+0.2.8 聚焦 GitHub Actions 的真实失败，不扩展新业务功能。修复 Process Runtime 在 `StdoutPipe/StderrPipe` 尚未完全读取时提前 `cmd.Wait()` 的竞态：现在先等待输出读取 goroutine 完成，再回收进程，确保 `Session.Wait()` 返回后 `History()` 已包含最终输出。对应 Runtime Manager 测试增加显式 ready 同步并进行重复压力验证。
 
 源码同步与一键推送新增 **Duplicate Source Gate**。已重命名的 `server_xiaoyu_models_test.go` / `server_xiaoyu_models_release_test.go` 会在同步、提交前自动清理；同一 Go package 若出现内容完全相同的 `*_test.go` 文件会直接拒绝推送，避免旧文件残留导致测试函数 redeclared。
 

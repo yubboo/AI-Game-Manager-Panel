@@ -1,10 +1,10 @@
-use xiaoyu_protocol::{ApprovalMode, JsonRpcRequest, JsonRpcResponse, RiskLevel};
-use xiaoyu_core::{Runtime, RUNTIME_VERSION};
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
+use xiaoyu_core::{RUNTIME_VERSION, Runtime};
+use xiaoyu_protocol::{ApprovalMode, JsonRpcRequest, JsonRpcResponse, RiskLevel};
 
 #[derive(Debug, Parser)]
 #[command(name = "xiaoyu", version = RUNTIME_VERSION, about = "小鱼 · AGMP Intelligence Core / CLI")]
@@ -93,14 +93,20 @@ fn dispatch(runtime: &Runtime, request: JsonRpcRequest) -> JsonRpcResponse {
             )?;
             Ok(serde_json::to_value(runtime.create_session(cwd, mode)?)?)
         }
-        "brain/prepare" => Ok(serde_json::to_value(runtime.prepare_brain(request.params.clone())?)?),
+        "brain/prepare" => Ok(serde_json::to_value(
+            runtime.prepare_brain(request.params.clone())?,
+        )?),
         "brain/resolve" => {
             let turn: xiaoyu_protocol::ModelTurn = serde_json::from_value(request.params.clone())?;
             Ok(serde_json::to_value(runtime.resolve_brain(turn)?)?)
         }
         "policy/preview" => {
             let risk: RiskLevel = serde_json::from_value(
-                request.params.get("risk").cloned().unwrap_or(json!("system")),
+                request
+                    .params
+                    .get("risk")
+                    .cloned()
+                    .unwrap_or(json!("system")),
             )?;
             let mode: ApprovalMode = serde_json::from_value(
                 request

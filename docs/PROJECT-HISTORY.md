@@ -4,6 +4,24 @@
 
 > 版本顺序采用 `0.2.1 ... 0.2.100 -> 0.3.0`。新版本记录追加到本文件顶部。
 
+## AI-Game-Manager-Panel 0.2.8
+
+### CI 全绿收口与 XiaoYu Agent Bench
+
+- 0.2.7 GitHub Actions 已确认 Windows Helper + Encoding、Linux Headless + Web + XiaoYu 全绿；Safety Job 的 Go test、Go vet、开发许可证测试也全部通过，唯一剩余红灯为 Rust `cargo fmt --check`。
+- 按 GitHub Rustfmt 输出修正 `xiaoyu-core` / `xiaoyu-protocol` 源码格式，目标是不再让格式问题阻断后续 `cargo check` / `cargo test`。
+- 新增 `internal/xiaoyu/host/bench_test.go` 与 `scripts/common/check-xiaoyu-agent-bench.mjs`，把“领域路径失败后切换通用 fallback”“mutation 后必须读回验证”“审批后恢复原 Tool Call”变成独立 Agent Bench。
+- GitHub Safety Job 新增可见的 `XiaoYu Agent Bench` 测试步骤；Agent Bench 不用 Tool 数量衡量智能，而是验证 Agent Loop 是否保持恢复、验证和审批边界。
+- Headless Job 生成 Go/Rust/Frontend/Electron 依赖锁快照并上传 `agmp-dependency-locks` Artifact；下一版从真实联网 Runner 收回 `go.sum`、`Cargo.lock`、两个 `pnpm-lock.yaml`，正式切换到 locked/frozen 构建。
+- 清理 Headless CI 中重复执行的 Duplicate Source Gate。
+
+### 下一阶段
+
+- 以 0.2.8 GitHub Actions 首次全绿为冻结条件。
+- 下载 `agmp-dependency-locks` Artifact，进入 0.2.9 的依赖冻结与 `--locked` / `--frozen-lockfile`。
+- 完成可复现依赖基线后，再继续 Windows Wails/Electron 真编译矩阵与 XiaoYu Tool Search / Jobs / Reflection。
+
+---
 ## AI-Game-Manager-Panel 0.2.7
 
 ### CI 收敛

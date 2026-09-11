@@ -295,6 +295,8 @@ Linux Release（涉及 Linux 代码/发布脚本时）
 - 小鱼是默认主入口；传统可视化页面和手动终端是辅助/兜底，不得反过来让 AI 变成装饰聊天框。
 - 小鱼核心 Runtime 与 Go Core 必须保持职责分离：Rust 不复制 Steam/DST/实例/授权/文件/Process 业务，Go 不重复实现 Brain/Planner/Memory。Process/stdio/PTY 的平台实现统一归 `internal/platform/runtime`。
 - Rust wire protocol 当前固定为 `xiaoyu.v1`，UI/Go/Rust 三层字段变更必须同步并有 Gate。
+- XiaoYu 智能能力不能只靠静态 Prompt/Gate 验证；`internal/xiaoyu/host/bench_test.go` 是首批 Agent Bench 基线，至少覆盖 fallback recovery、mutation 后验证、approval resume。新增 Agent Runtime 行为必须优先增加可重复 Bench。
+- Agent Bench 测量“目标是否被正确完成/恢复/验证并尊重审批边界”，禁止以 Tool 数量、Prompt 长度或角色数量冒充智能提升。
 - Tool 必须声明风险级别；Agent 不得直接执行未注册能力。
 - `ask/risk/full` 是审批策略，不等于“模型想做什么都能做”；`full` 仍只对明确注册并允许的 Tool 生效。
 - 0.1.74 的 `process.run` 是一次性受控命令，不得在文档中冒充持久 PTY。
