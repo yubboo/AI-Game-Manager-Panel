@@ -5,7 +5,7 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
-## 0.2.6：可复现源码同步与命名治理
+## 0.2.7：可复现源码同步与命名治理
 
 - Windows 源码工作副本不再依赖 Explorer 大批量覆盖，新增 `AGMP-Sync.bat + sync-agmp.ps1`。
 - Source Tree Gate / Naming Gate 同时进入本地一键推送与 GitHub Actions。

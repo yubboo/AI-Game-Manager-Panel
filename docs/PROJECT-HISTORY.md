@@ -4,6 +4,25 @@
 
 > 版本顺序采用 `0.2.1 ... 0.2.100 -> 0.3.0`。新版本记录追加到本文件顶部。
 
+## AI-Game-Manager-Panel 0.2.7
+
+### CI 收敛
+
+- 修复 Linux/CI 可复现的 Process Runtime 输出竞态：`Session.waitLoop` 先等待 stdout/stderr reader 完整 drain，再调用 `cmd.Wait()` 回收子进程。`Session.Wait()` 成功后，`History()` 现在保证可读取最终输出。
+- `TestManagerConvenienceAPIsAndStopAll` 增加显式 `ready` 同步，移除依赖调度时序的偶发失败；本地对该测试连续运行 100 次通过。
+- 新增 `scripts/common/check-duplicates.mjs`：禁止已重命名的旧 Model Center 测试文件回归，并检测同一 Go package 下内容完全相同的 `*_test.go`，防止重复 Test 函数声明。
+- `sync-agmp.ps1` 与 `push-agmp.ps1` 都会主动删除 `server_xiaoyu_models_test.go` / `server_xiaoyu_models_release_test.go` 旧路径，解决 Git 工作副本覆盖更新后旧文件残留。
+- Go 基线从 1.23 提升至 1.25，与 Wails v2.15.0 的最低 Go 版本对齐。GitHub Actions 在 Go test / Linux Headless build 前执行 `go mod tidy` 与 `go mod download`，补齐旧 `go.sum` 不完整导致的传递依赖校验失败。
+- Duplicate Source Gate 已接入 Linux Safety、Linux Headless、Windows Helper 和本地一键推送。
+
+### 验证
+
+- 0.2.6 GitHub Actions 已确认：Windows Helper + Encoding 全绿、Frontend `vue-tsc + vite build` 通过、Rust XiaoYu `cargo build --release` 通过、Linux AGMP Core build 通过。
+- 0.2.6 剩余红灯已定位为：旧 Model Center 测试文件残留、Wails 传递依赖 `go.sum` 缺失、Process Runtime history 偶发为空。本版逐项处理。
+- 本地 `TestManagerConvenienceAPIsAndStopAll -count=100`：PASS。
+- 本版目标：推送后让 GitHub Actions 首次全绿；全绿后再冻结 `Cargo.lock` / `pnpm-lock.yaml` 与完整 Go module graph。
+
+---
 ## AI-Game-Manager-Panel 0.2.6
 
 ### 修复
@@ -22,7 +41,7 @@
 
 ### 下一阶段
 
-- 推送 0.2.6 后以 GitHub Actions 的真实结果继续修复，直到 Safety、Linux Headless + Web + XiaoYu、Windows Helper + Encoding 全绿。
+- 推送 0.2.7 后以 GitHub Actions 的真实结果继续修复，直到 Safety、Linux Headless + Web + XiaoYu、Windows Helper + Encoding 全绿。
 
 ---
 

@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.6**  
+当前版本：**0.2.7**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 
 ## Windows 源码开发/发行构建入口
@@ -45,15 +45,13 @@ build/
 
 
 
-## 0.2.6 Windows 启动 / 源码同步 / 命名规范
+## 0.2.7 CI 收敛 / Runtime 输出完整性
 
-0.2.6 在 0.2.4 完整源码保护基础上继续修复 Windows 源码工作流：根 `AI-Game-Manager-Panel.bat` 在关键 PowerShell 入口缺失时会明确报错并暂停，不再双击后一闪而过；`AGMP-GitHub.bat` 继续保持 ASCII + CRLF + 无 BOM。
+0.2.7 聚焦 GitHub Actions 的真实失败，不扩展新业务功能。修复 Process Runtime 在 `StdoutPipe/StderrPipe` 尚未完全读取时提前 `cmd.Wait()` 的竞态：现在先等待输出读取 goroutine 完成，再回收进程，确保 `Session.Wait()` 返回后 `History()` 已包含最终输出。对应 Runtime Manager 测试增加显式 ready 同步并进行重复压力验证。
 
-新增 `AGMP-Sync.bat + sync-agmp.ps1`。推荐把新版源码完整解压到临时目录后运行 `AGMP-Sync.bat`，由 `robocopy` 稳定同步到 `H:\一键部署\AI-Game-Manager-Panel`，保留目标 `.git` 和未跟踪的 runtime/实例/备份/日志等本机数据，同时清理新版已经删除的旧 Git 跟踪源码。这样不再依赖 Windows Explorer 拖拽覆盖数百个文件。
+源码同步与一键推送新增 **Duplicate Source Gate**。已重命名的 `server_xiaoyu_models_test.go` / `server_xiaoyu_models_release_test.go` 会在同步、提交前自动清理；同一 Go package 若出现内容完全相同的 `*_test.go` 文件会直接拒绝推送，避免旧文件残留导致测试函数 redeclared。
 
-新增 [`docs/NAMING-CONVENTIONS.md`](docs/NAMING-CONVENTIONS.md) 与 Naming Gate：普通源码文件名默认上限 40 字符、测试文件 48 字符；仓库相对路径超过 180 字符告警、超过 220 字符直接失败。目录本身视为命名空间，禁止为了“描述完整”重复父目录语义。源码包继续统一为 `agmp-<version>.zip`。
-
-GitHub/本地检查新增 `check-source-tree.mjs` 与 `check-naming.mjs`。一键推送前会同时检查源码完整性、关键删除、命名路径、安全凭据与 GitHub Safety Gate。
+Go 基线提升到 **1.25.0**，与 Wails v2.15.0 的最低要求一致；GitHub CI 在 Go 测试与 Linux Headless 构建前执行 `go mod tidy + go mod download`，消除旧 `go.sum` 只含 Wails 主模块两行导致的传递依赖校验失败。依赖锁文件的完全冻结将在 CI 首次全绿后单独收敛，避免在未验证依赖图时提交伪锁文件。
 
 版本历史统一维护在 [`docs/PROJECT-HISTORY.md`](docs/PROJECT-HISTORY.md)。XiaoYu Agent Runtime 当前设计说明见 [`docs/development/XIAOYU-AGENT-RUNTIME.md`](docs/development/XIAOYU-AGENT-RUNTIME.md)。
 

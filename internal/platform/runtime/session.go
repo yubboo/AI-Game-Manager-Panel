@@ -153,8 +153,13 @@ func (s *Session) readLoop(source OutputSource, reader io.ReadCloser) {
 }
 
 func (s *Session) waitLoop(cmd *exec.Cmd) {
-	err := cmd.Wait()
+	// StdoutPipe/StderrPipe must be fully drained before Wait closes their file
+	// descriptors. Waiting for the readers first also guarantees History() sees
+	// every final line once Session.Wait reports completion. The child closes
+	// its pipe handles when it exits, so the readers reach EOF independently of
+	// cmd.Wait and cannot deadlock here.
 	s.readWG.Wait()
+	err := cmd.Wait()
 
 	exitCode := -1
 	if cmd.ProcessState != nil {

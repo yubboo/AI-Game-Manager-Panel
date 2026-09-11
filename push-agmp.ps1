@@ -108,6 +108,7 @@ function Assert-ProjectIntegrity {
         'rust/crates/xiaoyu-core/src/lib.rs',
         'rust/crates/xiaoyu-protocol/Cargo.toml',
         'scripts/common/check-github-safety.mjs',
+        'scripts/common/check-duplicates.mjs',
         'scripts/common/check-source-tree.mjs',
         'scripts/common/check-naming.mjs',
         'scripts/common/check-project-layout.mjs',
@@ -129,7 +130,7 @@ function Assert-ProjectIntegrity {
     }
 
     $requiredTrees = @(
-        @{ Path = 'scripts/common'; MinimumFiles = 15 },
+        @{ Path = 'scripts/common'; MinimumFiles = 16 },
         @{ Path = 'scripts/windows'; MinimumFiles = 8 },
         @{ Path = 'rust/crates'; MinimumFiles = 5 },
         @{ Path = 'internal/xiaoyu'; MinimumFiles = 20 },
@@ -236,6 +237,27 @@ function Remove-LegacyHistoryFiles {
     }
 }
 
+function Remove-LegacyRenamedFiles {
+    # Known historical paths that were renamed to shorter canonical names.
+    # Leaving both old and new Go test files can redeclare the same functions.
+    $legacy = @(
+        'internal\bridge\httpapi\server_xiaoyu_models_test.go',
+        'internal\bridge\httpapi\server_xiaoyu_models_release_test.go'
+    )
+    $removed = $false
+    foreach ($rel in $legacy) {
+        $full = Join-Path $ProjectRoot $rel
+        if (Test-Path -LiteralPath $full -PathType Leaf) {
+            if (-not $removed) {
+                Write-Step '清理已重命名的旧源码文件'
+                $removed = $true
+            }
+            Remove-Item -LiteralPath $full -Force
+            Write-Host ('  - 删除旧路径：' + $rel) -ForegroundColor DarkGray
+        }
+    }
+}
+
 function Assert-SourceNotIgnored {
     # 这些目录名称同时也是运行数据名称，最容易被错误的 .gitignore 规则误伤。
     $critical = @(
@@ -337,6 +359,7 @@ function Test-RepositorySafety([ValidateSet('tracked','staged','candidate')] [st
         $nodeGates = @(
             @{ Path = 'scripts\common\check-source-tree.mjs'; Name = 'Source Tree Gate' },
             @{ Path = 'scripts\common\check-naming.mjs'; Name = 'Naming Gate' },
+            @{ Path = 'scripts\common\check-duplicates.mjs'; Name = 'Duplicate Source Gate' },
             @{ Path = 'scripts\common\check-github-safety.mjs'; Name = 'GitHub Safety Gate' }
         )
         foreach ($item in $nodeGates) {
@@ -373,6 +396,7 @@ function Sync-Remote {
 }
 
 function Stage-And-Commit([string]$Message) {
+    Remove-LegacyRenamedFiles
     Remove-LegacyHistoryFiles
     Test-RepositorySafety 'candidate'
     Write-Step '暂存源码'

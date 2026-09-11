@@ -39,6 +39,7 @@ $required = @(
     'internal\xiaoyu\host\loop.go',
     'rust\Cargo.toml',
     'scripts\common\check-source-tree.mjs',
+    'scripts\common\check-duplicates.mjs',
     'scripts\windows\AIGameManagerPanel.ps1'
 )
 foreach ($rel in $required) {
@@ -96,6 +97,20 @@ if ((Test-Path -LiteralPath (Join-Path $Destination '.git')) -and (Get-Command g
             Remove-Item -LiteralPath $targetFile -Force
             Write-Host ('  - 移除旧源码：' + $rel) -ForegroundColor DarkGray
         }
+    }
+}
+
+# 0.2.6 之前存在过的长文件名已重命名；即使旧文件未被 Git 正确识别为 tracked，
+# 也必须从工作副本移除，否则 Go 会因为重复 Test 函数定义而编译失败。
+$legacyRenamed = @(
+    'internal\bridge\httpapi\server_xiaoyu_models_test.go',
+    'internal\bridge\httpapi\server_xiaoyu_models_release_test.go'
+)
+foreach ($rel in $legacyRenamed) {
+    $targetFile = Join-Path $Destination $rel
+    if (Test-Path -LiteralPath $targetFile -PathType Leaf) {
+        Remove-Item -LiteralPath $targetFile -Force
+        Write-Host ('  - 移除旧重命名文件：' + $rel) -ForegroundColor DarkGray
     }
 }
 

@@ -24,6 +24,7 @@ const requiredFiles = [
   'rust/crates/xiaoyu-core/src/lib.rs',
   'rust/crates/xiaoyu-protocol/Cargo.toml',
   'scripts/common/check-github-safety.mjs',
+  'scripts/common/check-duplicates.mjs',
   'scripts/common/check-project-layout.mjs',
   'scripts/common/check-xiaoyu-harness.mjs',
   'scripts/common/check-xiaoyu-agent-runtime.mjs',
@@ -42,7 +43,7 @@ for (const rel of requiredFiles) {
 }
 
 const requiredTrees = [
-  ['scripts/common', 15],
+  ['scripts/common', 16],
   ['scripts/windows', 8],
   ['rust/crates', 5],
   ['internal/xiaoyu', 20],

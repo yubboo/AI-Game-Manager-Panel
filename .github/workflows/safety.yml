@@ -43,6 +43,9 @@ jobs:
       - name: Naming and path gate
         run: node scripts/common/check-naming.mjs
 
+      - name: Duplicate source gate
+        run: node scripts/common/check-duplicates.mjs
+
       - name: GitHub secret/file safety gate
         run: node scripts/common/check-github-safety.mjs
 
@@ -103,8 +106,10 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
 
-      - name: Download Go modules
-        run: go mod download
+      - name: Normalize and download Go modules
+        run: |
+          go mod tidy
+          go mod download
 
       - name: Go tests
         run: go test ./internal/... ./cmd/...
@@ -168,6 +173,8 @@ jobs:
         run: |
           node scripts/common/check-source-tree.mjs
           node scripts/common/check-naming.mjs
+          node scripts/common/check-duplicates.mjs
+          node scripts/common/check-duplicates.mjs
 
       - name: Enforce headless AI parity
         run: |
@@ -193,8 +200,10 @@ jobs:
       - name: Sync Web assets
         run: node scripts/common/sync-web-assets.mjs
 
-      - name: Download Go modules
-        run: go mod download
+      - name: Normalize and download Go modules
+        run: |
+          go mod tidy
+          go mod download
 
       - name: Build Linux headless AGMP Core
         run: go build -tags agmp_dev_license -trimpath -o /tmp/agmp-headless ./cmd/aigame-manager-web
@@ -249,3 +258,4 @@ jobs:
         run: |
           node scripts/common/check-source-tree.mjs
           node scripts/common/check-naming.mjs
+          node scripts/common/check-duplicates.mjs

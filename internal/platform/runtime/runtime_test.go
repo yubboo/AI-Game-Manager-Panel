@@ -211,6 +211,24 @@ func TestManagerConvenienceAPIsAndStopAll(t *testing.T) {
 	if _, _, err := manager.Subscribe("missing", 1); !errors.Is(err, ErrSessionNotFound) {
 		t.Fatalf("missing subscription should fail, got %v", err)
 	}
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		history, err := manager.History("stream", 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ready := false
+		for _, line := range history {
+			if line.Source == OutputStdout && line.Text == "ready" {
+				ready = true
+				break
+			}
+		}
+		if ready {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 	if err := manager.SendLine("stream", "manager"); err != nil {
 		t.Fatal(err)
 	}
