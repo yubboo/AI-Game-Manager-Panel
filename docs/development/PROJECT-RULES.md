@@ -16,3 +16,9 @@
 - The only source handoff artifact names are `agmp-X.Y.Z.zip` and `agmp-X.Y.Z.sha256.txt`.
 - Forbidden handoff suffixes include `hotfix`, `final`, `fixed`, `new`, `v2`, timestamps, and date tags.
 - The SHA-256 companion must be regenerated every time the package bytes change.
+
+### Windows helper UX rule
+
+- `AGMP-GitHub.bat` must keep the console open after both success and failure so the user can read the final result.
+- The recommended `1. 一键推送` action must be visually highlighted in the PowerShell menu.
+- Do not rely on the user reopening a closed console to discover push or Gate results.

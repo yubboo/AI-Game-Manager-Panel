@@ -64,6 +64,7 @@ jobs:
         with:
           node-version: 22
       - run: node scripts/gates/check-no-go.mjs
+      - run: node scripts/gates/check-helper-ux.mjs
       - run: node scripts/common/check-naming.mjs
       - run: node scripts/common/check-github-safety.mjs
       - name: Ignored build cache must not trip GitHub Safety

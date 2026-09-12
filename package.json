@@ -9,7 +9,7 @@
     "test:core": "node -e \"require('fs').rmSync('.tmp-test',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node scripts/ci/run-core-tests.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build:server": "tsc -p tsconfig.build.json",
-    "gate": "node scripts/gates/check-architecture.mjs && node scripts/gates/check-no-go.mjs && node scripts/gates/check-ui-freeze.mjs && node scripts/common/check-naming.mjs"
+    "gate": "node scripts/gates/check-architecture.mjs && node scripts/gates/check-no-go.mjs && node scripts/gates/check-ui-freeze.mjs && node scripts/gates/check-helper-ux.mjs && node scripts/common/check-naming.mjs"
   },
   "devDependencies": {
     "@types/node": "24.10.0",

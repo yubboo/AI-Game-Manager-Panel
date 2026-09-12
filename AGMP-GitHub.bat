@@ -9,11 +9,15 @@ if not exist "%SCRIPT%" (
 )
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%"
 set "RC=%ERRORLEVEL%"
-if not "%RC%"=="0" (
+if "%RC%"=="0" (
+  echo.
+  echo [OK] AGMP GitHub helper finished successfully.
+  echo This window will stay open so you can review the result.
+) else (
   echo.
   echo [ERROR] AGMP GitHub helper exited with code %RC%.
   echo Please keep this window open and send the red PowerShell error if needed.
-  echo.
-  pause
 )
+echo.
+pause
 exit /b %RC%

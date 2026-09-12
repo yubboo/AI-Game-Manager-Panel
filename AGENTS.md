@@ -32,3 +32,9 @@ Development package -> user extracts to `H:\一键部署\agmp-<version>` -> `AGM
 - After a version is pushed/frozen, a source correction increments the patch version (for example `0.4.0` -> `0.4.1`).
 - Handoff artifacts are exactly `agmp-<version>.zip` and `agmp-<version>.sha256.txt`.
 - Never create handoff names containing `hotfix`, `final`, `fixed`, `new`, `v2`, date suffixes, or similar ad-hoc labels.
+
+### Windows helper UX rule
+
+- `AGMP-GitHub.bat` must keep the console open after both success and failure so the user can read the final result.
+- The recommended `1. 一键推送` action must be visually highlighted in the PowerShell menu.
+- Do not rely on the user reopening a closed console to discover push or Gate results.

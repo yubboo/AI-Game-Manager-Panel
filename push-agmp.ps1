@@ -11,10 +11,10 @@ Write-Host '====================================================================
 Write-Host '  AGMP GitHub 一键推送助手' -ForegroundColor White
 Write-Host '  架构：TypeScript Agent + Rust Native · Go=0' -ForegroundColor DarkGray
 Write-Host '====================================================================' -ForegroundColor DarkGray
-Write-Host '  1. [一键推送]  安全检查 > 提交 > Push'
-Write-Host '  2. [查看状态]  git status / 最近提交'
-Write-Host '  3. [仅安全检查]'
-Write-Host '  0. 退出'
+Write-Host '  1. [一键推送]  安全检查 > 提交 > Push  ← 推荐' -ForegroundColor Green
+Write-Host '  2. [查看状态]  git status / 最近提交' -ForegroundColor Gray
+Write-Host '  3. [仅安全检查]' -ForegroundColor Gray
+Write-Host '  0. 退出' -ForegroundColor DarkGray
 $choice=Read-Host '请选择'
 if($choice -eq '0'){exit 0}
 if(-not(Get-Command git.exe -ErrorAction SilentlyContinue)){Fail '未找到 git.exe'}
@@ -27,7 +27,7 @@ function Safety{
     Remove-Item -LiteralPath $generated -Recurse -Force -ErrorAction SilentlyContinue
   }
   Step '运行 0.4.0 Architecture / No-Go / Naming / GitHub Safety Gates'
-  foreach($script in @('scripts/gates/check-architecture.mjs','scripts/gates/check-no-go.mjs','scripts/gates/check-ui-freeze.mjs','scripts/common/check-naming.mjs','scripts/common/check-github-safety.mjs')){& node.exe $script;if($LASTEXITCODE -ne 0){Fail ('Gate 失败：'+$script)}}
+  foreach($script in @('scripts/gates/check-architecture.mjs','scripts/gates/check-no-go.mjs','scripts/gates/check-ui-freeze.mjs','scripts/gates/check-helper-ux.mjs','scripts/common/check-naming.mjs','scripts/common/check-github-safety.mjs')){& node.exe $script;if($LASTEXITCODE -ne 0){Fail ('Gate 失败：'+$script)}}
   $goFiles=@(Get-ChildItem -Recurse -File -Filter '*.go' -ErrorAction SilentlyContinue | Where-Object {$_.FullName -notmatch '\\node_modules\\|\\runtime\\|\\target\\'})
   if($goFiles.Count -gt 0){Fail ('发现 Go 源码：'+$goFiles[0].FullName)}
   Ok '安全检查通过。'
