@@ -139,3 +139,9 @@ Static Gates prove that contracts and capabilities exist; they do not prove that
 - **approval resume**: an approved action must resume the exact suspended Tool call and approval ID instead of silently replanning a different mutation.
 
 The benchmark entry point is `go test ./internal/xiaoyu/host -run '^TestAgentBench' -count=1 -v`. New Agent Runtime behavior should add a repeatable benchmark scenario when possible. The long-term metrics remain task success rate, false-complete rate, recovery success and unnecessary-human-intervention rate; Tool count, prompt length and agent-role count are not intelligence metrics.
+
+## 0.2.11 Persistent Go ↔ Rust Worker
+
+0.2.11 将 `tools/search`、Brain policy、Session 与 Job RPC 统一复用一个长期 `xiaoyu rpc` 子进程。Go Host 负责监督生命周期和最终审批；Rust Runtime 负责 stateful Agent primitives。RPC 当前串行执行以保证状态一致，超时/断管会回收 Worker，下一次调用再建立干净实例。
+
+这一步仍不等于把模型可见 `shell.exec` 直接切到 Rust。下一阶段只迁移**已经通过 Host Approval**的长任务，并保留 Domain Tool 优先和执行后验证。

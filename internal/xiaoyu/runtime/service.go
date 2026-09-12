@@ -1,6 +1,6 @@
 // Package xiaoyuruntime connects AGMP to XiaoYu's Rust Agent Runtime.
 //
-// 0.2.10 continues the Rust-first Agent Runtime migration with stateful Session/Job primitives. Go remains the source
+// 0.2.11 adds a supervised persistent Go↔Rust RPC worker on top of the stateful Session/Job primitives. Go remains the source
 // of truth for AGMP domain services, while generic Agent capabilities move to
 // Rust incrementally. Existing Go execution paths remain compatible until the
 // Rust equivalents have protocol tests and Agent Bench coverage.
@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	platformruntime "github.com/yubboo/AI-Game-Manager-Panel/internal/platform/runtime"
@@ -107,6 +108,13 @@ type Service struct {
 	root           string
 	binaryOverride string
 	timeout        time.Duration
+
+	// rpcMu serializes JSON-RPC frames over one long-lived stdio worker. The
+	// Rust Runtime owns stateful Session/Job registries, so a fresh child per
+	// request would destroy the very state these APIs are meant to preserve.
+	rpcMu      sync.Mutex
+	worker     *rpcWorker
+	requestSeq uint64
 }
 
 func New(options Options) *Service {
@@ -209,13 +217,138 @@ func (s *Service) Resolve(ctx context.Context, turn xiaoyuhost.ModelTurn) (xiaoy
 	return value, nil
 }
 
-func (s *Service) runRPC(parent context.Context, method string, params any, target any) error {
-	path, err := s.binaryPath()
-	if err != nil {
+func (s *Service) Start(ctx context.Context) error {
+	var status struct {
+		Protocol string `json:"protocol"`
+		Ready    bool   `json:"ready"`
+	}
+	if err := s.runRPC(ctx, "initialize", map[string]any{}, &status); err != nil {
 		return err
 	}
-	request := map[string]any{"jsonrpc": "2.0", "id": "agmp", "method": method, "params": params}
-	raw, err := json.Marshal(request)
+	if status.Protocol != ProtocolVersion {
+		return fmt.Errorf("XiaoYu Persistent Runtime Worker 协议不匹配：runtime=%s host=%s", status.Protocol, ProtocolVersion)
+	}
+	if !status.Ready {
+		return errors.New("XiaoYu Persistent Runtime Worker 尚未就绪")
+	}
+	return nil
+}
+
+// Close terminates the supervised Rust stdio worker. It is safe to call more
+// than once and does not affect AGMP domain services.
+func (s *Service) Close() {
+	s.rpcMu.Lock()
+	defer s.rpcMu.Unlock()
+	s.stopWorkerLocked()
+}
+
+// SessionInfo and Job* structures mirror xiaoyu.v1. They are Host-internal
+// primitives in 0.2.11; model-visible execution still goes through AGMP Tool
+// contracts and the existing RBAC/approval boundary.
+type SessionInfo struct {
+	ID           string `json:"id"`
+	Cwd          string `json:"cwd"`
+	ApprovalMode string `json:"approvalMode"`
+}
+
+type JobStartRequest struct {
+	SessionID      string   `json:"sessionId,omitempty"`
+	Executable     string   `json:"executable"`
+	Arguments      []string `json:"arguments,omitempty"`
+	Cwd            string   `json:"cwd,omitempty"`
+	MaxOutputBytes int      `json:"maxOutputBytes,omitempty"`
+	HostAuthorized bool     `json:"hostAuthorized"`
+}
+
+type JobSnapshot struct {
+	ID              string   `json:"id"`
+	SessionID       string   `json:"sessionId,omitempty"`
+	Executable      string   `json:"executable"`
+	Arguments       []string `json:"arguments"`
+	Cwd             string   `json:"cwd"`
+	State           string   `json:"state"`
+	PID             *int     `json:"pid,omitempty"`
+	ExitCode        *int     `json:"exitCode,omitempty"`
+	CreatedAt       uint64   `json:"createdAt"`
+	StartedAt       *uint64  `json:"startedAt,omitempty"`
+	FinishedAt      *uint64  `json:"finishedAt,omitempty"`
+	OutputTruncated bool     `json:"outputTruncated"`
+}
+
+type JobOutputChunk struct {
+	Sequence uint64 `json:"sequence"`
+	Stream   string `json:"stream"`
+	Text     string `json:"text"`
+}
+
+type JobOutputResponse struct {
+	ID         string           `json:"id"`
+	Chunks     []JobOutputChunk `json:"chunks"`
+	NextCursor uint64           `json:"nextCursor"`
+	Truncated  bool             `json:"truncated"`
+}
+
+func (s *Service) CreateSession(ctx context.Context, cwd, approvalMode string) (SessionInfo, error) {
+	var value SessionInfo
+	err := s.runRPC(ctx, "session/create", map[string]any{"cwd": cwd, "approvalMode": approvalMode}, &value)
+	return value, err
+}
+
+func (s *Service) GetSession(ctx context.Context, id string) (SessionInfo, error) {
+	var value SessionInfo
+	err := s.runRPC(ctx, "session/get", map[string]any{"id": id}, &value)
+	return value, err
+}
+
+func (s *Service) ListSessions(ctx context.Context) ([]SessionInfo, error) {
+	var value []SessionInfo
+	err := s.runRPC(ctx, "session/list", map[string]any{}, &value)
+	return value, err
+}
+
+func (s *Service) CloseSession(ctx context.Context, id string) (bool, error) {
+	var value struct {
+		Closed bool `json:"closed"`
+	}
+	err := s.runRPC(ctx, "session/close", map[string]any{"id": id}, &value)
+	return value.Closed, err
+}
+
+func (s *Service) StartJob(ctx context.Context, request JobStartRequest) (JobSnapshot, error) {
+	var value JobSnapshot
+	if !request.HostAuthorized {
+		return value, errors.New("XiaoYu Rust Job 必须先经过 Host 授权")
+	}
+	err := s.runRPC(ctx, "jobs/start", request, &value)
+	return value, err
+}
+
+func (s *Service) GetJob(ctx context.Context, id string) (JobSnapshot, error) {
+	var value JobSnapshot
+	err := s.runRPC(ctx, "jobs/get", map[string]any{"id": id}, &value)
+	return value, err
+}
+
+func (s *Service) ListJobs(ctx context.Context) ([]JobSnapshot, error) {
+	var value []JobSnapshot
+	err := s.runRPC(ctx, "jobs/list", map[string]any{}, &value)
+	return value, err
+}
+
+func (s *Service) JobOutput(ctx context.Context, id string, after uint64, limit int) (JobOutputResponse, error) {
+	var value JobOutputResponse
+	err := s.runRPC(ctx, "jobs/output", map[string]any{"id": id, "after": after, "limit": limit}, &value)
+	return value, err
+}
+
+func (s *Service) CancelJob(ctx context.Context, id string) (JobSnapshot, error) {
+	var value JobSnapshot
+	err := s.runRPC(ctx, "jobs/cancel", map[string]any{"id": id}, &value)
+	return value, err
+}
+
+func (s *Service) runRPC(parent context.Context, method string, params any, target any) error {
+	path, err := s.binaryPath()
 	if err != nil {
 		return err
 	}
@@ -228,23 +361,29 @@ func (s *Service) runRPC(parent context.Context, method string, params any, targ
 		ctx, cancel = context.WithTimeout(ctx, s.timeout)
 		defer cancel()
 	}
-	result, err := platformruntime.Run(ctx, platformruntime.RunSpec{
-		Spec:  platformruntime.Spec{Executable: path, Arguments: []string{"--root", s.root, "rpc"}, WorkingDirectory: s.root},
-		Stdin: string(raw) + "\n", MaxOutputBytes: 4 * 1024 * 1024,
-	})
-	if result.TimedOut {
-		return fmt.Errorf("小鱼 Agent Runtime RPC 超时：%w", ctx.Err())
-	}
-	if errors.Is(err, platformruntime.ErrOutputTruncated) {
-		return errors.New("小鱼 Agent Runtime RPC 输出超过安全上限")
-	}
-	if err != nil {
-		message := strings.TrimSpace(result.Stderr)
-		if message == "" {
-			message = err.Error()
+
+	s.rpcMu.Lock()
+	defer s.rpcMu.Unlock()
+	if s.worker == nil {
+		worker, startErr := startRPCWorker(path, s.root)
+		if startErr != nil {
+			return startErr
 		}
-		return fmt.Errorf("小鱼 Agent Runtime RPC 失败：%s", message)
+		s.worker = worker
 	}
+	s.requestSeq++
+	request := map[string]any{
+		"jsonrpc": "2.0",
+		"id":      fmt.Sprintf("agmp-%d", s.requestSeq),
+		"method":  method,
+		"params":  params,
+	}
+	line, err := s.worker.call(ctx, request)
+	if err != nil {
+		s.stopWorkerLocked()
+		return err
+	}
+
 	var response struct {
 		Result json.RawMessage `json:"result"`
 		Error  *struct {
@@ -252,19 +391,28 @@ func (s *Service) runRPC(parent context.Context, method string, params any, targ
 			Message string `json:"message"`
 		} `json:"error"`
 	}
-	if err := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &response); err != nil {
-		return fmt.Errorf("解析小鱼 Agent Runtime RPC 响应失败：%w", err)
+	if err := json.Unmarshal(line, &response); err != nil {
+		s.stopWorkerLocked()
+		return fmt.Errorf("解析 XiaoYu Persistent Runtime Worker 响应失败：%w", err)
 	}
 	if response.Error != nil {
-		return fmt.Errorf("小鱼 Agent Runtime RPC 错误 %d：%s", response.Error.Code, response.Error.Message)
+		return fmt.Errorf("XiaoYu Agent Runtime RPC 错误 %d：%s", response.Error.Code, response.Error.Message)
 	}
 	if len(response.Result) == 0 {
-		return errors.New("小鱼 Agent Runtime RPC 没有返回 result")
+		return errors.New("XiaoYu Agent Runtime RPC 没有返回 result")
 	}
 	if err := json.Unmarshal(response.Result, target); err != nil {
-		return fmt.Errorf("解析小鱼 Agent Runtime RPC result 失败：%w", err)
+		return fmt.Errorf("解析 XiaoYu Agent Runtime RPC result 失败：%w", err)
 	}
 	return nil
+}
+
+func (s *Service) stopWorkerLocked() {
+	if s.worker == nil {
+		return
+	}
+	s.worker.close()
+	s.worker = nil
 }
 
 // Domain Tool dispatch still belongs to AGMP Go services. This bridge now also

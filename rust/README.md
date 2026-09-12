@@ -48,3 +48,7 @@ Rust 不复制：
 Rust Native Runtime 不等于无限权限。`jobs/start` 只是 Host 授权后的内部原语，不能直接等同于模型执行权。任何真实执行都必须保持：身份/RBAC、三种审批模式、Capability Scope、Sandbox、路径/参数限制、秘密保护、审计和执行后验证。
 
 普通用户不需要安装 Rust/Cargo/MSVC。发行构建机/CI 预编译 XiaoYu Runtime，并把它作为 AGMP 内部组件随完整产品发布。
+
+## 0.2.11 Persistent Worker
+
+AGMP Go Host now keeps one supervised `xiaoyu rpc` process alive. Tool Search, Brain policy, Session Registry and Long-running Jobs share this process lifetime. The Worker remains an embedded AGMP component; Host RBAC/approval stays authoritative.

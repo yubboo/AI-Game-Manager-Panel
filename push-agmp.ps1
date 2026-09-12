@@ -104,6 +104,7 @@ function Assert-ProjectIntegrity {
         'internal/xiaoyu/host/loop.go',
         'internal/xiaoyu/host/bench_test.go',
         'internal/xiaoyu/host/brain_model.go',
+        'internal/xiaoyu/runtime/rpc_worker.go',
         'internal/app/app_xiaoyu_tools.go',
         'runtime/README.md',
         'rust/Cargo.toml',
@@ -125,6 +126,7 @@ function Assert-ProjectIntegrity {
         'scripts/common/check-xiaoyu-agent-runtime.mjs',
         'scripts/common/check-xiaoyu-agent-bench.mjs',
         'scripts/common/check-xiaoyu-jobs.mjs',
+        'scripts/common/check-xiaoyu-worker.mjs',
         'scripts/windows/AIGameManagerPanel.ps1',
         'scripts/windows/tasks/Tasks.ps1',
         'docs/NAMING-CONVENTIONS.md',
@@ -376,7 +378,8 @@ function Test-RepositorySafety([ValidateSet('tracked','staged','candidate')] [st
             @{ Path = 'scripts\common\check-dependency-locks.mjs'; Name = 'Dependency Lock Gate' },
             @{ Path = 'scripts\common\check-duplicates.mjs'; Name = 'Duplicate Source Gate' },
             @{ Path = 'scripts\common\check-github-safety.mjs'; Name = 'GitHub Safety Gate' },
-            @{ Path = 'scripts\common\check-xiaoyu-jobs.mjs'; Name = 'XiaoYu Session/Job Gate' }
+            @{ Path = 'scripts\common\check-xiaoyu-jobs.mjs'; Name = 'XiaoYu Session/Job Gate' },
+            @{ Path = 'scripts\common\check-xiaoyu-worker.mjs'; Name = 'XiaoYu Persistent Worker Gate' }
         )
         foreach ($item in $nodeGates) {
             $gate = Join-Path $ProjectRoot $item.Path

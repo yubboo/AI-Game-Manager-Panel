@@ -503,7 +503,12 @@ mod tests {
                         limit: 20,
                     })
                     .unwrap();
-                assert!(output.chunks.iter().any(|chunk| chunk.text.contains("xiaoyu-job")));
+                assert!(
+                    output
+                        .chunks
+                        .iter()
+                        .any(|chunk| chunk.text.contains("xiaoyu-job"))
+                );
                 return;
             }
             thread::sleep(Duration::from_millis(20));

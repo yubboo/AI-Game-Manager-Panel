@@ -4,45 +4,46 @@
 
 ## Current version
 
-**0.2.10 — Rust Session / Long-running Job Runtime foundation**
+**0.2.11 — Persistent Rust Runtime Worker**
 
 ## Stable baseline
 
-0.2.8 is the first all-green GitHub Actions baseline. 0.2.9 froze language ownership and reproducible dependency locks; its push passed Go, Linux Headless, Windows Helper and every architecture gate, but Safety stopped at `cargo fmt --check` because the new Rust Tool Search files were not fully rustfmt-normalized. 0.2.10 includes that exact formatting correction.
+0.2.8 was the first all-green GitHub Actions baseline. 0.2.9 froze language ownership and dependency locks. 0.2.10 added Rust Session/Long-running Job primitives; its Linux Headless and Windows Helper jobs pass, while Safety reaches Rust formatting and reports only rustfmt-normalization differences in the newly added Rust files. 0.2.11 contains those exact formatting corrections.
 
-## 0.2.10 changes
+## 0.2.11 changes
 
-- Rust now owns a real in-process Session Registry: create/get/list/close with runtime-root cwd containment.
-- Rust now owns a Long-running Job primitive: start/get/list/output/cancel, PID/exit state, bounded output and cancellation.
-- `jobs/start` requires explicit Host authorization and is not model-visible by default.
-- `xiaoyu rpc` keeps Session/Job state for the life of the persistent RPC process.
-- New `check-xiaoyu-jobs.mjs` protects the Session/Job protocol, root boundary, bounded output and Host-authorization contract.
-- 0.2.9 rustfmt CI failure is corrected.
+- Go now supervises one long-lived `xiaoyu rpc` child instead of spawning a new Rust process for every RPC.
+- Tool Search, Brain policy, Session Registry and Job Runtime now share the same Rust process lifetime.
+- Application startup prewarms the Rust worker; shutdown closes it.
+- RPC timeout or broken stdio kills the bad worker; the next call can establish a clean worker.
+- Worker stderr is bounded to 64 KiB to avoid unbounded diagnostic memory growth.
+- Go exposes Host-internal Session/Job bridge methods while preserving Host authorization as mandatory.
+- `sync-agmp.ps1` suppresses Robocopy OEM console output and uses a Unicode diagnostic log, eliminating mojibake for Chinese paths.
+- New `check-xiaoyu-worker.mjs` protects the persistent-worker lifecycle and safety boundary.
 
 ## Current migration boundary
 
 Still in Go for compatibility:
 
 - model-provider HTTP transport;
-- existing Agent Loop orchestration;
-- current model-visible `shell.exec` and shared Go process runtime;
+- top-level Agent Loop orchestration;
+- current model-visible `shell.exec`;
 - AGMP Domain Tool registry and game/product services.
 
-The Rust Session/Job APIs are currently runtime primitives. The next migration step is a **persistent Go ↔ Rust RPC worker** so approved XiaoYu operations can use these stateful primitives without spawning a fresh Rust process per RPC.
+Rust now owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs and their persistent worker lifetime. The next migration step is to route **approved** long-running Agent operations through Rust Jobs, then add PTY.
 
 ## Next runtime milestones
 
-1. Persistent Go ↔ Rust RPC worker / lifecycle supervision.
-2. Wire approved long-running operations to Rust Jobs.
-3. PTY / interactive terminal runtime.
-4. Sandbox / capability leases / filesystem scope.
-5. Apply Patch / generic filesystem mutation.
-6. Reflection / experience pipeline.
-7. Subagent / specialist dispatch.
+1. Wire approved long-running operations to Rust Jobs.
+2. PTY / interactive terminal runtime.
+3. Sandbox / capability leases / filesystem scope.
+4. Apply Patch / generic filesystem mutation.
+5. Reflection / experience pipeline.
+6. Subagent / specialist dispatch.
 
 ## Verification status
 
-Local packaging can run Node gates and Go compatibility tests. Full Rust `fmt/check/test`, locked pnpm builds, Go 1.25/Wails and Linux headless integration remain GitHub Actions authority.
+Local packaging can run Node gates and Go compatibility checks where the toolchain permits. Full Rust `fmt/check/test`, locked pnpm builds, Go 1.25/Wails and Linux headless integration remain GitHub Actions authority.
 
 ## AI reading order
 

@@ -5,6 +5,24 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.11：Persistent Rust Runtime Worker
+
+- 修正 0.2.10 GitHub Runner 报出的 Rust rustfmt 差异；
+- Go Host 建立受监督的长期 `xiaoyu rpc` stdio Worker；
+- Tool Search / Brain / Session / Job RPC 复用同一 Rust 进程，保持 stateful Runtime；
+- Application Startup 预热 Worker，Shutdown 负责关闭；
+- 超时/断管时终止坏 Worker，禁止无限卡死；
+- Worker stderr 采用有界 tail buffer；
+- Host-internal Session/Job Go Bridge 保留双层 `hostAuthorized` 防线；
+- 修复 `AGMP-Sync` 的 Robocopy 中文路径乱码；
+- 新增 Persistent Worker Gate 并接入 GitHub / Windows Helper / 一键推送。
+
+**冻结条件：** Rust fmt/check/test 通过；Go test/vet 通过；Linux Headless / Windows Helper 继续通过；Persistent Worker Gate PASS。
+
+### 下一步
+
+0.2.12 把已经通过 Approval 的长任务逐步切到 Rust Job Runtime，并准备 PTY/interactive session；不绕过现有三种审批模式。
+
 ## 0.2.10：Rust Session / Long-running Job Runtime
 
 - 修正 0.2.9 `cargo fmt --check` 唯一红灯；

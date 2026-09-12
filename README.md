@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.10**  
+当前版本：**0.2.11**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 当前状态：[`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)  
 架构边界：[`docs/PROJECT-ARCHITECTURE.md`](docs/PROJECT-ARCHITECTURE.md) / [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)
@@ -47,6 +47,12 @@ build/
 
 
 
+
+## 0.2.11 Persistent Rust Runtime Worker
+
+0.2.11 把 0.2.10 的 Rust Session / Job 原语真正接到长期存活的 Go ↔ Rust stdio Worker 上：AGMP 启动时会预热 `xiaoyu rpc`，后续 `Tool Search / Brain / Session / Job` RPC 复用同一 Rust 进程，因此 Session/Job 状态不会再因为“每个 RPC 都新启一个进程”而丢失。应用关闭时会监督退出 Worker；RPC 超时或管道损坏会终止失效 Worker，下一次调用再重新建立。
+
+Go Host 仍然是身份、RBAC 与三种审批模式的最终权威。Rust Job Bridge 在 Go 和 Rust 两侧都要求 Host authorization，当前不会把 `jobs/start` 直接暴露成绕过审批的模型 Tool。0.2.11 同时修复 Windows 源码同步时 Robocopy 的中文路径乱码：原生 Robocopy 报表写入临时 Unicode 日志，交互控制台只由 PowerShell 输出。
 
 ## 0.2.10 Rust Session / Long-running Job Runtime
 

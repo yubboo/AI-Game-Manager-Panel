@@ -138,3 +138,11 @@ AI 的主要职责始终围绕 AGMP：理解用户的开服/运维意图，自�
 - Job 输出必须有界并支持增量读取，禁止无限积累 stdout/stderr。
 - 长任务必须可查询状态、可取消、可审计；模型可见执行路径切换前必须先有协议测试和 Agent Bench。
 - 当前 Go `shell.exec` 保持兼容，直到 persistent RPC worker 与 Rust Job 路径完成验证。
+
+## 0.2.11 Persistent Runtime Worker Rule
+
+- AGMP Go Host 只维护一个受监督的 XiaoYu Rust stdio Worker；stateful Session/Job 不允许使用 per-call Rust process。
+- Worker 失败时必须终止并在后续调用重新建立；不得静默复用损坏 pipe。
+- Worker stderr 必须有界；stdout 只允许 JSON-RPC frame，禁止把日志混入协议通道。
+- Host identity/RBAC/approval 仍是最终授权来源，Rust `hostAuthorized` 只是内部防线。
+- 应用关闭必须显式关闭 Worker；开发模式缺少 Rust binary 时允许降级并给出可诊断状态，不得导致整个 AGMP 无法启动。

@@ -366,3 +366,13 @@ All contributors and AI agents must follow `docs/NAMING-CONVENTIONS.md` before c
 - Job stdout/stderr 必须有界，必须支持 status/output/cancel，禁止无限内存日志。
 - 0.2.10 的 Job RPC 先作为内部 Runtime primitive；在 persistent Go↔Rust RPC worker 完成前，不得宣称模型 `shell.exec` 已迁入 Rust。
 - 新增/修改 Rust Runtime 代码必须通过 `cargo fmt --check`、`cargo check --locked`、`cargo test --locked` 和 `check-xiaoyu-jobs.mjs`。
+
+### 0.2.11 Persistent Rust Runtime Worker 硬规则
+
+- `xiaoyu rpc` 是 Rust Agent Runtime 的长期进程边界；Go Host 不得重新退回“每次 RPC 都启动一个 Rust 子进程”的短进程模式。
+- `internal/xiaoyu/runtime/rpc_worker.go` 负责 Worker 生命周期、stdio JSON-RPC、超时回收和有界 stderr；不得复制第二套 Worker。
+- Session / Job 状态只在同一 Rust Worker 生命周期内可靠存在；Worker 崩溃/重启后 Host 必须重新观察状态，禁止假装旧 Session 仍存在。
+- Go Bridge 可以暴露 Host-internal Session/Job API，但 `jobs/start` 必须在 Go 和 Rust 两侧都要求 Host authorization；模型不可直接伪造授权。
+- Persistent Worker RPC 当前串行化，先保证状态一致与可审计；后续若引入并发 multiplexer，必须先增加 request-id correlation、取消语义和并发测试。
+- Windows 源码同步禁止直接显示 Robocopy OEM 报表；中文路径诊断必须使用 Unicode 日志或 PowerShell 自身输出。
+- 新增/修改 Worker 必须通过 `check-xiaoyu-worker.mjs`，并继续通过 Rust fmt/check/test、Go test/vet 与 Agent Bench。

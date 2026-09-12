@@ -35,6 +35,7 @@ const required = [
   'scripts/windows/tasks/Tasks.ps1',
   'scripts/common/check-distribution-boundary.mjs',
   'scripts/common/check-xiaoyu-jobs.mjs',
+  'scripts/common/check-xiaoyu-worker.mjs',
 ]
 for (const rel of required) if (!fs.existsSync(path.join(root, rel))) fail(`缺少 Windows Helper 文件：${rel}`)
 

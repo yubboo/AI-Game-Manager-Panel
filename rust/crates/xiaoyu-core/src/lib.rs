@@ -8,9 +8,9 @@ use anyhow::{Result, bail};
 use serde_json::Value;
 use std::path::PathBuf;
 use xiaoyu_protocol::{
-    ApprovalDecision, ApprovalMode, BrainDecision, BrainDecisionKind, BrainPrompt, ModelTurn,
-    JobOutputRequest, JobOutputResponse, JobSnapshot, JobStartRequest, PROTOCOL_VERSION, RiskLevel,
-    RuntimeStatus, SessionInfo, ToolSearchRequest, ToolSearchResponse, ToolSpec,
+    ApprovalDecision, ApprovalMode, BrainDecision, BrainDecisionKind, BrainPrompt,
+    JobOutputRequest, JobOutputResponse, JobSnapshot, JobStartRequest, ModelTurn, PROTOCOL_VERSION,
+    RiskLevel, RuntimeStatus, SessionInfo, ToolSearchRequest, ToolSearchResponse, ToolSpec,
 };
 
 pub const RUNTIME_NAME: &str = "小鱼 · XiaoYu Intelligence Core";
@@ -19,7 +19,8 @@ pub const RUNTIME_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// XiaoYu's Rust core is the AGMP Agent Runtime boundary. It owns provider-neutral
 /// agent semantics and is the Rust-first home for capability discovery, sessions,
 /// jobs, PTY, sandbox and generic native execution. Go remains the source of
-/// truth for game/product domain services. The 0.2.10 migration is incremental:
+/// truth for game/product domain services. The 0.2.11 migration adds the
+/// supervised persistent Go↔Rust RPC worker while remaining incremental:
 /// existing Go execution paths stay compatible until equivalent Rust paths are
 /// covered by protocol tests and Agent Bench scenarios.
 #[derive(Clone)]
@@ -45,6 +46,7 @@ impl Runtime {
             ready: true,
             capabilities: vec![
                 "json-rpc-stdio".to_string(),
+                "persistent-rpc-worker-v1".to_string(),
                 "risk-aware-planning".to_string(),
                 "session-foundation".to_string(),
                 "host-tool-contracts".to_string(),
@@ -378,6 +380,12 @@ mod tests {
                 .capabilities
                 .iter()
                 .any(|item| item == "long-running-jobs-v1")
+        );
+        assert!(
+            status
+                .capabilities
+                .iter()
+                .any(|item| item == "persistent-rpc-worker-v1")
         );
     }
 

@@ -107,12 +107,29 @@ $args = @(
     '/NP',
     '/XD'
 ) + $excludeDirs
-& robocopy.exe @args
-$code = $LASTEXITCODE
-if ($code -ge 8) {
-    Stop-Fail ('robocopy 同步失败，退出代码：' + $code)
+# Robocopy is a legacy native console program. On Chinese paths its OEM output
+# can be decoded by Windows PowerShell as UTF-8 and display mojibake even though
+# the actual copy is correct. Write the native report to a Unicode log instead,
+# and keep the interactive console output owned by PowerShell.
+$robocopyLog = Join-Path ([System.IO.Path]::GetTempPath()) ('agmp-sync-' + [guid]::NewGuid().ToString('N') + '.log')
+$args += ('/UNILOG:' + $robocopyLog)
+try {
+    & robocopy.exe @args | Out-Null
+    $code = $LASTEXITCODE
+    if ($code -ge 8) {
+        Write-Host ''
+        Write-Warn2 'Robocopy 失败日志（Unicode）：'
+        if (Test-Path -LiteralPath $robocopyLog) {
+            Get-Content -LiteralPath $robocopyLog -Encoding Unicode -ErrorAction SilentlyContinue |
+                Select-Object -Last 80 |
+                ForEach-Object { Write-Host $_ }
+        }
+        Stop-Fail ('robocopy 同步失败，退出代码：' + $code)
+    }
+    Write-Ok ('源码复制完成（Robocopy 退出代码：' + $code + '）。')
+} finally {
+    Remove-Item -LiteralPath $robocopyLog -Force -ErrorAction SilentlyContinue
 }
-Write-Ok '源码复制完成。'
 
 # 目标是 Git 工作副本时，只删除“Git 已跟踪但新版源码已不存在”的旧源码。
 # 未跟踪的 runtime / instances / backups / logs 等本机数据不会被删除。

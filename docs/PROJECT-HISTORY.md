@@ -1,6 +1,29 @@
 # AI-Game-Manager-Panel 项目历史
 
 
+## AI-Game-Manager-Panel 0.2.11
+
+### 主题
+
+Persistent Rust Runtime Worker / Windows 源码同步编码修复。
+
+### 主要变化
+
+- Go Host 新增长期 `xiaoyu rpc` Worker，Rust Session/Job 状态可跨 RPC 保持；
+- Startup 预热、Shutdown 关闭，超时/断管自动回收失效 Worker；
+- 新增 Host-internal Session/Job Bridge，`jobs/start` 仍要求 Host authorization；
+- Worker stderr 有界保留，避免诊断输出无限增长；
+- 修复 0.2.10 GitHub rustfmt 差异；
+- Robocopy 原生日志改写 Unicode 临时日志，控制台不再把 `H:\一键部署` 显示成乱码；
+- 新增 Persistent Worker Gate。
+
+### 验证
+
+- 0.2.10 GitHub：Windows Helper PASS；Linux Headless + Web + XiaoYu PASS；Go test/vet 与 Session/Job Gate PASS；Safety 仅在 rustfmt 差异处停止。
+- 0.2.11 本地：Node 架构 Gate 与可运行的 Go 兼容检查；最终 Rust/Go1.25/pnpm 由 GitHub Actions 权威验证。
+
+---
+
 ## AI-Game-Manager-Panel 0.2.10
 
 ### 主题

@@ -6,7 +6,7 @@
       "category": "智能核心",
       "route": "/",
       "status": "partial",
-      "phase": "0.2.10 · Rust Session / Long-running Job Runtime",
+      "phase": "0.2.11 · Rust Session / Long-running Job Runtime",
       "features": [
         "小鱼自然语言主入口",
         "XiaoYu Agent Runtime（Rust-first）",

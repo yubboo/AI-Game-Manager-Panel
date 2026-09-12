@@ -40,7 +40,7 @@ const (
 	// Name 与 Slogan 仅作为 configs/app.json 无法读取时的安全回退。
 	// 正常运行时，产品名称与标语均从统一配置中心读取，避免散落硬编码。
 	Name    = "AI游戏管理器面板"
-	Version = "0.2.10"
+	Version = "0.2.11"
 	Slogan  = "现代化智能 AI 一键游戏服务器部署与管理平台"
 )
 
@@ -265,10 +265,22 @@ func resolveDataDir() string {
 func (a *Application) Startup(ctx context.Context) {
 	a.ctx = ctx
 	a.logger.Info("application startup", "version", Version, "platform", runtime.GOOS)
+	if a.xiaoyuRuntime != nil {
+		workerCtx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+		if err := a.xiaoyuRuntime.Start(workerCtx); err != nil {
+			a.logger.Warn("xiaoyu persistent runtime worker unavailable", "error", err.Error())
+		} else {
+			a.logger.Info("xiaoyu persistent runtime worker ready")
+		}
+		cancel()
+	}
 	a.recordOperation("info", "agmp", "application_start", "AI Game Manager Panel", "success", "应用已启动", "", "")
 }
 
 func (a *Application) Shutdown(_ context.Context) {
+	if a.xiaoyuRuntime != nil {
+		a.xiaoyuRuntime.Close()
+	}
 	if a.dstRuntime != nil {
 		a.logger.Info("application shutdown: stopping managed DST processes")
 		a.dstRuntime.StopAllBlocking()

@@ -193,3 +193,8 @@ Rust 作为 XiaoYu 内部 Runtime 随完整 AGMP 一起发行。未来只有当 
 8. 不把 Rust 当成绕过 Approval/RBAC 的“更高权限层”。
 9. Session / Job / PTY 属于 Rust Runtime；Domain Service 不得复制一套 Agent Job Core。
 
+### 0.2.11 增量迁移
+
+- Rust：Tool Search + Session Registry + Long-running Jobs + persistent stdio Runtime process。
+- Go：监督 Rust Worker 生命周期并继续提供 Product/Domain authority。
+- 下一步：只把已通过 Host Approval 的长任务切到 Rust Jobs，然后再引入 PTY。

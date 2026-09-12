@@ -2,7 +2,7 @@
 
 小鱼是 AI Game Manager Panel 的内置智能核心和主自动化入口。AGMP 是产品；XiaoYu 是产品的智能灵魂。二者不是两个用户产品。
 
-## 1. 0.2.10 定位
+## 1. 0.2.11 定位
 
 0.2.9 起 Rust `xiaoyu-core` 的长期定位从“Brain-only”升级为：
 
@@ -169,3 +169,7 @@ XiaoYu Rust Runtime 是内部组件，不等于桌面壳。
 `xiaoyu rpc` 现在在单个 Runtime 进程生命周期内维护 Session 与 Job 状态。Job 可以后台运行、查询状态、读取有界输出并取消。当前 Go Host 仍以短 RPC 调用为主，因此这些 stateful primitives 尚未直接替换 `shell.exec`；0.2.11 会先建立持久 RPC Worker，再迁移模型可用的长任务路径。
 
 任何 `jobs/start` 都必须来自已经通过 Host 身份、RBAC 和审批链的调用方；Rust 的 `hostAuthorized` 是内部契约防线，不是独立身份认证系统。
+
+## 10. 0.2.11 Persistent Worker 边界
+
+Go Host 现在长期监督一个 `xiaoyu rpc` 进程，Rust Session/Job 状态因此可以跨多次 RPC 保持。Worker 是 XiaoYu Runtime 的内部基础设施，不是新的用户产品或独立权限层。Host 仍负责身份、RBAC、审批、审计与 Domain Tool；Rust 负责 Agent Runtime state/native primitives。Worker 重启意味着易失 Session/Job state 丢失，Host 必须重新观察真实系统状态。

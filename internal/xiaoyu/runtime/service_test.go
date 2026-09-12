@@ -53,3 +53,26 @@ func TestInternalAICoreRuntimePathIsPreferred(t *testing.T) {
 		t.Fatalf("internal AI Core path = %q, want %q", gotAbs, wantAbs)
 	}
 }
+
+func TestTailWriterKeepsBoundedSuffix(t *testing.T) {
+	writer := newTailWriter(8)
+	_, _ = writer.Write([]byte("12345"))
+	_, _ = writer.Write([]byte("67890"))
+	if got := writer.String(); got != "34567890" {
+		t.Fatalf("tail writer = %q, want bounded suffix", got)
+	}
+}
+
+func TestStartJobRejectsMissingHostAuthorizationBeforeRuntime(t *testing.T) {
+	service := New(Options{Root: t.TempDir(), BinaryOverride: filepath.Join(t.TempDir(), "missing-runtime")})
+	_, err := service.StartJob(nil, JobStartRequest{Executable: "example", HostAuthorized: false})
+	if err == nil {
+		t.Fatal("unauthorized Rust job must be rejected before contacting the runtime")
+	}
+}
+
+func TestClosePersistentWorkerIsIdempotent(t *testing.T) {
+	service := New(Options{Root: t.TempDir()})
+	service.Close()
+	service.Close()
+}

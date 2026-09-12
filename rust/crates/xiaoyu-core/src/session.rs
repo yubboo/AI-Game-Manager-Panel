@@ -97,7 +97,10 @@ pub(crate) fn resolve_cwd(root: &Path, requested: Option<&str>) -> Result<PathBu
         );
     }
     if !candidate.is_dir() {
-        bail!("working directory is not a directory: {}", candidate.display());
+        bail!(
+            "working directory is not a directory: {}",
+            candidate.display()
+        );
     }
     Ok(candidate)
 }
