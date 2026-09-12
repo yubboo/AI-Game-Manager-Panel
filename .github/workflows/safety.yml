@@ -156,6 +156,9 @@ jobs:
       - name: Rust Agent check
         run: cargo check --manifest-path rust/Cargo.toml --workspace --locked
 
+      - name: XiaoYu Linux native PTY integration
+        run: cargo test --manifest-path rust/Cargo.toml -p xiaoyu-core --locked linux_terminal_ -- --nocapture
+
       - name: Rust Agent tests
         run: cargo test --manifest-path rust/Cargo.toml --workspace --locked
 

@@ -146,9 +146,8 @@ The benchmark entry point is `go test ./internal/xiaoyu/host -run '^TestAgentBen
 
 这一步仍不等于把模型可见 `shell.exec` 直接切到 Rust。下一阶段只迁移**已经通过 Host Approval**的长任务，并保留 Domain Tool 优先和执行后验证。
 
-## 0.2.12 Interactive Terminal Session
+## 0.2.13 Linux Native PTY Foundation
 
-Rust Runtime 新增 `TerminalManager`，通过 persistent `xiaoyu rpc` 暴露 `terminal/start|get|list|write|output|close`。Terminal 是长期交互进程：Host 可以持续发送输入并增量读取有界 stdout/stderr。启动和每次输入都必须携带 Host authorization，避免“先批准启动一个 shell，后续输入无限制”的权限扩大。
+Rust Runtime 继续通过 persistent `xiaoyu rpc` 暴露 `terminal/start|get|list|write|output|resize|close`。在 Linux 上，`TerminalManager` 不再以普通 stdin/stdout pipe 模拟终端，而是使用真实 PTY master/slave、controlling TTY 与窗口尺寸。启动、每次输入和每次 resize 都必须携带 Host authorization，避免长期 shell 扩大权限。
 
-本版 backend 明确为 `stdio-pipe-v1`。这是 PTY-ready 的协议与生命周期基础，但**不是** Native PTY/ConPTY；需要 TTY detection、窗口 resize、控制字符/交互程序兼容性的能力将在下一阶段实现，并保持同一 RPC contract。模型可见 `shell.exec` 仍未直接迁移。
-
+Linux Snapshot 返回 `backend=linux-pty-v1`，并由 integration tests 验证 TTY detection 与 `stty size`。Windows 当前仍返回 `stdio-pipe-v1` fallback；在 Windows Rust CI 实际验证 ConPTY 之前不发布 ConPTY capability。模型可见 `shell.exec` 仍未直接迁移。

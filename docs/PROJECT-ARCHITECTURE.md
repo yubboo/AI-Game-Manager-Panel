@@ -1,4 +1,4 @@
-# AI Game Manager Panel 0.2.12 总架构
+# AI Game Manager Panel 0.2.13 总架构
 
 > AGMP 是唯一产品。用户与 XiaoYu 是“两个大脑、同一副身体”：用户拥有最终授权与接管权；XiaoYu 负责理解、规划、执行编排、验证、恢复与总结。0.2.9 起语言职责正式冻结为 **Rust-first Agent Runtime / Go Domain Host / Vue UI**。
 
@@ -319,7 +319,7 @@ Go AGMP Host
 
 0.2.11 后 Go 不再为每个 XiaoYu RPC 启动一次 Rust 进程。长期 Worker 保持 stateful Runtime，同时在超时/断管时被回收。模型可见 `shell.exec` 仍未直接迁移；下一步只迁移已审批的长任务。
 
-## 0.2.12 Rust Interactive Terminal Session
+## 0.2.13 Linux Native PTY Foundation
 
 ```text
 Approved Host action
@@ -330,10 +330,13 @@ Persistent `xiaoyu rpc` Worker
        ↓
 Rust TerminalManager
   ├─ start / get / list
-  ├─ write (每次输入重新要求 Host authorization)
-  ├─ output (bounded + cursor)
+  ├─ write       (每次输入重新要求 Host authorization)
+  ├─ output      (bounded + cursor)
+  ├─ resize      (Host authorization)
   └─ close
+       ↓
+Linux: native PTY master/slave + controlling TTY
+Other: explicit stdio-pipe fallback
 ```
 
-0.2.12 建立跨多次 RPC 保持状态的交互终端会话，但 backend 明确为 `stdio-pipe-v1`。这是 Native PTY/ConPTY 前的协议与生命周期基础，不宣称 TTY resize/control-sequence 完整兼容。后续 Windows ConPTY / Unix PTY 必须复用同一 Terminal contract，而不是再建立第二套终端核心。
-
+0.2.13 不改变 Terminal 上层协议，而是把 Linux backend 升级成真实 `linux-pty-v1`。TTY detection 与 window resize 由 Rust integration tests 验证。Windows 本版仍明确为 `stdio-pipe-v1`，不把未验证的接口包装成 ConPTY 完成态；下一阶段先建立 Windows Rust Runtime CI，再在相同 contract 后面实现 ConPTY。

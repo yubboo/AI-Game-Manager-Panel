@@ -5,21 +5,21 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
-## 0.2.12：Rust Interactive Terminal Session
+## 0.2.13：Linux Native PTY Foundation
 
-- 在 Persistent Rust Worker 上新增长期交互 Terminal Session；
-- 新增 `terminal/start|get|list|write|output|close` JSON-RPC；
-- stdout/stderr 使用固定上限缓冲与 cursor 增量读取；
-- Terminal start 与每次 stdin 输入都要求 Host authorization；
-- cwd 继续限制在 Runtime Root / Session scope；
-- Snapshot 必须明确 backend；本版只实现 `stdio-pipe-v1`，禁止冒充已完成 Native PTY/ConPTY；
-- 新增 Terminal Session Gate，并接入 GitHub / Windows Helper / 一键推送。
+- 修正 0.2.12 GitHub Runner 报出的两处 `cargo fmt --check` 差异；
+- 保持既有 `terminal/*` contract，不创建第二套 Terminal API；
+- Linux backend 使用真实 PTY master/slave、`setsid`、controlling TTY；
+- 新增 `terminal/resize`，rows/cols resize 必须再次经过 Host authorization；
+- Linux CI 测试必须证明 `test -t 0` 为真，并用 `stty size` 验证 resize；
+- PTY output 继续有界，cwd 继续限制在 Runtime Root / Session scope；
+- Windows 当前继续明确使用 `stdio-pipe-v1` fallback，不允许提前声明 ConPTY 已完成。
 
-**冻结条件：** 0.2.11 三 Job 全绿不回退；Rust fmt/check/test 通过；交互输入/输出/关闭测试通过；Go Host 双层授权测试通过。
+**冻结条件：** 0.2.12 已通过的 Go/Headless/Windows Gate 不回退；Rust fmt/check/test 通过；Linux PTY TTY/resize 测试通过；Terminal Gate PASS。
 
 ### 下一步
 
-0.2.13 在保持同一 Terminal protocol 的前提下实现 Windows ConPTY + Unix PTY 后端，再把已经通过 Host Approval 的交互任务逐步切入 Rust Terminal Runtime。
+0.2.14 增加 Windows Rust Runtime CI，并实现/验证 Windows ConPTY backend；只有 Windows Runner 实际 build + integration test 通过后，才允许发布 `windows-conpty-*` capability。
 
 ## 0.2.11：Persistent Rust Runtime Worker
 

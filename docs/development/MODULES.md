@@ -1,4 +1,4 @@
-# AGMP 0.2.12 模块边界
+# AGMP 0.2.13 模块边界
 
 > 0.2.9 冻结语言职责：Rust-first XiaoYu Agent Runtime、Go Domain Host、Vue UI。详细边界见 `docs/architecture/LANGUAGE-OWNERSHIP.md`。模块是否规划存在仍由 `configs/modules.json` 描述；源码目录只为真实实现创建。
 
@@ -142,6 +142,6 @@ frontend/src/features/
 
 Rust `xiaoyu-core` 已新增 Session Registry 与 Long-running Job primitives。它们属于通用 Agent Runtime，不属于任何游戏 Domain。当前模型可见 `shell.exec` 仍走 Go Host；在 persistent RPC worker 完成前禁止双写/双执行。未来切换时必须保证同一个已批准动作只有一个权威 Process Runtime。
 
-## 0.2.12 Persistent Runtime Worker
+## 0.2.11 Persistent Runtime Worker
 
 XiaoYu Runtime 新增 Go-supervised Rust Worker：一个 `xiaoyu rpc` 进程承载 Tool Search、Brain、Session、Job state。该 Worker 属于 AI Runtime 基础设施，不创建新产品模块；游戏/部署/实例等 Domain 模块继续由 Go Service 提供。

@@ -147,11 +147,13 @@ AI 的主要职责始终围绕 AGMP：理解用户的开服/运维意图，自�
 - Host identity/RBAC/approval 仍是最终授权来源，Rust `hostAuthorized` 只是内部防线。
 - 应用关闭必须显式关闭 Worker；开发模式缺少 Rust binary 时允许降级并给出可诊断状态，不得导致整个 AGMP 无法启动。
 
-## 0.2.12 Interactive Terminal Rule
+## 0.2.13 Native PTY Rule
 
-- XiaoYu Interactive Terminal 属于 Rust Agent Runtime；Go Host 只负责授权与 RPC Bridge。
-- Terminal start 和每次 write 都必须独立验证 Host authorization；长期 shell 不能变成一次批准后永久自由输入。
-- stdin 单次 payload、stdout/stderr 历史必须有界；关闭会话必须能够终止仍在运行的 child。
-- `stdio-pipe-v1` 不得标记成 Native PTY/ConPTY；只有跨平台 PTY backend 和 resize/TTY tests 完成后才能升级 capability。
-- 模型执行路径迁移到 Terminal 前必须增加 Agent Bench，证明 approval/observation/verification 不回退。
-
+- XiaoYu Terminal 属于 Rust Agent Runtime；Go Host 只负责身份/RBAC/审批和 RPC Bridge，不得新建第二套 Agent Terminal Core。
+- Terminal start、每次 write、每次 resize 都必须独立验证 Host authorization；长期 shell 不能变成一次批准后永久自由输入。
+- stdin 单次 payload、Terminal output history 必须有界；cwd 必须限制在 Runtime Root / Session scope。
+- Linux 只有在真实 PTY + TTY detection + resize integration test 通过后才能声明 `linux-pty-v1`。
+- Windows 0.2.13 仍是 `stdio-pipe-v1` fallback；没有 Windows Rust CI build/integration test 时，严禁声明 ConPTY 已完成。
+- Native backend 必须复用现有 `terminal/*` protocol；禁止为 ConPTY/PTTY 再创建第二套生命周期或审批语义。
+- 模型可见 `shell.exec` 暂不直接切换到 Terminal RPC；迁移前必须有 Agent Bench 覆盖 approval、输入、输出、取消与恢复。
+- 新增/修改 Terminal Runtime 必须通过 `check-xiaoyu-terminal.mjs`、Rust fmt/check/test、Go test/vet 和现有 Agent Bench。

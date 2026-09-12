@@ -8,13 +8,14 @@ const read = rel => fs.readFileSync(path.join(root, rel), 'utf8').replace(/^\uFE
 try {
   for (const rel of [
     'rust/crates/xiaoyu-core/src/terminal.rs',
+    'rust/crates/xiaoyu-core/src/pty_linux.rs',
     'rust/crates/xiaoyu-core/src/lib.rs',
     'rust/crates/xiaoyu-core/src/bin/xiaoyu.rs',
     'rust/crates/xiaoyu-protocol/src/lib.rs',
     'internal/xiaoyu/runtime/service.go',
     'internal/xiaoyu/runtime/service_test.go',
   ]) {
-    if (!fs.existsSync(path.join(root, rel))) failures.push(`缺少 Rust Terminal Session 源码：${rel}`)
+    if (!fs.existsSync(path.join(root, rel))) failures.push(`缺少 Rust Terminal/PTY 源码：${rel}`)
   }
 
   const terminal = read('rust/crates/xiaoyu-core/src/terminal.rs')
@@ -24,18 +25,39 @@ try {
     'MAX_OUTPUT_BYTES',
     'MAX_WRITE_BYTES',
     'stdio-pipe-v1',
+    'linux-pty-v1',
     'pub fn start',
     'pub fn write',
     'pub fn output',
+    'pub fn resize',
     'pub fn close',
     'host_authorized',
     'terminal input requires Host authorization',
+    'terminal resize requires Host authorization',
     'interactive_terminal_accepts_input_and_exposes_output',
+    'linux_terminal_is_backed_by_a_real_tty',
+    'linux_terminal_resize_updates_kernel_winsize',
   ]) {
-    if (!terminal.includes(token)) failures.push(`Rust Terminal Session 缺少 ${token}`)
+    if (!terminal.includes(token)) failures.push(`Rust Terminal/PTY 缺少 ${token}`)
   }
-  if (/portable[_-]pty|ConPTY|CreatePseudoConsole|openpty/.test(terminal)) {
-    failures.push('0.2.12 不得把 stdio Terminal Session 伪装成已完成 Native PTY/ConPTY')
+
+  const pty = read('rust/crates/xiaoyu-core/src/pty_linux.rs')
+  for (const token of [
+    'posix_openpt',
+    'grantpt',
+    'unlockpt',
+    'ptsname_r',
+    'setsid',
+    'TIOCSCTTY',
+    'TIOCSWINSZ',
+    'FD_CLOEXEC',
+    'TERM',
+    'xterm-256color',
+  ]) {
+    if (!pty.includes(token)) failures.push(`Linux Native PTY backend 缺少 ${token}`)
+  }
+  if (/CreatePseudoConsole|ResizePseudoConsole|ClosePseudoConsole|PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE/.test(terminal + pty)) {
+    failures.push('0.2.13 仍未提供经 Windows CI 验证的 ConPTY backend，不得提前声明 Windows ConPTY 已完成')
   }
 
   const protocol = read('rust/crates/xiaoyu-protocol/src/lib.rs')
@@ -46,6 +68,9 @@ try {
     'TerminalWriteRequest',
     'TerminalOutputRequest',
     'TerminalOutputResponse',
+    'TerminalResizeRequest',
+    'pub rows: u16',
+    'pub cols: u16',
   ]) {
     if (!protocol.includes(token)) failures.push(`xiaoyu.v1 Terminal 协议缺少 ${token}`)
   }
@@ -57,6 +82,7 @@ try {
     '"terminal/list"',
     '"terminal/write"',
     '"terminal/output"',
+    '"terminal/resize"',
     '"terminal/close"',
   ]) {
     if (!cli.includes(method)) failures.push(`Rust JSON-RPC 缺少 ${method}`)
@@ -64,9 +90,11 @@ try {
 
   const core = read('rust/crates/xiaoyu-core/src/lib.rs')
   for (const capability of [
-    'interactive-terminal-v1',
+    'interactive-terminal-v2',
     'authorized-terminal-input',
+    'authorized-terminal-resize',
     'bounded-terminal-output',
+    'linux-native-pty-v1',
   ]) {
     if (!core.includes(capability)) failures.push(`Rust Runtime capability 缺少 ${capability}`)
   }
@@ -76,9 +104,11 @@ try {
     'func (s *Service) StartTerminal(',
     'func (s *Service) WriteTerminal(',
     'func (s *Service) TerminalOutput(',
+    'func (s *Service) ResizeTerminal(',
     'func (s *Service) CloseTerminal(',
     'XiaoYu Rust Terminal 必须先经过 Host 授权',
     'XiaoYu Rust Terminal 输入必须先经过 Host 授权',
+    'XiaoYu Rust Terminal 调整尺寸必须先经过 Host 授权',
   ]) {
     if (!service.includes(token)) failures.push(`Go↔Rust Terminal Bridge 缺少 ${token}`)
   }
@@ -86,17 +116,19 @@ try {
   const tests = read('internal/xiaoyu/runtime/service_test.go')
   if (!tests.includes('TestStartTerminalRejectsMissingHostAuthorizationBeforeRuntime')) failures.push('Go Terminal Bridge 缺少启动授权前置拒绝测试')
   if (!tests.includes('TestWriteTerminalRejectsMissingHostAuthorizationBeforeRuntime')) failures.push('Go Terminal Bridge 缺少输入授权前置拒绝测试')
+  if (!tests.includes('TestResizeTerminalRejectsMissingHostAuthorizationBeforeRuntime')) failures.push('Go Terminal Bridge 缺少 resize 授权前置拒绝测试')
 
   const workflow = read('.github/workflows/safety.yml')
-  if (!workflow.includes('check-xiaoyu-terminal.mjs')) failures.push('GitHub Actions 必须执行 XiaoYu Terminal Session Gate')
+  if (!workflow.includes('check-xiaoyu-terminal.mjs')) failures.push('GitHub Actions 必须执行 XiaoYu Terminal/PTY Gate')
+  if (!workflow.includes('cargo test --manifest-path rust/Cargo.toml -p xiaoyu-core --locked linux_terminal_')) failures.push('GitHub Actions 必须执行 Linux Native PTY integration tests')
 } catch (error) {
-  failures.push(`XiaoYu Terminal Session Gate 检查失败：${error instanceof Error ? error.message : String(error)}`)
+  failures.push(`XiaoYu Terminal/PTY Gate 检查失败：${error instanceof Error ? error.message : String(error)}`)
 }
 
 if (failures.length) {
-  console.error('AGMP XiaoYu Terminal Session Gate FAIL')
+  console.error('AGMP XiaoYu Terminal/PTY Gate FAIL')
   failures.forEach(item => console.error(` - ${item}`))
   process.exit(1)
 }
 
-console.log('AGMP XiaoYu Terminal Session Gate PASS (interactive stdio session · per-input Host authorization · bounded output · PTY claim reserved)')
+console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux native PTY · resize · per-input Host authorization · Windows stdio fallback explicit)')

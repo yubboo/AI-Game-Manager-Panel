@@ -347,7 +347,7 @@ AI 权限名称固定为 **请求批准 / 帮我批准 / 完全访问权限**。
 - `internal/platform/runtime` 继续服务 Go Domain；现有业务域不得直接 `exec.Command`、`exec.CommandContext` 或自行创建 stdin/stdout/stderr pipe。XiaoYu 新的通用 Native Runtime 不再默认堆到此 Go 包。
 - 长生命周期游戏/终端会话统一使用 `Session`；一次性内部命令统一使用有输出上限和 Context 取消的 `Run`；无需交互的外部启动使用 `StartDetached` 并异步回收。
 - Session 必须保留 stdout/stderr 来源、串行化 stdin、PID/状态/退出码快照；Unix 终止以进程组为单位，Windows 保持隐藏控制台并允许显式 `ShowWindow` 的 GUI 安装器例外。
-- PTY/ConPTY 和跨 AGMP 重启后的会话重连仍是独立增强项；实现时只能扩展当前 Runtime，不得再创建另一套 Process Core。
+- Linux Native PTY 已进入 Rust XiaoYu Runtime；Windows ConPTY 和跨 AGMP 重启后的会话重连仍是独立增强项。实现时必须扩展当前 Terminal/Runtime contract，不得再创建另一套 Process Core。
 
 ## 18. 0.1.81 架构冻结
 
@@ -377,13 +377,13 @@ All contributors and AI agents must follow `docs/NAMING-CONVENTIONS.md` before c
 - Windows 源码同步禁止直接显示 Robocopy OEM 报表；中文路径诊断必须使用 Unicode 日志或 PowerShell 自身输出。
 - 新增/修改 Worker 必须通过 `check-xiaoyu-worker.mjs`，并继续通过 Rust fmt/check/test、Go test/vet 与 Agent Bench。
 
-### 0.2.12 Rust Interactive Terminal Session 硬规则
+### 0.2.13 Linux Native PTY 硬规则
 
-- `rust/crates/xiaoyu-core/src/terminal.rs` 是 XiaoYu 交互终端会话归属；不得在 Go Host 新建第二套 Agent Terminal Core。
-- Terminal start 与**每次输入**都必须通过 Host identity/RBAC/approval 后再携带 `hostAuthorized=true`；“会话之前已经批准”不能自动授权后续任意命令。
-- Terminal stdout/stderr 和单次输入必须有界；禁止无限日志和无限 stdin payload。
-- 0.2.12 只允许称为 `interactive-terminal-v1 / stdio-pipe-v1`，不得在代码、UI 或文档中把它描述成已完成 Native PTY/ConPTY。
-- Native PTY/ConPTY 后端必须复用同一 Terminal protocol，并通过独立跨平台测试后才能声明 `pty=true` 或等价 capability。
+- `rust/crates/xiaoyu-core/src/terminal.rs` 是唯一 XiaoYu Terminal 生命周期；`pty_linux.rs` 只实现平台 backend，不得复制一套 Session/Approval Core。
+- Terminal start、**每次输入**与**每次 resize**都必须通过 Host identity/RBAC/approval 后再携带 `hostAuthorized=true`；“会话之前已经批准”不能自动授权后续任意命令。
+- Terminal output 和单次输入必须有界；cwd 必须继续限制在 Runtime Root / Session scope。
+- Linux 只有真实 PTY、controlling TTY、TTY detection 与 resize integration tests 都存在时才能声明 `linux-native-pty-v1`。
+- Windows 0.2.13 必须明确保持 `stdio-pipe-v1` fallback；没有 Windows Rust CI 实际 build/test 前不得声明 ConPTY 已完成。
+- Native PTY/ConPTY 必须复用同一 `terminal/*` protocol；禁止为某个平台创建第二套 Terminal RPC 或绕过 Host Approval。
 - 模型可见 `shell.exec` 暂不直接切换到 Terminal RPC；迁移前必须有 Agent Bench 覆盖 approval、输入、输出、取消与恢复。
 - 新增/修改 Terminal Runtime 必须通过 `check-xiaoyu-terminal.mjs`、Rust fmt/check/test、Go test/vet 和现有 Agent Bench。
-

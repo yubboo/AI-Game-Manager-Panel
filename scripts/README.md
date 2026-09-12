@@ -1,4 +1,4 @@
-# AI Game Manager Panel Scripts 0.2.12
+# AI Game Manager Panel Scripts 0.2.13
 
 Windows 开发助手自 0.1.64 起固定为：**一个 ASCII-safe BAT 启动器 + PowerShell Task Runner**。
 
@@ -109,7 +109,7 @@ GitHub Safety Job 单独执行 `go test ./internal/xiaoyu/host -run '^TestAgentB
 
 `check-xiaoyu-jobs.mjs` validates the Rust Session Registry and Long-running Job contracts: Host authorization, Runtime Root cwd containment, bounded output, cancellation and JSON-RPC methods. It is part of GitHub Actions, Windows project checks and the GitHub push helper.
 
-## 0.2.12 Interactive Terminal Gate
+## 0.2.13 Linux Native PTY Gate
 
-`check-xiaoyu-terminal.mjs` 验证 Rust Terminal Session 的生命周期、RPC、Host authorization、有界输入/输出，并明确禁止把 `stdio-pipe-v1` 虚报成 Native PTY/ConPTY。该 Gate 同时进入 GitHub Actions、Windows 项目检查和一键推送。
+`check-xiaoyu-terminal.mjs` 验证既有 Terminal RPC、Linux `posix_openpt`/controlling TTY backend、Host-authorized write/resize、有界输入输出，以及 Linux TTY/resize 测试。Windows 在 0.2.13 必须继续明确为 `stdio-pipe-v1` fallback；没有 Windows Rust CI 实测前禁止虚报 ConPTY。该 Gate 同时进入 GitHub Actions、Windows 项目检查和一键推送。
 

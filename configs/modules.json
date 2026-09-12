@@ -6,7 +6,7 @@
       "category": "智能核心",
       "route": "/",
       "status": "partial",
-      "phase": "0.2.12 · Rust Interactive Terminal Session",
+      "phase": "0.2.13 · Linux Native PTY Foundation",
       "features": [
         "小鱼自然语言主入口",
         "XiaoYu Agent Runtime（Rust-first）",
@@ -14,7 +14,7 @@
         "Tool Registry / Capability Discovery",
         "Rust Session Registry / Long-running Jobs",
         "Job Status / Cancel / Bounded Output",
-        "Rust Interactive Terminal Session / Bounded Output",
+        "Rust Terminal / Linux Native PTY / Bounded Output",
         "Agent Loop：Plan / Act / Observe / Validate / Recover",
         "Step / Tool / Failure Budget 与 Doom-loop 防护",
         "请求批准 / 帮我批准 / 完全访问权限",
@@ -41,6 +41,8 @@
         "rpc:jobs/*",
         "rust:xiaoyu-core/terminal",
         "rpc:terminal/*",
+        "rpc:terminal/resize",
+        "rust:xiaoyu-core/pty_linux",
         "doc:LANGUAGE-OWNERSHIP"
       ]
     },
@@ -194,7 +196,7 @@
         "进程状态 / PID / 时间 / 退出码快照",
         "环境变量继承 + Overlay",
         "受限 Run / Shell / 超时取消 / 输出上限",
-        "PTY / ConPTY 交互传输（后续扩展）",
+        "Windows ConPTY 交互传输（下一阶段；Linux PTY 已落地）",
         "跨 AGMP 重启会话重连（后续扩展）"
       ],
       "sourceRefs": [

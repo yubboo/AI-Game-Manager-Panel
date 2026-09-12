@@ -166,6 +166,11 @@ fn dispatch(runtime: &Runtime, request: JsonRpcRequest) -> JsonRpcResponse {
                 serde_json::from_value(request.params.clone())?;
             Ok(serde_json::to_value(runtime.terminal_output(output)?)?)
         }
+        "terminal/resize" => {
+            let resize: xiaoyu_protocol::TerminalResizeRequest =
+                serde_json::from_value(request.params.clone())?;
+            Ok(serde_json::to_value(runtime.resize_terminal(resize)?)?)
+        }
         "terminal/close" => {
             let id = request
                 .params

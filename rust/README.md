@@ -53,7 +53,8 @@ Rust Native Runtime 不等于无限权限。`jobs/start` 只是 Host 授权后�
 
 AGMP Go Host now keeps one supervised `xiaoyu rpc` process alive. Tool Search, Brain policy, Session Registry and Long-running Jobs share this process lifetime. The Worker remains an embedded AGMP component; Host RBAC/approval stays authoritative.
 
-## 0.2.12 Interactive Terminal Session
+## 0.2.13 Linux Native PTY Foundation
 
-`xiaoyu-core::terminal` adds a stateful interactive process session over the persistent RPC worker. The initial backend is deliberately named `stdio-pipe-v1`: it supports repeated Host-authorized input, bounded incremental output, status and close semantics, but does not claim native PTY/ConPTY behavior yet. The next backend upgrade will keep the same RPC contract.
+`xiaoyu-core::terminal` keeps the same stateful Terminal RPC contract introduced in 0.2.12, but Linux now uses a real PTY backend (`linux-pty-v1`) created directly by Rust. The child gets its own session and controlling terminal; output remains bounded, input stays Host-authorized, and `terminal/resize` updates the kernel window size. Linux tests verify both TTY detection and resize behavior.
 
+Windows and other non-Linux builds still report the explicit `stdio-pipe-v1` fallback. 0.2.13 does **not** claim Windows ConPTY support. The next step is a dedicated Windows Rust CI lane plus a verified ConPTY backend behind this same protocol.

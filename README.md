@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.12**  
+当前版本：**0.2.13**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 当前状态：[`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)  
 架构边界：[`docs/PROJECT-ARCHITECTURE.md`](docs/PROJECT-ARCHITECTURE.md) / [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)
@@ -48,11 +48,17 @@ build/
 
 
 
+## 0.2.13 Linux Native PTY Foundation
+
+0.2.13 在 0.2.12 已经稳定的 Terminal protocol 上把 Linux backend 从普通 stdio pipe 升级为**真实 PTY**：Rust 直接创建 PTY master/slave、建立独立 session/controlling terminal，并继续通过 Persistent `xiaoyu rpc` Worker 保持长期交互状态。`terminal/start|get|list|write|output|resize|close` 仍复用同一套协议，不再另建第二套终端核心。
+
+Linux Snapshot 明确返回 `backend=linux-pty-v1`，并支持 Host-authorized rows/cols resize；CI 会真实验证 `test -t 0` 与 `stty size`。Windows 当前仍明确返回 `stdio-pipe-v1` fallback，**本版不虚报 ConPTY 已完成**。Terminal Start、每次输入和 resize 都必须先经过 Go Host 授权，不能利用长期 shell 绕过三种审批模式。下一步将建立 Windows Rust Runtime CI，再实现并验证 ConPTY。
+
 ## 0.2.12 Rust Interactive Terminal Session
 
 0.2.12 在 0.2.11 已全绿的 Persistent Rust Runtime Worker 上新增 **Interactive Terminal Session v1**：Rust Runtime 可以启动长期交互进程、持续读取有界 stdout/stderr、向同一会话发送输入、查询状态并关闭会话。`terminal/start|get|list|write|output|close` 通过同一个 `xiaoyu rpc` Worker 保存状态。
 
-本阶段**不把 stdio pipe 冒充 Native PTY/ConPTY**。Terminal Snapshot 会明确返回 `backend=stdio-pipe-v1`；真正的 Windows ConPTY / Unix PTY 将在后续版本单独实现和验证。每次 Terminal Start 与每次输入都必须先经过 Go Host 授权，Rust 继续只接受 `hostAuthorized=true` 的内部调用，不能绕过三种审批模式。
+该阶段明确使用 `backend=stdio-pipe-v1`，只建立 PTY-ready 的协议和生命周期，不把普通 pipe 冒充 Native PTY/ConPTY。
 
 ## 0.2.11 Persistent Rust Runtime Worker
 

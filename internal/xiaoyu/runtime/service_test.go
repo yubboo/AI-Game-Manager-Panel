@@ -92,3 +92,11 @@ func TestWriteTerminalRejectsMissingHostAuthorizationBeforeRuntime(t *testing.T)
 		t.Fatal("unauthorized Rust terminal input must be rejected before contacting the runtime")
 	}
 }
+
+func TestResizeTerminalRejectsMissingHostAuthorizationBeforeRuntime(t *testing.T) {
+	service := New(Options{Root: t.TempDir(), BinaryOverride: filepath.Join(t.TempDir(), "missing-runtime")})
+	_, err := service.ResizeTerminal(nil, TerminalResizeRequest{ID: "XYT-test", Rows: 40, Cols: 120, HostAuthorized: false})
+	if err == nil {
+		t.Fatal("unauthorized Rust terminal resize must be rejected before contacting the runtime")
+	}
+}

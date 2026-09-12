@@ -174,9 +174,8 @@ XiaoYu Rust Runtime 是内部组件，不等于桌面壳。
 
 Go Host 现在长期监督一个 `xiaoyu rpc` 进程，Rust Session/Job 状态因此可以跨多次 RPC 保持。Worker 是 XiaoYu Runtime 的内部基础设施，不是新的用户产品或独立权限层。Host 仍负责身份、RBAC、审批、审计与 Domain Tool；Rust 负责 Agent Runtime state/native primitives。Worker 重启意味着易失 Session/Job state 丢失，Host 必须重新观察真实系统状态。
 
-## 11. 0.2.12 Interactive Terminal 边界
+## 11. 0.2.13 Linux Native PTY 边界
 
-`xiaoyu-core` 现在拥有长期 Interactive Terminal Session：start/get/list/write/output/close。Terminal 与 Job 不同，stdin 可多次写入，因此**每个输入 frame 都必须重新经过 Host authorization**。输出采用有界缓冲与 cursor 读取，工作目录继续受 Runtime Root / Session scope 约束。
+`xiaoyu-core` 继续拥有唯一的长期 Terminal 生命周期：`start/get/list/write/output/resize/close`。Terminal stdin 可多次写入，因此**每个输入 frame 和每次 resize 都必须重新经过 Host authorization**。输出采用有界缓冲与 cursor 读取，工作目录继续受 Runtime Root / Session scope 约束。
 
-0.2.12 Snapshot 的 backend 固定为 `stdio-pipe-v1`。它提供长期交互会话语义，但不声明 TTY/PTY 能力。Native Windows ConPTY 与 Unix PTY 是下一阶段 backend 替换，不创建第二套 Terminal protocol。
-
+Linux backend 现在是真实 `linux-pty-v1`：Rust 创建 PTY master/slave、建立新 session 和 controlling TTY，并允许更新 kernel window size。Linux tests 必须证明 stdin 是 TTY，并验证 `stty size` 随 resize 改变。非 Linux backend 当前仍是明确的 `stdio-pipe-v1` fallback。尤其 Windows ConPTY 尚未在 0.2.13 声明完成；后续实现必须复用同一 Terminal contract。

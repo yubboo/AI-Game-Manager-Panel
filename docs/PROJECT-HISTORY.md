@@ -1,5 +1,31 @@
 # AI-Game-Manager-Panel 项目历史
 
+## AI-Game-Manager-Panel 0.2.13
+
+### 主题
+Linux Native PTY Foundation / Terminal resize。
+
+### 主要变化
+- 修复 0.2.12 GitHub Actions 唯一红灯：`terminal.rs` 两处 rustfmt 布局差异；
+- 保持 0.2.12 的 `terminal/*` RPC contract，不创建第二套终端协议；
+- Linux Rust Runtime 新增真实 PTY backend：`posix_openpt` / slave / `setsid` / controlling TTY；
+- Linux Snapshot 返回 `backend=linux-pty-v1`；非 Linux 继续显式 `stdio-pipe-v1` fallback；
+- 新增 `terminal/resize`、rows/cols protocol 与 Go Host Bridge；resize 继续要求 Host authorization；
+- PTY master 使用 close-on-exec；关闭会话时终止 PTY process group；Linux PTY slave 关闭后的 EIO 按正常 EOF 处理；
+- Linux Rust tests 验证 `test -t 0` 与 `stty size`，避免只靠结构 Gate 虚报 PTY；
+- Terminal Gate 升级为 Linux Native PTY Gate，并明确禁止在 Windows Rust CI 验证前声明 ConPTY 已完成。
+
+### 0.2.12 GitHub 基线
+- Windows Helper + Encoding：PASS；
+- Linux Headless + Web + XiaoYu：PASS；
+- Go tests / Go vet / Agent Bench / Terminal Gate：PASS；
+- Safety 唯一失败：`cargo fmt --check` 在 `terminal.rs` 两处排版差异处停止，Rust check/test 因前序失败被跳过。
+
+### 下一阶段
+- 0.2.14：增加 Windows Rust Runtime CI，实际编译并集成测试 ConPTY；只有 Windows Runner 通过后再发布 Windows native PTY capability。
+
+---
+
 
 ## AI-Game-Manager-Panel 0.2.12
 
@@ -15,12 +41,11 @@ Rust Interactive Terminal Session / PTY-ready protocol foundation。
 - Snapshot 明确 `backend=stdio-pipe-v1`，本版不虚报 Native PTY/ConPTY；
 - 新增 `check-xiaoyu-terminal.mjs` 并接入 CI / Windows Helper / Push Gate。
 
-### 验证目标
-- 保持 0.2.11 三 Job 全绿；
-- Rust fmt/check/test；
-- Go test/vet；
-- Terminal interactive input/output lifecycle；
-- Agent Bench 与 Persistent Worker 不回退。
+### GitHub 验证结果
+- Windows Helper + Encoding：PASS；
+- Linux Headless + Web + XiaoYu：PASS；
+- Go test/vet、Agent Bench、Terminal Session Gate：PASS；
+- Safety 仅 `cargo fmt --check` 失败：`terminal.rs` 两处布局差异；因此该 run 中 Rust check/test 被跳过；功能路径与其余 Gate 未发现回退。
 
 ---
 

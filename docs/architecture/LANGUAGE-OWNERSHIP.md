@@ -199,9 +199,9 @@ Rust 作为 XiaoYu 内部 Runtime 随完整 AGMP 一起发行。未来只有当 
 - Go：监督 Rust Worker 生命周期并继续提供 Product/Domain authority。
 - 下一步：只把已通过 Host Approval 的长任务切到 Rust Jobs，然后再引入 PTY。
 
-### 0.2.12 增量迁移
+### 0.2.13 增量迁移
 
-- Rust：新增 Interactive Terminal Session v1，长期持有 stdin/stdout/stderr 与状态；输出有界、输入逐次授权。
-- Go：继续提供身份、RBAC、审批、Domain authority，并只通过 Persistent Worker 调用 Terminal RPC。
-- `stdio-pipe-v1` 是交互会话兼容层，不等于 Native PTY。Windows ConPTY / Unix PTY 将复用同一协议增量替换 backend。
-
+- Rust：Terminal contract 保持不变，Linux backend 升级为真实 `linux-pty-v1`，并新增 Host-authorized resize。
+- Go：继续提供身份、RBAC、审批、Domain authority，只通过 Persistent Worker 调用 Terminal RPC。
+- Windows：仍明确使用 `stdio-pipe-v1` fallback；ConPTY 只有在专用 Windows Rust CI 实际验证后才能进入 capability。
+- 原则：Native Runtime 因真实能力进入 Rust，而不是为了提高 GitHub Rust 百分比；Go Domain Service 不因 PTY 迁移而重写。

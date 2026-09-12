@@ -31,6 +31,7 @@ const requiredFiles = [
   'rust/crates/xiaoyu-core/src/session.rs',
   'rust/crates/xiaoyu-core/src/jobs.rs',
   'rust/crates/xiaoyu-core/src/terminal.rs',
+  'rust/crates/xiaoyu-core/src/pty_linux.rs',
   'rust/crates/xiaoyu-protocol/Cargo.toml',
   'scripts/common/check-github-safety.mjs',
   'scripts/common/check-language-ownership.mjs',

@@ -1,17 +1,22 @@
 use crate::session::resolve_cwd;
-use anyhow::{Context, Result, bail};
+use anyhow::{Result, bail};
+#[cfg(not(target_os = "linux"))]
+use anyhow::Context;
 use std::collections::{HashMap, VecDeque};
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use std::path::PathBuf;
-use std::process::{Child, ChildStdin, Command, Stdio};
+use std::process::Child;
+#[cfg(not(target_os = "linux"))]
+use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 use xiaoyu_protocol::{
-    JobOutputChunk, SessionInfo, TerminalOutputRequest, TerminalOutputResponse, TerminalSnapshot,
-    TerminalStartRequest, TerminalState, TerminalWriteRequest,
+    JobOutputChunk, SessionInfo, TerminalOutputRequest, TerminalOutputResponse,
+    TerminalResizeRequest, TerminalSnapshot, TerminalStartRequest, TerminalState,
+    TerminalWriteRequest,
 };
 
 const DEFAULT_OUTPUT_BYTES: usize = 512 * 1024;
@@ -20,7 +25,11 @@ const MAX_TERMINALS: usize = 32;
 const DEFAULT_OUTPUT_CHUNKS: usize = 200;
 const MAX_OUTPUT_CHUNKS: usize = 1000;
 const MAX_WRITE_BYTES: usize = 64 * 1024;
-const TERMINAL_BACKEND: &str = "stdio-pipe-v1";
+const DEFAULT_ROWS: u16 = 24;
+const DEFAULT_COLS: u16 = 80;
+const PIPE_BACKEND: &str = "stdio-pipe-v1";
+#[cfg(target_os = "linux")]
+const NATIVE_PTY_BACKEND: &str = "linux-pty-v1";
 
 #[derive(Clone)]
 pub struct TerminalManager {
@@ -31,8 +40,8 @@ pub struct TerminalManager {
 #[derive(Clone)]
 struct TerminalEntry {
     state: Arc<Mutex<TerminalStateData>>,
-    child: Arc<Mutex<Option<Child>>>,
-    stdin: Arc<Mutex<Option<ChildStdin>>>,
+    process: Arc<Mutex<Option<TerminalProcess>>>,
+    input: Arc<Mutex<Option<Box<dyn Write + Send>>>>,
     output: Arc<Mutex<OutputBuffer>>,
 }
 
@@ -49,6 +58,112 @@ struct TerminalStateData {
     created_at: u64,
     finished_at: Option<u64>,
     close_requested: bool,
+    backend: String,
+    rows: u16,
+    cols: u16,
+}
+
+enum TerminalProcess {
+    Pipe(Child),
+    #[cfg(target_os = "linux")]
+    LinuxPty(crate::pty_linux::LinuxPtyProcess),
+}
+
+impl TerminalProcess {
+    fn pid(&self) -> u32 {
+        match self {
+            Self::Pipe(child) => child.id(),
+            #[cfg(target_os = "linux")]
+            Self::LinuxPty(process) => process.pid(),
+        }
+    }
+
+    fn try_wait(&mut self) -> io::Result<Option<i32>> {
+        match self {
+            Self::Pipe(child) => child
+                .try_wait()
+                .map(|status| status.map(|status| status.code().unwrap_or_default())),
+            #[cfg(target_os = "linux")]
+            Self::LinuxPty(process) => process.try_wait(),
+        }
+    }
+
+    fn kill(&mut self) -> io::Result<()> {
+        match self {
+            Self::Pipe(child) => child.kill(),
+            #[cfg(target_os = "linux")]
+            Self::LinuxPty(process) => process.kill(),
+        }
+    }
+
+    fn resize(&mut self, rows: u16, cols: u16) -> io::Result<()> {
+        match self {
+            Self::Pipe(_) => Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "terminal backend does not support resize",
+            )),
+            #[cfg(target_os = "linux")]
+            Self::LinuxPty(process) => process.resize(rows, cols),
+        }
+    }
+}
+
+struct SpawnedTerminal {
+    process: TerminalProcess,
+    input: Box<dyn Write + Send>,
+    readers: Vec<(&'static str, Box<dyn Read + Send>)>,
+    backend: &'static str,
+}
+
+fn spawn_terminal(
+    executable: &str,
+    arguments: &[String],
+    cwd: &std::path::Path,
+    rows: u16,
+    cols: u16,
+) -> Result<SpawnedTerminal> {
+    #[cfg(target_os = "linux")]
+    {
+        let spawned = crate::pty_linux::spawn(executable, arguments, cwd, rows, cols)?;
+        return Ok(SpawnedTerminal {
+            process: TerminalProcess::LinuxPty(spawned.process),
+            input: Box::new(spawned.writer),
+            readers: vec![("pty", Box::new(spawned.reader))],
+            backend: NATIVE_PTY_BACKEND,
+        });
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let mut command = Command::new(executable);
+        command
+            .args(arguments)
+            .current_dir(cwd)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+        let mut child = command
+            .spawn()
+            .with_context(|| format!("cannot start terminal executable: {executable}"))?;
+        let stdin = child
+            .stdin
+            .take()
+            .ok_or_else(|| anyhow::anyhow!("terminal stdin pipe unavailable"))?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| anyhow::anyhow!("terminal stdout pipe unavailable"))?;
+        let stderr = child
+            .stderr
+            .take()
+            .ok_or_else(|| anyhow::anyhow!("terminal stderr pipe unavailable"))?;
+        Ok(SpawnedTerminal {
+            process: TerminalProcess::Pipe(child),
+            input: Box::new(stdin),
+            readers: vec![("stdout", Box::new(stdout)), ("stderr", Box::new(stderr))],
+            backend: PIPE_BACKEND,
+        })
+    }
 }
 
 #[derive(Debug)]
@@ -144,7 +259,10 @@ impl TerminalManager {
             bail!("terminal executable is required");
         }
         let cwd = if let Some(session) = session {
-            resolve_cwd(&self.root, request.cwd.as_deref().or(Some(session.cwd.as_str())))?
+            resolve_cwd(
+                &self.root,
+                request.cwd.as_deref().or(Some(session.cwd.as_str())),
+            )?
         } else {
             resolve_cwd(&self.root, request.cwd.as_deref())?
         };
@@ -163,29 +281,18 @@ impl TerminalManager {
             }
         }
 
-        let mut command = Command::new(executable);
-        command
-            .args(&request.arguments)
-            .current_dir(&cwd)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-        let mut child = command
-            .spawn()
-            .with_context(|| format!("cannot start terminal executable: {executable}"))?;
-        let pid = child.id();
-        let stdin = child
-            .stdin
-            .take()
-            .ok_or_else(|| anyhow::anyhow!("terminal stdin pipe unavailable"))?;
-        let stdout = child
-            .stdout
-            .take()
-            .ok_or_else(|| anyhow::anyhow!("terminal stdout pipe unavailable"))?;
-        let stderr = child
-            .stderr
-            .take()
-            .ok_or_else(|| anyhow::anyhow!("terminal stderr pipe unavailable"))?;
+        let rows = if request.rows == 0 {
+            DEFAULT_ROWS
+        } else {
+            request.rows
+        };
+        let cols = if request.cols == 0 {
+            DEFAULT_COLS
+        } else {
+            request.cols
+        };
+        let spawned = spawn_terminal(executable, &request.arguments, &cwd, rows, cols)?;
+        let pid = spawned.process.pid();
 
         let id = format!("XYT-{}", Uuid::new_v4());
         let created_at = unix_millis();
@@ -201,24 +308,23 @@ impl TerminalManager {
             created_at,
             finished_at: None,
             close_requested: false,
+            backend: spawned.backend.to_string(),
+            rows,
+            cols,
         }));
-        let child = Arc::new(Mutex::new(Some(child)));
-        let stdin = Arc::new(Mutex::new(Some(stdin)));
+        let process = Arc::new(Mutex::new(Some(spawned.process)));
+        let input = Arc::new(Mutex::new(Some(spawned.input)));
         let output = Arc::new(Mutex::new(OutputBuffer::new(max_output_bytes)));
         let readers = Arc::new(AtomicUsize::new(0));
-        spawn_reader(stdout, "stdout", output.clone(), readers.clone());
-        spawn_reader(stderr, "stderr", output.clone(), readers.clone());
-        spawn_monitor(
-            state.clone(),
-            child.clone(),
-            stdin.clone(),
-            readers,
-        );
+        for (stream, reader) in spawned.readers {
+            spawn_reader(reader, stream, output.clone(), readers.clone());
+        }
+        spawn_monitor(state.clone(), process.clone(), input.clone(), readers);
 
         let entry = TerminalEntry {
             state,
-            child,
-            stdin,
+            process,
+            input,
             output,
         };
         let snapshot = snapshot(&entry)?;
@@ -267,11 +373,11 @@ impl TerminalManager {
                 bail!("terminal is not running: {}", request.id);
             }
         }
-        let mut stdin = entry
-            .stdin
+        let mut input = entry
+            .input
             .lock()
-            .map_err(|_| anyhow::anyhow!("terminal stdin lock poisoned"))?;
-        let writer = stdin
+            .map_err(|_| anyhow::anyhow!("terminal input lock poisoned"))?;
+        let writer = input
             .as_mut()
             .ok_or_else(|| anyhow::anyhow!("terminal input is already closed"))?;
         writer.write_all(request.data.as_bytes())?;
@@ -279,7 +385,7 @@ impl TerminalManager {
             writer.write_all(b"\n")?;
         }
         writer.flush()?;
-        drop(stdin);
+        drop(input);
         snapshot(&entry)
     }
 
@@ -290,6 +396,43 @@ impl TerminalManager {
             .lock()
             .map_err(|_| anyhow::anyhow!("terminal output lock poisoned"))?;
         Ok(buffer.read(request.id, request.after, request.limit))
+    }
+
+    pub fn resize(&self, request: TerminalResizeRequest) -> Result<TerminalSnapshot> {
+        if !request.host_authorized {
+            bail!("terminal resize requires Host authorization");
+        }
+        if request.rows == 0 || request.cols == 0 {
+            bail!("terminal resize requires non-zero rows and cols");
+        }
+        let entry = self.entry(&request.id)?;
+        {
+            let state = entry
+                .state
+                .lock()
+                .map_err(|_| anyhow::anyhow!("terminal state lock poisoned"))?;
+            if state.state != TerminalState::Running {
+                bail!("terminal is not running: {}", request.id);
+            }
+        }
+        let mut process = entry
+            .process
+            .lock()
+            .map_err(|_| anyhow::anyhow!("terminal process lock poisoned"))?;
+        let process = process
+            .as_mut()
+            .ok_or_else(|| anyhow::anyhow!("terminal process is unavailable"))?;
+        process.resize(request.rows, request.cols)?;
+        drop(process);
+        {
+            let mut state = entry
+                .state
+                .lock()
+                .map_err(|_| anyhow::anyhow!("terminal state lock poisoned"))?;
+            state.rows = request.rows;
+            state.cols = request.cols;
+        }
+        snapshot(&entry)
     }
 
     pub fn close(&self, id: &str) -> Result<TerminalSnapshot> {
@@ -306,17 +449,17 @@ impl TerminalManager {
             state.close_requested = true;
             state.state = TerminalState::Closed;
         }
-        if let Ok(mut stdin) = entry.stdin.lock() {
-            *stdin = None;
+        if let Ok(mut input) = entry.input.lock() {
+            *input = None;
         }
-        let mut child = entry
-            .child
+        let mut process = entry
+            .process
             .lock()
-            .map_err(|_| anyhow::anyhow!("terminal child lock poisoned"))?;
-        if let Some(process) = child.as_mut() {
+            .map_err(|_| anyhow::anyhow!("terminal process lock poisoned"))?;
+        if let Some(process) = process.as_mut() {
             let _ = process.kill();
         }
-        drop(child);
+        drop(process);
         snapshot(&entry)
     }
 
@@ -357,7 +500,9 @@ fn snapshot(entry: &TerminalEntry) -> Result<TerminalSnapshot> {
         created_at: state.created_at,
         finished_at: state.finished_at,
         output_truncated,
-        backend: TERMINAL_BACKEND.to_string(),
+        backend: state.backend,
+        rows: state.rows,
+        cols: state.cols,
     })
 }
 
@@ -382,6 +527,10 @@ fn spawn_reader<R>(
                     }
                 }
                 Err(error) => {
+                    #[cfg(target_os = "linux")]
+                    if stream == "pty" && error.raw_os_error() == Some(5) {
+                        break;
+                    }
                     if let Ok(mut buffer) = output.lock() {
                         buffer.append("runtime", format!("terminal output read failed: {error}\n"));
                     }
@@ -395,30 +544,30 @@ fn spawn_reader<R>(
 
 fn spawn_monitor(
     state: Arc<Mutex<TerminalStateData>>,
-    child: Arc<Mutex<Option<Child>>>,
-    stdin: Arc<Mutex<Option<ChildStdin>>>,
+    process: Arc<Mutex<Option<TerminalProcess>>>,
+    input: Arc<Mutex<Option<Box<dyn Write + Send>>>>,
     readers: Arc<AtomicUsize>,
 ) {
     thread::spawn(move || {
         let exit_status = loop {
             let result = {
-                let mut child = match child.lock() {
+                let mut process = match process.lock() {
                     Ok(value) => value,
                     Err(_) => return,
                 };
-                match child.as_mut() {
+                match process.as_mut() {
                     Some(process) => process.try_wait(),
                     None => return,
                 }
             };
             match result {
-                Ok(Some(status)) => break Ok(status),
+                Ok(Some(code)) => break Ok(code),
                 Ok(None) => thread::sleep(Duration::from_millis(50)),
                 Err(error) => break Err(error),
             }
         };
-        if let Ok(mut stdin) = stdin.lock() {
-            *stdin = None;
+        if let Ok(mut input) = input.lock() {
+            *input = None;
         }
         while readers.load(Ordering::SeqCst) > 0 {
             thread::sleep(Duration::from_millis(10));
@@ -429,8 +578,8 @@ fn spawn_monitor(
         };
         state.finished_at = Some(unix_millis());
         match exit_status {
-            Ok(status) => {
-                state.exit_code = status.code();
+            Ok(code) => {
+                state.exit_code = Some(code);
                 state.state = if state.close_requested {
                     TerminalState::Closed
                 } else {
@@ -446,8 +595,9 @@ fn spawn_monitor(
                 };
             }
         }
-        if let Ok(mut child) = child.lock() {
-            *child = None;
+        drop(state);
+        if let Ok(mut process) = process.lock() {
+            *process = None;
         }
     });
 }
@@ -475,6 +625,8 @@ mod tests {
             arguments,
             cwd: Some(root.to_string_lossy().into_owned()),
             max_output_bytes: 32 * 1024,
+            rows: DEFAULT_ROWS,
+            cols: DEFAULT_COLS,
             host_authorized: true,
         }
     }
@@ -508,7 +660,10 @@ mod tests {
         let root = std::env::current_dir().unwrap();
         let manager = TerminalManager::new(root.clone());
         let terminal = manager.start(shell_request(&root), None).unwrap();
-        assert_eq!(terminal.backend, TERMINAL_BACKEND);
+        #[cfg(target_os = "linux")]
+        assert_eq!(terminal.backend, NATIVE_PTY_BACKEND);
+        #[cfg(not(target_os = "linux"))]
+        assert_eq!(terminal.backend, PIPE_BACKEND);
         manager
             .write(TerminalWriteRequest {
                 id: terminal.id.clone(),
@@ -548,5 +703,100 @@ mod tests {
             thread::sleep(Duration::from_millis(20));
         }
         panic!("interactive terminal output did not arrive in time");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_terminal_is_backed_by_a_real_tty() {
+        let root = std::env::current_dir().unwrap();
+        let manager = TerminalManager::new(root.clone());
+        let terminal = manager.start(shell_request(&root), None).unwrap();
+        assert_eq!(terminal.backend, NATIVE_PTY_BACKEND);
+        manager
+            .write(TerminalWriteRequest {
+                id: terminal.id.clone(),
+                data: "printf 'TTY:%s\\n' \"$(test -t 0 && echo yes || echo no)\"".to_string(),
+                append_newline: true,
+                host_authorized: true,
+            })
+            .unwrap();
+        manager
+            .write(TerminalWriteRequest {
+                id: terminal.id.clone(),
+                data: "exit".to_string(),
+                append_newline: true,
+                host_authorized: true,
+            })
+            .unwrap();
+        for _ in 0..150 {
+            let output = manager
+                .output(TerminalOutputRequest {
+                    id: terminal.id.clone(),
+                    after: 0,
+                    limit: 100,
+                })
+                .unwrap();
+            if output
+                .chunks
+                .iter()
+                .any(|chunk| chunk.text.contains("TTY:yes"))
+            {
+                return;
+            }
+            thread::sleep(Duration::from_millis(20));
+        }
+        panic!("Linux PTY did not report a TTY on stdin");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_terminal_resize_updates_kernel_winsize() {
+        let root = std::env::current_dir().unwrap();
+        let manager = TerminalManager::new(root.clone());
+        let terminal = manager.start(shell_request(&root), None).unwrap();
+        let resized = manager
+            .resize(TerminalResizeRequest {
+                id: terminal.id.clone(),
+                rows: 40,
+                cols: 120,
+                host_authorized: true,
+            })
+            .unwrap();
+        assert_eq!(resized.rows, 40);
+        assert_eq!(resized.cols, 120);
+        manager
+            .write(TerminalWriteRequest {
+                id: terminal.id.clone(),
+                data: "stty size".to_string(),
+                append_newline: true,
+                host_authorized: true,
+            })
+            .unwrap();
+        manager
+            .write(TerminalWriteRequest {
+                id: terminal.id.clone(),
+                data: "exit".to_string(),
+                append_newline: true,
+                host_authorized: true,
+            })
+            .unwrap();
+        for _ in 0..150 {
+            let output = manager
+                .output(TerminalOutputRequest {
+                    id: terminal.id.clone(),
+                    after: 0,
+                    limit: 100,
+                })
+                .unwrap();
+            if output
+                .chunks
+                .iter()
+                .any(|chunk| chunk.text.contains("40 120"))
+            {
+                return;
+            }
+            thread::sleep(Duration::from_millis(20));
+        }
+        panic!("Linux PTY resize was not visible through stty size");
     }
 }

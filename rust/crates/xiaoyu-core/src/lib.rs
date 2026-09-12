@@ -1,4 +1,6 @@
 mod jobs;
+#[cfg(target_os = "linux")]
+mod pty_linux;
 mod session;
 mod terminal;
 mod tool_search;
@@ -12,8 +14,8 @@ use xiaoyu_protocol::{
     ApprovalDecision, ApprovalMode, BrainDecision, BrainDecisionKind, BrainPrompt,
     JobOutputRequest, JobOutputResponse, JobSnapshot, JobStartRequest, ModelTurn, PROTOCOL_VERSION,
     RiskLevel, RuntimeStatus, SessionInfo, TerminalOutputRequest, TerminalOutputResponse,
-    TerminalSnapshot, TerminalStartRequest, TerminalWriteRequest, ToolSearchRequest,
-    ToolSearchResponse, ToolSpec,
+    TerminalResizeRequest, TerminalSnapshot, TerminalStartRequest, TerminalWriteRequest,
+    ToolSearchRequest, ToolSearchResponse, ToolSpec,
 };
 
 pub const RUNTIME_NAME: &str = "小鱼 · XiaoYu Intelligence Core";
@@ -22,10 +24,11 @@ pub const RUNTIME_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// XiaoYu's Rust core is the AGMP Agent Runtime boundary. It owns provider-neutral
 /// agent semantics and is the Rust-first home for capability discovery, sessions,
 /// jobs, PTY, sandbox and generic native execution. Go remains the source of
-/// truth for game/product domain services. The 0.2.12 migration adds the
-/// Host-authorized interactive Terminal Session on the persistent Go↔Rust worker while remaining incremental:
-/// existing Go execution paths stay compatible until equivalent Rust paths are
-/// covered by protocol tests and Agent Bench scenarios.
+/// truth for game/product domain services. The 0.2.13 migration upgrades the
+/// existing Terminal protocol to a real Linux PTY backend with Host-authorized
+/// resize while keeping an explicit stdio fallback on platforms whose native
+/// backend is not yet verified. Existing Go execution paths stay compatible
+/// until equivalent Rust paths are covered by protocol and Agent Bench tests.
 #[derive(Clone)]
 pub struct Runtime {
     sessions: session::SessionManager,
@@ -44,41 +47,52 @@ impl Runtime {
     }
 
     pub fn status(&self) -> RuntimeStatus {
+        let mut capabilities = vec![
+            "json-rpc-stdio".to_string(),
+            "persistent-rpc-worker-v1".to_string(),
+            "risk-aware-planning".to_string(),
+            "session-foundation".to_string(),
+            "host-tool-contracts".to_string(),
+            "plugin-harness-contracts".to_string(),
+            "rust-agent-runtime-boundary".to_string(),
+            "domain-provider-separation".to_string(),
+            "tool-search-v1".to_string(),
+            "session-registry-v1".to_string(),
+            "long-running-jobs-v1".to_string(),
+            "cancellable-jobs".to_string(),
+            "bounded-job-output".to_string(),
+            "interactive-terminal-v2".to_string(),
+            "authorized-terminal-input".to_string(),
+            "bounded-terminal-output".to_string(),
+            "native-runtime-migration".to_string(),
+            "model-brain-policy".to_string(),
+            "memory-skill-expert-context".to_string(),
+            "expert-collaboration-policy".to_string(),
+            "agent-kernel-v2".to_string(),
+            "goal-first-execution".to_string(),
+            "public-decision-summary".to_string(),
+            "verification-recovery-loop".to_string(),
+            "guided-autonomy".to_string(),
+            "model-intelligence-preservation".to_string(),
+            "general-capability-fallback".to_string(),
+            "domain-tools-preferred-not-required".to_string(),
+        ];
+        #[cfg(target_os = "linux")]
+        {
+            capabilities.push("linux-native-pty-v1".to_string());
+            capabilities.push("authorized-terminal-resize".to_string());
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            capabilities.push("stdio-terminal-fallback".to_string());
+        }
+
         RuntimeStatus {
             name: RUNTIME_NAME.to_string(),
             version: RUNTIME_VERSION.to_string(),
             protocol: PROTOCOL_VERSION.to_string(),
             ready: true,
-            capabilities: vec![
-                "json-rpc-stdio".to_string(),
-                "persistent-rpc-worker-v1".to_string(),
-                "risk-aware-planning".to_string(),
-                "session-foundation".to_string(),
-                "host-tool-contracts".to_string(),
-                "plugin-harness-contracts".to_string(),
-                "rust-agent-runtime-boundary".to_string(),
-                "domain-provider-separation".to_string(),
-                "tool-search-v1".to_string(),
-                "session-registry-v1".to_string(),
-                "long-running-jobs-v1".to_string(),
-                "cancellable-jobs".to_string(),
-                "bounded-job-output".to_string(),
-                "interactive-terminal-v1".to_string(),
-                "authorized-terminal-input".to_string(),
-                "bounded-terminal-output".to_string(),
-                "native-runtime-migration".to_string(),
-                "model-brain-policy".to_string(),
-                "memory-skill-expert-context".to_string(),
-                "expert-collaboration-policy".to_string(),
-                "agent-kernel-v2".to_string(),
-                "goal-first-execution".to_string(),
-                "public-decision-summary".to_string(),
-                "verification-recovery-loop".to_string(),
-                "guided-autonomy".to_string(),
-                "model-intelligence-preservation".to_string(),
-                "general-capability-fallback".to_string(),
-                "domain-tools-preferred-not-required".to_string(),
-            ],
+            capabilities,
             // Domain Tool count is supplied by the AGMP Go host. Rust now owns
             // Tool Search plus Session/Job/Terminal primitives, while model-visible
             // execution remains behind Host Tool approval/RBAC.
@@ -140,9 +154,10 @@ impl Runtime {
         self.jobs.cancel(id)
     }
 
-    /// Starts a long-lived interactive terminal process. 0.2.12 deliberately
-    /// exposes this as a stdio-backed terminal session, not a native PTY claim.
-    /// Every start and every input frame must already be authorized by the Go Host.
+    /// Starts a long-lived interactive terminal process. Linux uses a native
+    /// PTY in 0.2.13; platforms without a verified native backend keep an
+    /// explicit stdio fallback. Every start and every input frame must already
+    /// be authorized by the Go Host.
     pub fn start_terminal(&self, request: TerminalStartRequest) -> Result<TerminalSnapshot> {
         let session = request
             .session_id
@@ -169,6 +184,10 @@ impl Runtime {
         request: TerminalOutputRequest,
     ) -> Result<TerminalOutputResponse> {
         self.terminals.output(request)
+    }
+
+    pub fn resize_terminal(&self, request: TerminalResizeRequest) -> Result<TerminalSnapshot> {
+        self.terminals.resize(request)
     }
 
     pub fn close_terminal(&self, id: &str) -> Result<TerminalSnapshot> {
@@ -430,6 +449,42 @@ mod tests {
                 .iter()
                 .any(|item| item == "persistent-rpc-worker-v1")
         );
+        assert!(
+            status
+                .capabilities
+                .iter()
+                .any(|item| item == "interactive-terminal-v2")
+        );
+        #[cfg(target_os = "linux")]
+        {
+            assert!(
+                status
+                    .capabilities
+                    .iter()
+                    .any(|item| item == "linux-native-pty-v1")
+            );
+            assert!(
+                status
+                    .capabilities
+                    .iter()
+                    .any(|item| item == "authorized-terminal-resize")
+            );
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            assert!(
+                status
+                    .capabilities
+                    .iter()
+                    .any(|item| item == "stdio-terminal-fallback")
+            );
+            assert!(
+                !status
+                    .capabilities
+                    .iter()
+                    .any(|item| item == "linux-native-pty-v1")
+            );
+        }
     }
 
     #[test]

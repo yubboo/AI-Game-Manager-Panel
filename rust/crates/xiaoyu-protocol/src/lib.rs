@@ -278,6 +278,10 @@ pub struct TerminalStartRequest {
     #[serde(default)]
     pub max_output_bytes: usize,
     #[serde(default)]
+    pub rows: u16,
+    #[serde(default)]
+    pub cols: u16,
+    #[serde(default)]
     pub host_authorized: bool,
 }
 
@@ -300,6 +304,8 @@ pub struct TerminalSnapshot {
     pub finished_at: Option<u64>,
     pub output_truncated: bool,
     pub backend: String,
+    pub rows: u16,
+    pub cols: u16,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -309,6 +315,16 @@ pub struct TerminalWriteRequest {
     pub data: String,
     #[serde(default)]
     pub append_newline: bool,
+    #[serde(default)]
+    pub host_authorized: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TerminalResizeRequest {
+    pub id: String,
+    pub rows: u16,
+    pub cols: u16,
     #[serde(default)]
     pub host_authorized: bool,
 }
