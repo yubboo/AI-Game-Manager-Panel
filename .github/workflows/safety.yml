@@ -37,6 +37,9 @@ jobs:
           test -f rust/crates/xiaoyu-core/src/tool_search.rs
           test -f rust/crates/xiaoyu-core/src/session.rs
           test -f rust/crates/xiaoyu-core/src/jobs.rs
+          test -f rust/crates/xiaoyu-core/src/terminal.rs
+          test -f rust/crates/xiaoyu-core/src/pty_linux.rs
+          test -f rust/crates/xiaoyu-core/src/pty_windows.rs
           test -f frontend/pnpm-lock.yaml
           test -f desktop/electron/pnpm-lock.yaml
           test -f docs/architecture/LANGUAGE-OWNERSHIP.md
@@ -202,6 +205,9 @@ jobs:
           test -f rust/crates/xiaoyu-core/src/tool_search.rs
           test -f rust/crates/xiaoyu-core/src/session.rs
           test -f rust/crates/xiaoyu-core/src/jobs.rs
+          test -f rust/crates/xiaoyu-core/src/terminal.rs
+          test -f rust/crates/xiaoyu-core/src/pty_linux.rs
+          test -f rust/crates/xiaoyu-core/src/pty_windows.rs
           test -f frontend/pnpm-lock.yaml
           test -f desktop/electron/pnpm-lock.yaml
           test -f docs/architecture/LANGUAGE-OWNERSHIP.md
@@ -270,6 +276,40 @@ jobs:
           test -x rust/target/release/xiaoyu
           test -x /tmp/agmp-headless
           test -f cmd/aigame-manager-web/web/index.html
+
+
+  windows-rust-runtime:
+    name: Windows Rust Runtime + ConPTY
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: XiaoYu Terminal/PTY structure gate
+        run: node scripts/common/check-xiaoyu-terminal.mjs
+
+      - name: Rust Agent format
+        run: cargo fmt --manifest-path rust/Cargo.toml --all -- --check
+
+      - name: Rust Agent check on Windows
+        run: cargo check --manifest-path rust/Cargo.toml --workspace --locked
+
+      - name: XiaoYu Windows ConPTY integration
+        run: cargo test --manifest-path rust/Cargo.toml -p xiaoyu-core --locked windows_terminal_ -- --nocapture
+
+      - name: Rust Agent tests on Windows
+        run: cargo test --manifest-path rust/Cargo.toml --workspace --locked
 
 
   windows-helper:

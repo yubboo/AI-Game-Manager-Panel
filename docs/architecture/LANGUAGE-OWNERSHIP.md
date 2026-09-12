@@ -199,6 +199,13 @@ Rust 作为 XiaoYu 内部 Runtime 随完整 AGMP 一起发行。未来只有当 
 - Go：监督 Rust Worker 生命周期并继续提供 Product/Domain authority。
 - 下一步：只把已通过 Host Approval 的长任务切到 Rust Jobs，然后再引入 PTY。
 
+### 0.2.14 增量迁移
+
+- Linux Native PTY 继续归 Rust XiaoYu Runtime。
+- Windows Terminal backend 从 stdio fallback 升级为 ConPTY，并由独立 Windows Rust CI build/integration test 验证。
+- `terminal/*` contract 跨平台共用；平台差异只存在 Rust native backend，禁止复制 Agent 业务逻辑。
+- start/write/resize 继续由 Go Host 的身份、RBAC、审批决定，Rust 负责被授权后的 native execution。
+
 ### 0.2.13 增量迁移
 
 - Rust：Terminal contract 保持不变，Linux backend 升级为真实 `linux-pty-v1`，并新增 Host-authorized resize。

@@ -5,6 +5,22 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.14：Windows ConPTY / Cross-platform Native Terminal
+
+- 修正 0.2.13 GitHub Runner 剩余的一处 Rust import-order `cargo fmt --check` 差异；
+- 保持既有 `terminal/*` contract，不为 Windows 再造第二套 Terminal API；
+- Windows backend 使用 ConPTY：`CreatePseudoConsole`、`PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE`、`CreateProcessW`、`ResizePseudoConsole`；
+- Windows Snapshot 目标为 `backend=windows-conpty-v1`，Linux 继续 `linux-pty-v1`；
+- ConPTY input/output 继续有界并持久，start/write/resize 均保留 Host authorization；
+- 新增独立 `Windows Rust Runtime + ConPTY` CI Job，Windows Runner 必须执行 Rust check/tests 和 ConPTY integration test；
+- 未经 Windows Runner 实际验证，不把 ConPTY 宣布为稳定完成态。
+
+**冻结条件：** 既有 Go/Headless/Windows Helper Gate 不回退；Rust fmt/check/test 通过；Linux PTY integration 通过；Windows ConPTY integration 通过；四个主要 CI Job 全绿。
+
+### 下一步
+
+Native Terminal 双平台站稳后，进入 Sandbox / Capability Lease 与 Approved Agent Terminal wiring，继续保持 Rust-first Runtime 和 Go Domain Host 的职责边界。
+
 ## 0.2.13：Linux Native PTY Foundation
 
 - 修正 0.2.12 GitHub Runner 报出的两处 `cargo fmt --check` 差异；

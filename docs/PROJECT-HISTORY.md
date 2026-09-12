@@ -1,5 +1,22 @@
 # AI-Game-Manager-Panel 项目历史
 
+## AI-Game-Manager-Panel 0.2.14
+
+### Windows ConPTY / Cross-platform Native Terminal
+
+- 修复 0.2.13 GitHub Actions 唯一剩余的 Rust import-order rustfmt 差异。
+- Rust 新增 `pty_windows.rs`，实现 Windows ConPTY 创建、进程启动、输入输出、状态、终止和 resize。
+- Linux 继续使用 `linux-pty-v1`；Windows 使用 `windows-conpty-v1`；其他平台才保留明确的 stdio fallback。
+- ConPTY 继续复用 `terminal/start|get|list|write|output|resize|close`，没有制造平台专用的第二套协议。
+- 新增独立 `Windows Rust Runtime + ConPTY` GitHub Actions Job，要求 Windows Runner 真实 build/test ConPTY backend。
+- Host 授权仍是 start/write/resize 的硬边界；Rust Native Terminal 不成为绕过三种审批模式的后门。
+
+### 验证目标
+
+- Linux Safety：rustfmt / cargo check / Linux PTY integration / Rust tests 全绿；
+- Windows Rust Runtime + ConPTY：cargo fmt/check、Windows ConPTY integration、workspace tests 全绿；
+- Windows Helper 与 Linux Headless 不回退。
+
 ## AI-Game-Manager-Panel 0.2.13
 
 ### 主题

@@ -53,6 +53,12 @@ Rust Native Runtime 不等于无限权限。`jobs/start` 只是 Host 授权后�
 
 AGMP Go Host now keeps one supervised `xiaoyu rpc` process alive. Tool Search, Brain policy, Session Registry and Long-running Jobs share this process lifetime. The Worker remains an embedded AGMP component; Host RBAC/approval stays authoritative.
 
+## 0.2.14 Windows ConPTY / Cross-platform Native Terminal
+
+`xiaoyu-core::terminal` now has native terminal backends on the two primary platforms: Linux keeps `linux-pty-v1`, while Windows uses `windows-conpty-v1` implemented with `CreatePseudoConsole`, extended startup attributes and `ResizePseudoConsole`. The public JSON-RPC Terminal contract stays unchanged.
+
+A dedicated `Windows Rust Runtime + ConPTY` CI job builds the Rust workspace on `windows-latest` and runs a ConPTY integration probe. Start, input and resize remain Host-authorized; native terminal support is an execution primitive, not a permission bypass.
+
 ## 0.2.13 Linux Native PTY Foundation
 
 `xiaoyu-core::terminal` keeps the same stateful Terminal RPC contract introduced in 0.2.12, but Linux now uses a real PTY backend (`linux-pty-v1`) created directly by Rust. The child gets its own session and controlling terminal; output remains bounded, input stays Host-authorized, and `terminal/resize` updates the kernel window size. Linux tests verify both TTY detection and resize behavior.

@@ -174,6 +174,12 @@ XiaoYu Rust Runtime 是内部组件，不等于桌面壳。
 
 Go Host 现在长期监督一个 `xiaoyu rpc` 进程，Rust Session/Job 状态因此可以跨多次 RPC 保持。Worker 是 XiaoYu Runtime 的内部基础设施，不是新的用户产品或独立权限层。Host 仍负责身份、RBAC、审批、审计与 Domain Tool；Rust 负责 Agent Runtime state/native primitives。Worker 重启意味着易失 Session/Job state 丢失，Host 必须重新观察真实系统状态。
 
+## 12. 0.2.14 Windows ConPTY 边界
+
+Windows backend 使用 `CreatePseudoConsole` 创建 ConPTY，通过 `PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE` + `CreateProcessW` 连接子进程，使用 `ResizePseudoConsole` 更新 rows/cols。它与 Linux PTY 共用 `terminal/start|get|list|write|output|resize|close`，Snapshot 仅通过 `backend` 暴露实现差异。
+
+ConPTY 不能绕过 Host：Terminal start、每次 write、每次 resize 都必须携带已由 Go Host 审批生成的授权状态。Windows 完成态必须由独立 `windows-latest` Rust CI 实际 check/test 后确认。
+
 ## 11. 0.2.13 Linux Native PTY 边界
 
 `xiaoyu-core` 继续拥有唯一的长期 Terminal 生命周期：`start/get/list/write/output/resize/close`。Terminal stdin 可多次写入，因此**每个输入 frame 和每次 resize 都必须重新经过 Host authorization**。输出采用有界缓冲与 cursor 读取，工作目录继续受 Runtime Root / Session scope 约束。

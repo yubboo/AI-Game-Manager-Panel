@@ -147,6 +147,13 @@ AI 的主要职责始终围绕 AGMP：理解用户的开服/运维意图，自�
 - Host identity/RBAC/approval 仍是最终授权来源，Rust `hostAuthorized` 只是内部防线。
 - 应用关闭必须显式关闭 Worker；开发模式缺少 Rust binary 时允许降级并给出可诊断状态，不得导致整个 AGMP 无法启动。
 
+## 0.2.14 Cross-platform Native Terminal Rule
+
+- Windows Native Terminal 必须使用 Rust ConPTY backend，并复用同一 `terminal/*` contract；禁止为 Windows 复制 Agent Loop 或业务逻辑。
+- `windows-conpty-v1` 只有在 `windows-latest` Rust build + integration test 通过后才能作为稳定 capability 对外描述。
+- start/write/resize 的 Host authorization 不因 Native PTY/ConPTY 而放宽。
+- Linux PTY、Windows ConPTY 与其他平台 fallback 必须通过明确 `backend` 区分，禁止把普通 stdio pipe 冒充 Native PTY。
+
 ## 0.2.13 Native PTY Rule
 
 - XiaoYu Terminal 属于 Rust Agent Runtime；Go Host 只负责身份/RBAC/审批和 RPC Bridge，不得新建第二套 Agent Terminal Core。

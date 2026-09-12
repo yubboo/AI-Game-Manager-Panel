@@ -146,6 +146,12 @@ The benchmark entry point is `go test ./internal/xiaoyu/host -run '^TestAgentBen
 
 这一步仍不等于把模型可见 `shell.exec` 直接切到 Rust。下一阶段只迁移**已经通过 Host Approval**的长任务，并保留 Domain Tool 优先和执行后验证。
 
+## 0.2.14 Windows ConPTY / Cross-platform Native Terminal
+
+Rust Terminal Runtime 在 Windows 增加 `windows-conpty-v1` backend：ConPTY 创建、进程绑定、输入输出、退出检测和 resize 都留在 Rust native execution 层。Linux 继续使用 `linux-pty-v1`。上层 Go Bridge 与 JSON-RPC 方法不分叉。
+
+Windows Runner 新增独立 Rust Runtime Job，必须执行 ConPTY integration test；在该 Job 全绿前，代码只能视为“已实现、待平台验证”，不得宣称稳定完成。Host authorization 仍覆盖 start/write/resize。
+
 ## 0.2.13 Linux Native PTY Foundation
 
 Rust Runtime 继续通过 persistent `xiaoyu rpc` 暴露 `terminal/start|get|list|write|output|resize|close`。在 Linux 上，`TerminalManager` 不再以普通 stdin/stdout pipe 模拟终端，而是使用真实 PTY master/slave、controlling TTY 与窗口尺寸。启动、每次输入和每次 resize 都必须携带 Host authorization，避免长期 shell 扩大权限。

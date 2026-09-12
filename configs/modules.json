@@ -6,7 +6,7 @@
       "category": "智能核心",
       "route": "/",
       "status": "partial",
-      "phase": "0.2.13 · Linux Native PTY Foundation",
+      "phase": "0.2.14 · Windows ConPTY + Cross-Platform Native Terminal",
       "features": [
         "小鱼自然语言主入口",
         "XiaoYu Agent Runtime（Rust-first）",

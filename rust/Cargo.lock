@@ -392,19 +392,20 @@ dependencies = [
 
 [[package]]
 name = "xiaoyu-core"
-version = "0.2.13"
+version = "0.2.14"
 dependencies = [
  "anyhow",
  "clap",
  "serde",
  "serde_json",
  "uuid",
+ "windows-sys",
  "xiaoyu-protocol",
 ]
 
 [[package]]
 name = "xiaoyu-protocol"
-version = "0.2.13"
+version = "0.2.14"
 dependencies = [
  "serde",
  "serde_json",

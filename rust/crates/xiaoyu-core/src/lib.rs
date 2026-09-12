@@ -1,6 +1,8 @@
 mod jobs;
 #[cfg(target_os = "linux")]
 mod pty_linux;
+#[cfg(windows)]
+mod pty_windows;
 mod session;
 mod terminal;
 mod tool_search;
@@ -24,10 +26,10 @@ pub const RUNTIME_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// XiaoYu's Rust core is the AGMP Agent Runtime boundary. It owns provider-neutral
 /// agent semantics and is the Rust-first home for capability discovery, sessions,
 /// jobs, PTY, sandbox and generic native execution. Go remains the source of
-/// truth for game/product domain services. The 0.2.13 migration upgrades the
-/// existing Terminal protocol to a real Linux PTY backend with Host-authorized
-/// resize while keeping an explicit stdio fallback on platforms whose native
-/// backend is not yet verified. Existing Go execution paths stay compatible
+/// truth for game/product domain services. The 0.2.14 migration keeps the same
+/// Terminal protocol while providing native Linux PTY and Windows ConPTY backends
+/// with Host-authorized input/resize. Other platforms keep an explicit stdio
+/// fallback. Existing Go execution paths stay compatible
 /// until equivalent Rust paths are covered by protocol and Agent Bench tests.
 #[derive(Clone)]
 pub struct Runtime {
@@ -82,7 +84,12 @@ impl Runtime {
             capabilities.push("linux-native-pty-v1".to_string());
             capabilities.push("authorized-terminal-resize".to_string());
         }
-        #[cfg(not(target_os = "linux"))]
+        #[cfg(windows)]
+        {
+            capabilities.push("windows-conpty-v1".to_string());
+            capabilities.push("authorized-terminal-resize".to_string());
+        }
+        #[cfg(not(any(target_os = "linux", windows)))]
         {
             capabilities.push("stdio-terminal-fallback".to_string());
         }
@@ -155,9 +162,9 @@ impl Runtime {
     }
 
     /// Starts a long-lived interactive terminal process. Linux uses a native
-    /// PTY in 0.2.13; platforms without a verified native backend keep an
-    /// explicit stdio fallback. Every start and every input frame must already
-    /// be authorized by the Go Host.
+    /// PTY and Windows uses ConPTY in 0.2.14; platforms without a verified native
+    /// backend keep an explicit stdio fallback. Every start and every input frame
+    /// must already be authorized by the Go Host.
     pub fn start_terminal(&self, request: TerminalStartRequest) -> Result<TerminalSnapshot> {
         let session = request
             .session_id
@@ -470,19 +477,28 @@ mod tests {
                     .any(|item| item == "authorized-terminal-resize")
             );
         }
-        #[cfg(not(target_os = "linux"))]
+        #[cfg(windows)]
+        {
+            assert!(
+                status
+                    .capabilities
+                    .iter()
+                    .any(|item| item == "windows-conpty-v1")
+            );
+            assert!(
+                status
+                    .capabilities
+                    .iter()
+                    .any(|item| item == "authorized-terminal-resize")
+            );
+        }
+        #[cfg(not(any(target_os = "linux", windows)))]
         {
             assert!(
                 status
                     .capabilities
                     .iter()
                     .any(|item| item == "stdio-terminal-fallback")
-            );
-            assert!(
-                !status
-                    .capabilities
-                    .iter()
-                    .any(|item| item == "linux-native-pty-v1")
             );
         }
     }

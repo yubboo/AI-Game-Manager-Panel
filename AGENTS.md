@@ -377,6 +377,14 @@ All contributors and AI agents must follow `docs/NAMING-CONVENTIONS.md` before c
 - Windows 源码同步禁止直接显示 Robocopy OEM 报表；中文路径诊断必须使用 Unicode 日志或 PowerShell 自身输出。
 - 新增/修改 Worker 必须通过 `check-xiaoyu-worker.mjs`，并继续通过 Rust fmt/check/test、Go test/vet 与 Agent Bench。
 
+### 0.2.14 Windows ConPTY / Cross-platform Native Terminal 硬规则
+
+- Windows Native Terminal 必须落在 Rust XiaoYu Runtime，不得回流成 Go Agent Runtime。
+- Windows 必须复用既有 `terminal/*` contract；平台差异只允许在 `pty_windows.rs` / `pty_linux.rs` backend。
+- `windows-conpty-v1` 必须由独立 Windows Rust CI 实际 build + integration test 后才算稳定能力；禁止只靠源码 token 宣称完成。
+- Terminal start、write、resize 仍受 Go Host RBAC / 三种审批模式控制，ConPTY 不得成为长期 shell 权限绕过通道。
+- Linux 使用 `linux-pty-v1`，Windows 使用 `windows-conpty-v1`；普通 stdio fallback 必须明确标记，禁止冒充 PTY/ConPTY。
+
 ### 0.2.13 Linux Native PTY 硬规则
 
 - `rust/crates/xiaoyu-core/src/terminal.rs` 是唯一 XiaoYu Terminal 生命周期；`pty_linux.rs` 只实现平台 backend，不得复制一套 Session/Approval Core。

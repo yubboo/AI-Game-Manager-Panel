@@ -1,4 +1,4 @@
-# AI Game Manager Panel Scripts 0.2.13
+# AI Game Manager Panel Scripts 0.2.14
 
 Windows 开发助手自 0.1.64 起固定为：**一个 ASCII-safe BAT 启动器 + PowerShell Task Runner**。
 
@@ -108,6 +108,10 @@ GitHub Safety Job 单独执行 `go test ./internal/xiaoyu/host -run '^TestAgentB
 ## 0.2.10 Session / Job Runtime Gate
 
 `check-xiaoyu-jobs.mjs` validates the Rust Session Registry and Long-running Job contracts: Host authorization, Runtime Root cwd containment, bounded output, cancellation and JSON-RPC methods. It is part of GitHub Actions, Windows project checks and the GitHub push helper.
+
+## 0.2.14 Cross-platform Native Terminal Gate
+
+`check-xiaoyu-terminal.mjs` 现在同时要求 Linux PTY 与 Windows ConPTY backend：检查 `pty_linux.rs`、`pty_windows.rs`、共享 Terminal RPC、Host-authorized write/resize，以及 Linux/Windows integration test 是否进入 GitHub Actions。新增独立 `Windows Rust Runtime + ConPTY` Job 后，Windows ConPTY 必须由真实 `windows-latest` Runner 编译和运行。
 
 ## 0.2.13 Linux Native PTY Gate
 

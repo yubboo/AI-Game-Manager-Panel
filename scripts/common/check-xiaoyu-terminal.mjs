@@ -9,6 +9,7 @@ try {
   for (const rel of [
     'rust/crates/xiaoyu-core/src/terminal.rs',
     'rust/crates/xiaoyu-core/src/pty_linux.rs',
+    'rust/crates/xiaoyu-core/src/pty_windows.rs',
     'rust/crates/xiaoyu-core/src/lib.rs',
     'rust/crates/xiaoyu-core/src/bin/xiaoyu.rs',
     'rust/crates/xiaoyu-protocol/src/lib.rs',
@@ -26,6 +27,7 @@ try {
     'MAX_WRITE_BYTES',
     'stdio-pipe-v1',
     'linux-pty-v1',
+    'windows-conpty-v1',
     'pub fn start',
     'pub fn write',
     'pub fn output',
@@ -37,6 +39,7 @@ try {
     'interactive_terminal_accepts_input_and_exposes_output',
     'linux_terminal_is_backed_by_a_real_tty',
     'linux_terminal_resize_updates_kernel_winsize',
+    'windows_terminal_conpty_accepts_io_and_resize',
   ]) {
     if (!terminal.includes(token)) failures.push(`Rust Terminal/PTY 缺少 ${token}`)
   }
@@ -56,8 +59,21 @@ try {
   ]) {
     if (!pty.includes(token)) failures.push(`Linux Native PTY backend 缺少 ${token}`)
   }
-  if (/CreatePseudoConsole|ResizePseudoConsole|ClosePseudoConsole|PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE/.test(terminal + pty)) {
-    failures.push('0.2.13 仍未提供经 Windows CI 验证的 ConPTY backend，不得提前声明 Windows ConPTY 已完成')
+  const windowsPty = read('rust/crates/xiaoyu-core/src/pty_windows.rs')
+  for (const token of [
+    'CreatePseudoConsole',
+    'ResizePseudoConsole',
+    'ClosePseudoConsole',
+    'PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE',
+    'InitializeProcThreadAttributeList',
+    'UpdateProcThreadAttribute',
+    'DeleteProcThreadAttributeList',
+    'CreateProcessW',
+    'EXTENDED_STARTUPINFO_PRESENT',
+    'CREATE_UNICODE_ENVIRONMENT',
+    'CreatePipe',
+  ]) {
+    if (!windowsPty.includes(token)) failures.push(`Windows ConPTY backend 缺少 ${token}`)
   }
 
   const protocol = read('rust/crates/xiaoyu-protocol/src/lib.rs')
@@ -95,6 +111,7 @@ try {
     'authorized-terminal-resize',
     'bounded-terminal-output',
     'linux-native-pty-v1',
+    'windows-conpty-v1',
   ]) {
     if (!core.includes(capability)) failures.push(`Rust Runtime capability 缺少 ${capability}`)
   }
@@ -121,6 +138,8 @@ try {
   const workflow = read('.github/workflows/safety.yml')
   if (!workflow.includes('check-xiaoyu-terminal.mjs')) failures.push('GitHub Actions 必须执行 XiaoYu Terminal/PTY Gate')
   if (!workflow.includes('cargo test --manifest-path rust/Cargo.toml -p xiaoyu-core --locked linux_terminal_')) failures.push('GitHub Actions 必须执行 Linux Native PTY integration tests')
+  if (!workflow.includes('Windows Rust Runtime + ConPTY')) failures.push('GitHub Actions 必须提供独立 Windows Rust Runtime + ConPTY Job')
+  if (!workflow.includes('cargo test --manifest-path rust/Cargo.toml -p xiaoyu-core --locked windows_terminal_')) failures.push('GitHub Actions 必须执行 Windows ConPTY integration tests')
 } catch (error) {
   failures.push(`XiaoYu Terminal/PTY Gate 检查失败：${error instanceof Error ? error.message : String(error)}`)
 }
@@ -131,4 +150,4 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux native PTY · resize · per-input Host authorization · Windows stdio fallback explicit)')
+console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY · resize · per-input Host authorization)')

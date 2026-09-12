@@ -4,20 +4,20 @@
 
 ## Current version
 
-**0.2.13 — Linux Native PTY Foundation**
+**0.2.14 — Windows ConPTY / Cross-platform Native Terminal**
 
 ## Stable baseline
 
-0.2.11 is the latest fully green three-job baseline. 0.2.12 added the Terminal protocol and passed Windows Helper, Linux Headless, Go test/vet, Agent Bench and Terminal Gate; its only red step was two `cargo fmt --check` layout differences in `terminal.rs`. 0.2.13 fixes those differences and upgrades the Linux backend without rewriting Go Domain Services.
+0.2.11 is the latest fully green three-job baseline. 0.2.12 and 0.2.13 advanced the Rust Terminal Runtime; 0.2.13 GitHub Actions passed Windows Helper, Linux Headless, Go test/vet and all structural gates, with the Safety job stopped only by one rustfmt import-order difference before Rust check/PTY integration could run.
 
-## 0.2.13 changes
+## 0.2.14 changes
 
-- Linux Rust Runtime now creates a real PTY master/slave with a controlling terminal instead of a stdio-pipe emulation.
-- Linux Terminal Snapshot reports `backend=linux-pty-v1`; non-Linux builds keep an explicit `stdio-pipe-v1` fallback until a native backend is verified.
-- `terminal/resize` and rows/cols were added to the existing Terminal contract. Resize requires Host authorization just like terminal start and every input frame.
-- Linux tests verify real TTY semantics with `test -t 0` and verify kernel window size propagation with `stty size`.
-- PTY master descriptors are close-on-exec, output remains bounded, cwd remains inside Runtime Root / Session scope, and close terminates the PTY process group.
-- `check-xiaoyu-terminal.mjs` now protects the Linux native PTY implementation while explicitly forbidding an unverified Windows ConPTY claim.
+- Fix the remaining 0.2.13 `cargo fmt --check` import ordering difference.
+- Add `pty_windows.rs` using Windows ConPTY APIs behind the existing Terminal contract.
+- Windows terminal backend reports `windows-conpty-v1`; Linux remains `linux-pty-v1`; only unsupported/unverified platforms retain `stdio-pipe-v1`.
+- ConPTY supports persistent input/output and Host-authorized resize without creating a second Terminal API.
+- Add a dedicated `Windows Rust Runtime + ConPTY` GitHub Actions job that performs Windows Rust format/check/tests and an actual ConPTY integration test.
+- Keep all Terminal start/input/resize operations behind Go Host identity, RBAC and approval authority.
 
 ## Current migration boundary
 
@@ -28,20 +28,19 @@ Still in Go for compatibility:
 - current model-visible `shell.exec`;
 - AGMP Domain Tool registry and game/product services.
 
-Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs, Persistent RPC Worker and Terminal Runtime. Linux has a native PTY backend; Windows remains an explicit stdio fallback in 0.2.13.
+Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs, Persistent RPC Worker and Terminal Runtime. Linux PTY is implemented; Windows ConPTY is implemented in 0.2.14 and must be considered verified only after the dedicated Windows Runner is green.
 
 ## Next runtime milestones
 
-1. Windows ConPTY backend plus a dedicated Windows Rust compile/integration CI job.
-2. Wire approved interactive Agent actions to the Terminal Runtime.
-3. Sandbox / capability leases / filesystem scope.
-4. Apply Patch / generic filesystem mutation.
-5. Reflection / experience pipeline.
-6. Subagent / specialist dispatch.
+1. Wire approved interactive Agent actions to the native Terminal Runtime.
+2. Sandbox / capability leases / filesystem scope.
+3. Apply Patch / generic filesystem mutation.
+4. Reflection / experience pipeline.
+5. Subagent / specialist dispatch.
 
 ## Verification status
 
-Local packaging runs Node gates and Go compatibility checks where available. GitHub Actions remains authoritative for Rust `fmt/check/test`, Go 1.25/Wails, locked pnpm builds, Linux native PTY integration and Linux headless integration. Windows ConPTY must not be advertised until a Windows Rust CI job builds and exercises it.
+Local packaging runs Node gates and Go compatibility checks where available. GitHub Actions is authoritative for Rust `fmt/check/test`, Go 1.25/Wails, locked pnpm builds, Linux native PTY integration, Windows ConPTY integration and Linux headless integration.
 
 ## AI reading order
 

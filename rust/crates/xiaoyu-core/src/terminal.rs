@@ -1,12 +1,12 @@
 use crate::session::resolve_cwd;
-use anyhow::{Result, bail};
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", windows)))]
 use anyhow::Context;
+use anyhow::{Result, bail};
 use std::collections::{HashMap, VecDeque};
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
 use std::process::Child;
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", windows)))]
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -27,9 +27,12 @@ const MAX_OUTPUT_CHUNKS: usize = 1000;
 const MAX_WRITE_BYTES: usize = 64 * 1024;
 const DEFAULT_ROWS: u16 = 24;
 const DEFAULT_COLS: u16 = 80;
+#[cfg(not(any(target_os = "linux", windows)))]
 const PIPE_BACKEND: &str = "stdio-pipe-v1";
 #[cfg(target_os = "linux")]
 const NATIVE_PTY_BACKEND: &str = "linux-pty-v1";
+#[cfg(windows)]
+const WINDOWS_CONPTY_BACKEND: &str = "windows-conpty-v1";
 
 #[derive(Clone)]
 pub struct TerminalManager {
@@ -67,6 +70,8 @@ enum TerminalProcess {
     Pipe(Child),
     #[cfg(target_os = "linux")]
     LinuxPty(crate::pty_linux::LinuxPtyProcess),
+    #[cfg(windows)]
+    WindowsPty(crate::pty_windows::WindowsPtyProcess),
 }
 
 impl TerminalProcess {
@@ -75,6 +80,8 @@ impl TerminalProcess {
             Self::Pipe(child) => child.id(),
             #[cfg(target_os = "linux")]
             Self::LinuxPty(process) => process.pid(),
+            #[cfg(windows)]
+            Self::WindowsPty(process) => process.pid(),
         }
     }
 
@@ -85,6 +92,8 @@ impl TerminalProcess {
                 .map(|status| status.map(|status| status.code().unwrap_or_default())),
             #[cfg(target_os = "linux")]
             Self::LinuxPty(process) => process.try_wait(),
+            #[cfg(windows)]
+            Self::WindowsPty(process) => process.try_wait(),
         }
     }
 
@@ -93,6 +102,8 @@ impl TerminalProcess {
             Self::Pipe(child) => child.kill(),
             #[cfg(target_os = "linux")]
             Self::LinuxPty(process) => process.kill(),
+            #[cfg(windows)]
+            Self::WindowsPty(process) => process.kill(),
         }
     }
 
@@ -104,6 +115,8 @@ impl TerminalProcess {
             )),
             #[cfg(target_os = "linux")]
             Self::LinuxPty(process) => process.resize(rows, cols),
+            #[cfg(windows)]
+            Self::WindowsPty(process) => process.resize(rows, cols),
         }
     }
 }
@@ -133,7 +146,18 @@ fn spawn_terminal(
         });
     }
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(windows)]
+    {
+        let spawned = crate::pty_windows::spawn(executable, arguments, cwd, rows, cols)?;
+        return Ok(SpawnedTerminal {
+            process: TerminalProcess::WindowsPty(spawned.process),
+            input: Box::new(spawned.writer),
+            readers: vec![("pty", Box::new(spawned.reader))],
+            backend: WINDOWS_CONPTY_BACKEND,
+        });
+    }
+
+    #[cfg(not(any(target_os = "linux", windows)))]
     {
         let mut command = Command::new(executable);
         command
@@ -531,6 +555,10 @@ fn spawn_reader<R>(
                     if stream == "pty" && error.raw_os_error() == Some(5) {
                         break;
                     }
+                    #[cfg(windows)]
+                    if stream == "pty" && matches!(error.raw_os_error(), Some(109) | Some(232)) {
+                        break;
+                    }
                     if let Ok(mut buffer) = output.lock() {
                         buffer.append("runtime", format!("terminal output read failed: {error}\n"));
                     }
@@ -662,7 +690,9 @@ mod tests {
         let terminal = manager.start(shell_request(&root), None).unwrap();
         #[cfg(target_os = "linux")]
         assert_eq!(terminal.backend, NATIVE_PTY_BACKEND);
-        #[cfg(not(target_os = "linux"))]
+        #[cfg(windows)]
+        assert_eq!(terminal.backend, WINDOWS_CONPTY_BACKEND);
+        #[cfg(not(any(target_os = "linux", windows)))]
         assert_eq!(terminal.backend, PIPE_BACKEND);
         manager
             .write(TerminalWriteRequest {
@@ -798,5 +828,77 @@ mod tests {
             thread::sleep(Duration::from_millis(20));
         }
         panic!("Linux PTY resize was not visible through stty size");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_terminal_conpty_accepts_io_and_resize() {
+        let root = std::env::current_dir().unwrap();
+        let manager = TerminalManager::new(root);
+        let terminal = manager
+            .start(
+                TerminalStartRequest {
+                    session_id: None,
+                    executable: "cmd.exe".to_string(),
+                    arguments: vec!["/Q".to_string()],
+                    cwd: None,
+                    max_output_bytes: 0,
+                    rows: 24,
+                    cols: 80,
+                    host_authorized: true,
+                },
+                None,
+            )
+            .unwrap();
+        assert_eq!(terminal.backend, WINDOWS_CONPTY_BACKEND);
+
+        let resized = manager
+            .resize(TerminalResizeRequest {
+                id: terminal.id.clone(),
+                rows: 40,
+                cols: 120,
+                host_authorized: true,
+            })
+            .unwrap();
+        assert_eq!(resized.rows, 40);
+        assert_eq!(resized.cols, 120);
+
+        manager
+            .write(TerminalWriteRequest {
+                id: terminal.id.clone(),
+                data: "echo AGMP-CONPTY".to_string(),
+                append_newline: true,
+                host_authorized: true,
+            })
+            .unwrap();
+        manager
+            .write(TerminalWriteRequest {
+                id: terminal.id.clone(),
+                data: "exit".to_string(),
+                append_newline: true,
+                host_authorized: true,
+            })
+            .unwrap();
+
+        for _ in 0..100 {
+            let output = manager
+                .output(TerminalOutputRequest {
+                    id: terminal.id.clone(),
+                    after: 0,
+                    limit: 100,
+                })
+                .unwrap();
+            if output
+                .chunks
+                .iter()
+                .any(|chunk| chunk.text.contains("AGMP-CONPTY"))
+            {
+                let _ = manager.close(&terminal.id);
+                return;
+            }
+            thread::sleep(Duration::from_millis(20));
+        }
+        let _ = manager.close(&terminal.id);
+        panic!("ConPTY output did not contain the probe text");
     }
 }

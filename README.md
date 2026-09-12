@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.13**  
+当前版本：**0.2.14**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 当前状态：[`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)  
 架构边界：[`docs/PROJECT-ARCHITECTURE.md`](docs/PROJECT-ARCHITECTURE.md) / [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)
@@ -47,6 +47,12 @@ build/
 
 
 
+
+## 0.2.14 Windows ConPTY / Cross-platform Native Terminal
+
+0.2.14 在 0.2.13 Linux PTY 基础上补齐 Windows 原生终端 backend：Rust XiaoYu Runtime 在 Windows 使用 `CreatePseudoConsole` / `ResizePseudoConsole` / `PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE` 创建 ConPTY，并继续复用既有 `terminal/start|get|list|write|output|resize|close` 协议。Linux 继续使用 `linux-pty-v1`，Windows Snapshot 目标为 `backend=windows-conpty-v1`，其他未验证平台才保留 `stdio-pipe-v1` fallback。
+
+本版新增独立 **Windows Rust Runtime + ConPTY** GitHub Actions Job，真实执行 Windows Rust `cargo check/test` 与 ConPTY integration test；Terminal start、每次输入、resize 仍必须先经过 Go Host RBAC/审批边界。0.2.13 GitHub Runner 唯一的 Rust import-order `cargo fmt` 差异也一并修复。ConPTY 是否完成以 Windows Runner 实际全绿为准。
 
 ## 0.2.13 Linux Native PTY Foundation
 
