@@ -129,6 +129,7 @@ Web、Wails、Electron、未来 Rust Native 只是同一个 AGMP 的不同构建
 - 文件名、目录名和 API 名优先使用短、明确、可搜索的业务词。禁止为了“显得专业”制造超长命名；人和 AI 都应能从名字判断归属与用途。
 - 同一功能需要拆成多个文件时，必须保留统一短前缀，优先 `xxx.go`、`xxx_rule.go`、`xxx_win.go`、`xxx_test.go`；确有顺序关系时可用 `xxx_one.go`、`xxx_two.go`。禁止同一功能拆成互不相关、看不出关联的文件名。
 - 新增目录原则上使用 1~2 个清晰业务词；新增源码文件名应尽量控制在 32 个字符以内。超过 48 个字符必须说明理由并通过 Module Gate。
+- 命名 Gate 仅检查项目自有源码/公开配置/文档；`runtime/*` 本机运行状态、缓存、已安装工具链与第三方二进制不参与源码命名检查。第三方文件必须保留上游名称，不能为了过 Gate 重命名；`runtime/README.md` 仍属于源码树。
 - 0.1.83 已完成第二轮聚合：禁止恢复 `internal/service`、`internal/core`、`internal/games/dst/service` 等泛化中间层；新增功能优先进入 `xiaoyu/games/server/ops/deploy/system/platform` 既有边界。
 - 规划功能不得只创建 `doc.go` 或前端 `module.ts` 占位目录；没有真实实现时由 `configs/modules.json` 记录阶段。
 - `internal/app` 保持单包编排，但大型文件按统一 `app_*.go` 前缀按业务分组，避免一个 1000+ 行总文件。
@@ -148,7 +149,7 @@ Web、Wails、Electron、未来 Rust Native 只是同一个 AGMP 的不同构建
 - **帮我批准**：小鱼可以主动规划并给出推荐，但只有读取自动完成；任何会改变系统状态的 Tool 都必须等待用户明确批准。推荐意见不能替代批准。
 - **完全访问权限**：用户授予 AI 最高 AGMP Tool 权限，可自主规划并执行已注册、已启用的系统能力，不逐项请求批准。
 
-“完全访问权限”不是“关闭安全”。无论哪种模式，以下保护都不能被权限模式绕过：身份/RBAC、模块 API 边界、参数校验、路径作用域、目标存在性检查、并发/幂等保护、必要备份与回滚条件、秘密保护、操作审计、执行后验证。Full 权限表示用户已授权已注册能力在当前策略范围内自动执行，不等于绕过 Host。AI 仍应优先使用模块 Service / Domain Tool；领域能力不足时可以使用通用 Agent Runtime。迁移期间 `shell.exec` 仍由 Go Host 提供，后续迁入 Rust 也必须保持同等审批、Sandbox 与审计，不允许前端或未授权旁路直接执行 OS 操作。
+“完全访问权限”不是“关闭安全”。无论哪种模式，以下保护都不能被权限模式绕过：身份/RBAC、模块 API 边界、参数校验、路径作用域、目标存在性检查、并发/幂等保护、必要备份与回滚条件、秘密保护、操作审计、执行后验证。Full 权限表示用户已授权已注册能力在当前策略范围内自动执行，不等于绕过 Host。AI 仍应优先使用模块 Service / Domain Tool；领域能力不足时可以使用通用 Agent Runtime。0.2.20 起 server-owned XiaoYu Run 的 `shell.exec` 在 Go Host 完成授权后进入 Rust Native Terminal；人工/兼容 Shell 仍留在 Go `platform/runtime`。无论执行 Runtime 在哪一侧，都必须保持同等审批、Sandbox 与审计，不允许前端或未授权旁路直接执行 OS 操作。
 
 AI 的主要职责始终围绕 AGMP：理解用户的开服/运维意图，自动调用系统内置能力完成任务。通用聊天可以提供，但优先级低于“安全、准确地操控 AGMP 完成用户目标”。
 
@@ -168,6 +169,16 @@ AI 的主要职责始终围绕 AGMP：理解用户的开服/运维意图，自�
 - Worker stderr 必须有界；stdout 只允许 JSON-RPC frame，禁止把日志混入协议通道。
 - Host identity/RBAC/approval 仍是最终授权来源，Rust `hostAuthorized` 只是内部防线。
 - 应用关闭必须显式关闭 Worker；开发模式缺少 Rust binary 时允许降级并给出可诊断状态，不得导致整个 AGMP 无法启动。
+
+## 0.2.20 Approved Agent Native Terminal Rule
+
+- 0.2.19 GitHub 四条主 Job 全绿后，Linux PTY / Windows ConPTY 作为稳定 Native Terminal 基线冻结；非回归问题不要继续改 backend。
+- server-owned XiaoYu `shell.exec` 必须先完整经过 Go Host identity、RBAC、敏感操作 step-up、审批策略/指纹恢复，然后才能调用 Rust `terminal/*`。
+- `HostAuthorized=true` 只能由 Host bridge 设置；客户端、模型 Tool 参数、Memory/Skill/Expert 均不能伪造。
+- Agent Native Terminal 的 CWD 必须经 workspace service 解析，输出必须有界，必须继承 Tool timeout，并在完成/错误/超时后关闭 Terminal。
+- Native Terminal 失败时 fail-closed，禁止静默 fallback 到 legacy shell，避免一次批准被执行两次。
+- 人工 Shell 与 `process.run` compatibility 本阶段继续走 `platform/runtime`；迁移必须分阶段，不得同时重写 Domain Tool。
+- 下一阶段 Sandbox / Capability Lease 之前，不得把 Terminal ID 或长期自由输入能力直接暴露给模型。
 
 ## 0.2.19 Windows ConPTY Stdio Isolation Rule
 

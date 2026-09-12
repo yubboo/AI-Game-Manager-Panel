@@ -15,6 +15,9 @@ try {
     'rust/crates/xiaoyu-protocol/src/lib.rs',
     'internal/xiaoyu/runtime/service.go',
     'internal/xiaoyu/runtime/service_test.go',
+    'internal/app/app_xiaoyu_tools.go',
+    'internal/app/app_xiaoyu_terminal.go',
+    'internal/app/app_xiaoyu_terminal_test.go',
   ]) {
     if (!fs.existsSync(path.join(root, rel))) failures.push(`缺少 Rust Terminal/PTY 源码：${rel}`)
   }
@@ -157,6 +160,27 @@ try {
   if (!tests.includes('TestWriteTerminalRejectsMissingHostAuthorizationBeforeRuntime')) failures.push('Go Terminal Bridge 缺少输入授权前置拒绝测试')
   if (!tests.includes('TestResizeTerminalRejectsMissingHostAuthorizationBeforeRuntime')) failures.push('Go Terminal Bridge 缺少 resize 授权前置拒绝测试')
 
+  const appTools = read('internal/app/app_xiaoyu_tools.go')
+  const appTerminal = read('internal/app/app_xiaoyu_terminal.go')
+  const appTerminalTests = read('internal/app/app_xiaoyu_terminal_test.go')
+  if (!appTools.includes('runAuthorizedShellTool(ctx, command, cwd)')) failures.push('shell.exec 必须把已授权 Agent Run 接入 Native Terminal Runtime')
+  if (!appTools.includes('compatHandler')) failures.push('process.run/manual compatibility 必须与模型 Agent Native Terminal 路径分离')
+  for (const token of [
+    'runApprovedAgentTerminal(parent, command, cwd)',
+    'Native Terminal 仅接受 server-owned XiaoYu Run 中已通过 Host 授权的动作',
+    'StartTerminal(ctx, xiaoyuruntime.TerminalStartRequest{',
+    'HostAuthorized: true',
+    'TerminalOutput(ctx, terminal.ID',
+    'GetTerminal(ctx, terminal.ID)',
+    'CloseTerminal(cleanupCtx, terminal.ID)',
+    'tool/native-terminal-started',
+    'tool/native-terminal-completed',
+  ]) {
+    if (!appTerminal.includes(token)) failures.push(`Approved Agent → Native Terminal wiring 缺少 ${token}`)
+  }
+  if (!appTerminalTests.includes('TestApprovedAgentShellUsesHostAuthorizedNativeTerminal')) failures.push('Approved Agent Native Terminal 缺少 Host-authorized wiring 测试')
+  if (!appTerminalTests.includes('TestApprovedAgentShellRejectsNonRunCallerBeforeNativeRuntime')) failures.push('Approved Agent Native Terminal 缺少 non-Run fail-closed 测试')
+
   const workflow = read('.github/workflows/safety.yml')
   if (!workflow.includes('check-xiaoyu-terminal.mjs')) failures.push('GitHub Actions 必须执行 XiaoYu Terminal/PTY Gate')
   if (!workflow.includes('cargo test --manifest-path rust/Cargo.toml -p xiaoyu-core --locked linux_terminal_')) failures.push('GitHub Actions 必须执行 Linux Native PTY integration tests')
@@ -174,4 +198,4 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY cwd/CR/stdio-isolation · resize · per-input Host authorization)')
+console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY · Approved Agent native wiring · Host authorization)')

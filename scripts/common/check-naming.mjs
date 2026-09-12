@@ -7,12 +7,21 @@ const root = path.resolve(here, '..', '..')
 const failures = []
 const warnings = []
 const skipDirs = new Set(['.git', 'node_modules', 'target', 'build', 'dist', '.pnpm-store'])
+const localRootDirs = new Set(['bin', '.vscode', '.idea', 'data', 'log', 'logs', 'backups', 'instances', 'temp', 'exports', 'plugins', 'cache'])
+
+function shouldSkipDir(rel, name) {
+  if (skipDirs.has(name)) return true
+  if (localRootDirs.has(rel)) return true
+  // runtime/README.md belongs to source; every runtime subdirectory is local/generated state.
+  if (rel.startsWith('runtime/')) return true
+  return false
+}
 
 function walk(dir, prefix = '') {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const rel = path.posix.join(prefix, entry.name)
     if (entry.isDirectory()) {
-      if (skipDirs.has(entry.name)) continue
+      if (shouldSkipDir(rel, entry.name)) continue
       walk(path.join(dir, entry.name), rel)
       continue
     }

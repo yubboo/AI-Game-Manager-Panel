@@ -412,6 +412,16 @@ All contributors and AI agents must follow `docs/NAMING-CONVENTIONS.md` before c
 - Windows 源码同步禁止直接显示 Robocopy OEM 报表；中文路径诊断必须使用 Unicode 日志或 PowerShell 自身输出。
 - 新增/修改 Worker 必须通过 `check-xiaoyu-worker.mjs`，并继续通过 Rust fmt/check/test、Go test/vet 与 Agent Bench。
 
+### 0.2.20 Approved Agent Native Terminal 硬规则
+
+- 0.2.19 GitHub 四条主 Job 已全绿，Native Terminal backend 冻结；后续 AI 不得无证据继续改 ConPTY/PTTY。
+- `shell.exec` 只有在 server-owned XiaoYu Run 且 Go Host 已完成 identity/RBAC/step-up/approval 后，才可进入 Rust Native Terminal。
+- `HostAuthorized=true` 只能由 Go Host bridge 写入，绝不接受模型/前端参数。
+- Agent Native Terminal 必须使用 workspace-resolved CWD、Tool timeout、有界输出，并保证 Terminal lifecycle 收口。
+- Native Terminal 失败必须 fail-closed；禁止对同一已批准动作静默 fallback 到 legacy shell。
+- 人工 Shell / `process.run` compatibility 本版继续留在 `platform/runtime`；不要借迁移扩大模型权限或重写 Domain Tool。
+- 下一阶段才做 Sandbox / Capability Lease；在 Lease 落地前不向模型开放长期 Terminal ID、任意 input/resize 或跨 workspace scope。
+
 ### 0.2.19 Windows ConPTY stdio isolation 硬规则
 
 - 真实 Windows Runner 中，若父进程 stdout/stderr 被 test harness/CI 捕获，Windows console child 可能在 `bInheritHandles=false` 时仍获得父标准句柄；这会绕过 ConPTY pipes。

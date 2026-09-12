@@ -10,6 +10,6 @@
   "wailsjsdir": "frontend/wailsjs",
   "info": {
     "productName": "AI游戏管理器面板",
-    "productVersion": "0.2.19"
+    "productVersion": "0.2.20"
   }
 }

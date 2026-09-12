@@ -199,6 +199,13 @@ Rust 作为 XiaoYu 内部 Runtime 随完整 AGMP 一起发行。未来只有当 
 - Go：监督 Rust Worker 生命周期并继续提供 Product/Domain authority。
 - 下一步：只把已通过 Host Approval 的长任务切到 Rust Jobs，然后再引入 PTY。
 
+### 0.2.20 Approved Agent Native Terminal wiring
+
+- **Go Host owns authorization and routing**：identity、RBAC、step-up、approval fingerprint、workspace CWD 与 server-owned Run context 在 Go 中完成。
+- **Rust owns native execution**：已授权的 Agent `shell.exec` 使用 Rust `terminal/*`，Linux PTY / Windows ConPTY 不复制到 Go。
+- **No dual execution**：Agent Native Terminal 失败时不得静默回退到 Go legacy shell；人工/compat 路径仍独立留在 `platform/runtime`。
+- `HostAuthorized` 是 Host-internal capability bit，不属于模型、前端或 Tool arguments。
+
 ### 0.2.19 Windows ConPTY stdio isolation
 
 Windows `CreateProcessW`/`STARTUPINFOEXW` 的标准句柄隔离继续属于 Rust Native Runtime。Go Host 不复制 Win32 handle 语义，只维持身份、RBAC、审批、审计与 Domain authority。

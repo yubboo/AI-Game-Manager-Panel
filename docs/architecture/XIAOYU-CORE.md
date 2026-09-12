@@ -174,6 +174,12 @@ XiaoYu Rust Runtime 是内部组件，不等于桌面壳。
 
 Go Host 现在长期监督一个 `xiaoyu rpc` 进程，Rust Session/Job 状态因此可以跨多次 RPC 保持。Worker 是 XiaoYu Runtime 的内部基础设施，不是新的用户产品或独立权限层。Host 仍负责身份、RBAC、审批、审计与 Domain Tool；Rust 负责 Agent Runtime state/native primitives。Worker 重启意味着易失 Session/Job state 丢失，Host 必须重新观察真实系统状态。
 
+## 17. 0.2.20 Approved Agent Native Terminal 接线边界
+
+0.2.19 的四条 GitHub Job 全绿后，Native Terminal 被视为稳定内部原语。0.2.20 不增加 Rust 侧权限判断，而是在 Go Host 已完成身份/RBAC/step-up/approval 后，把 server-owned Agent `shell.exec` 交给既有 `terminal/start|output|get|close`。Rust 继续只验证 `hostAuthorized` 防线与 Runtime root/cwd，不替代 Host 的用户授权语义。
+
+Agent Native Terminal 不可用或 RPC 失败时必须返回失败 Observation，不能再执行一次 legacy shell。这样 approval resume 的同一指纹只会触发一个权威执行路径。
+
 ## 16. 0.2.19 Windows ConPTY stdio 隔离边界
 
 0.2.18 已证明 newline 规则本身不是剩余阻塞点。0.2.19 修复 `CreateProcessW` 在 redirected/captured parent 下的 stdio 复制：`STARTF_USESTDHANDLES` + NULL stdin/stdout/stderr 强制 child 只通过 ConPTY communication channels 交互。该修复只属于 Windows PTY backend，不上移到 Go Host。

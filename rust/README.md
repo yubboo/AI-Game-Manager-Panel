@@ -53,6 +53,10 @@ Rust Native Runtime 不等于无限权限。`jobs/start` 只是 Host 授权后�
 
 AGMP Go Host now keeps one supervised `xiaoyu rpc` process alive. Tool Search, Brain policy, Session Registry and Long-running Jobs share this process lifetime. The Worker remains an embedded AGMP component; Host RBAC/approval stays authoritative.
 
+## 0.2.20 Approved Agent Native Terminal Wiring
+
+The Rust Terminal protocol/backends stay frozen after the fully green 0.2.19 CI baseline. The new change is at the Go Host boundary: a server-owned XiaoYu `shell.exec` that has already passed identity/RBAC/step-up/approval is executed through the existing Rust Native Terminal RPC. `HostAuthorized` remains an internal Host bit; manual/compat shell execution is not migrated in this step, and an Agent Native Terminal failure never silently re-executes through the legacy runtime.
+
 ## 0.2.19 Windows ConPTY Input Pipe Convergence
 
 The remaining Windows failure is redirected-parent stdio leakage, not CR/LF. `STARTUPINFOEXW` now sets `STARTF_USESTDHANDLES` with null stdin/stdout/stderr before `CreateProcessW`, preventing a captured test runner from becoming the child's effective console I/O. Existing ConPTY CR/cwd/resize/authorization semantics stay unchanged.

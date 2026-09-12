@@ -11,7 +11,7 @@ Rust now owns the first stateful native runtime primitives after Tool Search:
 - Runtime Root working-directory containment;
 - explicit `hostAuthorized` requirement before native process start.
 
-These APIs are intentionally **not model-visible authority**. Existing XiaoYu `shell.exec` still passes through the Go Host RBAC/approval boundary. Session/Job state persists only inside a long-lived `xiaoyu rpc` process; the current one-shot Go RPC bridge remains for stateless operations. 0.2.11 will add persistent Host ↔ Rust process supervision before wiring approved long-running actions to this runtime.
+These APIs are intentionally **not model-visible authority**. XiaoYu `shell.exec` still passes through the Go Host RBAC/approval boundary; from 0.2.20, only the server-owned Run execution step crosses into the Rust Native Terminal after that authorization. Stateful Session/Job/Terminal data lives in the long-lived `xiaoyu rpc` worker; manual/compat shell execution remains separate during migration.
 
 
 ## 0.2.9 Rust-first runtime ownership
@@ -145,6 +145,12 @@ The benchmark entry point is `go test ./internal/xiaoyu/host -run '^TestAgentBen
 0.2.11 将 `tools/search`、Brain policy、Session 与 Job RPC 统一复用一个长期 `xiaoyu rpc` 子进程。Go Host 负责监督生命周期和最终审批；Rust Runtime 负责 stateful Agent primitives。RPC 当前串行执行以保证状态一致，超时/断管会回收 Worker，下一次调用再建立干净实例。
 
 这一步仍不等于把模型可见 `shell.exec` 直接切到 Rust。下一阶段只迁移**已经通过 Host Approval**的长任务，并保留 Domain Tool 优先和执行后验证。
+
+## 0.2.20 Approved Agent Native Terminal Wiring
+
+0.2.19 已在真实 GitHub Windows/Linux Runner 上把 Native Terminal 完整跑绿。0.2.20 首次迁移模型执行路径：只有 server-owned XiaoYu Run 中已经通过 Go Host identity/RBAC/step-up/approval 的 `shell.exec` 才进入 Rust `terminal/start → output/get → close`。命令以一次性 shell child 执行，不向模型暴露长期 Terminal ID 或自由 input channel。
+
+人工 Shell / `process.run` 继续留在 legacy `platform/runtime`；Agent Native Terminal 失败时不 fallback，确保同一 approval fingerprint 只有一个执行权威。CWD 仍受 workspace resolver 限制，输出 512 KiB 有界并继承 Tool timeout。Sandbox / Capability Lease 尚未在本版实现，是下一阶段。
 
 ## 0.2.19 Windows ConPTY Input Pipe Convergence
 

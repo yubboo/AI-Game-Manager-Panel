@@ -5,6 +5,18 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.20：Approved Agent Native Terminal Wiring
+
+- 以 0.2.19 GitHub 四条 Job 全绿作为 Native Terminal 冻结基线，不再改动 ConPTY/PTTY 协议语义；
+- `shell.exec` 只有在 server-owned XiaoYu Run 中、且已经经过 Go Host identity/RBAC/step-up/approval 后，才进入 Rust Native Terminal；
+- `HostAuthorized=true` 只能由 Go Host bridge 内部设置，不能来自模型参数或客户端字段；
+- Agent 命令继续受工作区 CWD、Tool timeout、512 KiB 输出上限、审计与执行后验证约束；
+- Native Terminal 不可用时 fail-closed，禁止对同一批准动作静默回退到 legacy shell 造成双执行；
+- 人工 Shell 与 `process.run` 兼容路径本版保持 `platform/runtime`，避免一次迁移扩大影响面；
+- Terminal/PTY Gate 与 Go tests 必须覆盖 server-owned Run、HostAuthorized、Native Terminal 生命周期和 non-Run 拒绝边界。
+
+**冻结条件：** Go/XiaoYu tests、Terminal Gate、Linux Native PTY、Windows ConPTY integration/workspace tests、Windows Helper 与 Linux Headless 全绿；确认未扩大任何模型权限后，下一阶段进入 Sandbox / Capability Lease。
+
 ## 0.2.19：Windows ConPTY Input Pipe Convergence
 
 - 以 0.2.18 Windows Runner 的真实日志为唯一修复依据，不继续猜测 CR/LF；

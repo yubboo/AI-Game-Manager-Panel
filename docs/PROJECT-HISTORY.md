@@ -1,5 +1,14 @@
 # AI-Game-Manager-Panel 项目历史
 
+## AI-Game-Manager-Panel 0.2.20
+
+- **新增**：server-owned XiaoYu `shell.exec` 在既有 Host 授权完成后接入 Rust Native Terminal。
+- **安全边界**：身份、RBAC、step-up、审批指纹、workspace CWD 与 Tool timeout 仍由 Go Host 决定；`HostAuthorized` 不是模型输入。
+- **兼容**：人工 Shell / `process.run` 继续使用 `platform/runtime`；Agent Native Terminal 不做静默 fallback。
+- **验证**：新增 Native Terminal Go wiring tests，并把 wiring 规则加入 `check-xiaoyu-terminal.mjs`；最终跨平台结论以 GitHub Actions 为准。
+- **基线**：0.2.19 GitHub 四条 Job 已全绿，Windows ConPTY integration 与 workspace tests 首次全部通过。
+- **下一阶段**：Sandbox / Capability Lease / filesystem scope。
+
 ## AI-Game-Manager-Panel 0.2.19
 
 ### Windows ConPTY Input Pipe Convergence

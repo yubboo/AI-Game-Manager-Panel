@@ -4,21 +4,19 @@
 
 ## Current version
 
-**0.2.19 — Windows ConPTY Input Pipe Convergence**
+**0.2.20 — Approved Agent Native Terminal Wiring**
 
 ## Stable baseline
 
-0.2.18 confirmed that the complete source-delivery workflow, Windows PowerShell/helper encoding, Go tests/vet, Linux headless/Web/XiaoYu, Rust formatting/checking and Linux native PTY are green on GitHub. Windows ConPTY also starts `cmd.exe` in the correct repository cwd and the CR newline unit rule passes.
+0.2.19 is now a fully green GitHub baseline: `safety`, `Linux Headless + Web + XiaoYu`, `Windows Helper + Encoding`, and `Windows Rust Runtime + ConPTY` all completed successfully. Windows ConPTY integration and Windows Rust workspace tests are CI-proven, so cross-platform Native Terminal is frozen as a stable internal primitive.
 
-The remaining Windows failure is now isolated to process stdio routing under the GitHub/Rust test harness. The Runner log prints the `cmd.exe` banner and prompt directly into the parent test output while commands written to the ConPTY input pipe are ignored. Microsoft Terminal documents this redirected-parent case: without `STARTF_USESTDHANDLES`, Windows can duplicate the parent's standard handles into a console child even when `bInheritHandles` is false, bypassing the pseudoconsole communication pipes.
+## 0.2.20 changes
 
-## 0.2.19 changes
-
-- Build Windows ConPTY `STARTUPINFOEXW` with `STARTF_USESTDHANDLES`.
-- Explicitly keep `hStdInput`, `hStdOutput` and `hStdError` null so the child cannot fall back to redirected/captured parent stdio.
-- Preserve `bInheritHandles = false`, ConPTY cwd normalization, CR Enter semantics, resize locking and fallback cfg boundaries.
-- Add a Windows unit regression for the startup flags/null std handles and freeze the rule in `check-xiaoyu-terminal.mjs`.
-- Do not add new model-visible execution privileges in this release.
+- Route server-owned XiaoYu `shell.exec` calls to Rust Native Terminal only after the existing Go Host identity/RBAC/step-up/approval pipeline has authorized the exact Tool call.
+- Keep workspace CWD resolution in Go, set `HostAuthorized=true` only inside the Host bridge, bound captured PTY output to 512 KiB, inherit Tool timeout, and close the terminal on every path.
+- Keep manual shell calls and the compatibility `process.run` path on the existing `platform/runtime` implementation for this migration step.
+- Fail closed when the Native Terminal path is unavailable; do not silently re-execute an approved Agent action through the legacy runtime.
+- Add Go wiring tests and extend the Terminal/PTY Gate so future changes cannot bypass the server-owned Run / Host authorization boundary.
 
 ## Mandatory GitHub baseline workflow
 
@@ -26,23 +24,23 @@ Before starting a new version, after the user reports a push, and before prepari
 
 ## Current migration boundary
 
-Still in Go for compatibility:
+Still in Go for compatibility and authority:
 
 - model-provider HTTP transport;
 - top-level Agent Loop orchestration;
-- current model-visible `shell.exec`;
-- AGMP Domain Tool registry and game/product services.
+- identity/RBAC/sensitive-action step-up/approval fingerprint enforcement;
+- AGMP Domain Tool registry and game/product services;
+- manual shell / `process.run` compatibility execution.
 
-Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs, Persistent RPC Worker and Terminal Runtime. Linux native PTY is CI-proven. Windows ConPTY is compile/start/cwd-proven; 0.2.19 targets the remaining redirected-parent stdio isolation required for real input/output integration.
+Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs, Persistent RPC Worker and the CI-proven cross-platform Native Terminal Runtime. In 0.2.20, only server-owned Agent `shell.exec` execution crosses into Native Terminal after Go Host authorization.
 
 ## Next runtime milestones
 
-1. Obtain a fully green `Windows Rust Runtime + ConPTY` lane.
-2. Wire approved interactive Agent actions to the native Terminal Runtime.
-3. Sandbox / capability leases / filesystem scope.
-4. Apply Patch / generic filesystem mutation.
-5. Reflection / experience pipeline.
-6. Subagent / specialist dispatch.
+1. Freeze Approved Agent → Native Terminal wiring on GitHub Actions.
+2. Sandbox / capability leases / filesystem scope.
+3. Apply Patch / generic filesystem mutation.
+4. Reflection / experience pipeline.
+5. Subagent / specialist dispatch.
 
 ## Verification status
 

@@ -1,4 +1,4 @@
-# AI Game Manager Panel Scripts 0.2.19
+# AI Game Manager Panel Scripts 0.2.20
 
 Windows 开发助手自 0.1.64 起固定为：**一个 ASCII-safe BAT 启动器 + PowerShell Task Runner**。
 
@@ -40,6 +40,10 @@ AI-Game-Manager-Panel.bat
 10. 一键发布（Wails / Electron / 全部）
 
 Linux 服务器正式构建入口仍为 `bash scripts/build_linux.sh`。
+
+## 0.2.20 Approved Agent Terminal Gate
+
+`check-xiaoyu-terminal.mjs` 现在除了冻结 Linux PTY / Windows ConPTY，还检查 server-owned Agent `shell.exec` 必须经过 Host 授权后才进入 Native Terminal、`HostAuthorized=true` 只能由 bridge 设置、non-Run 调用不能进入 Agent Native path，并要求对应 Go wiring tests 存在。
 
 ## GitHub Safety Gate
 

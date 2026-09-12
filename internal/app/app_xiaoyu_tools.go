@@ -260,7 +260,19 @@ func (a *Application) registerXiaoYuTools() {
 			// hidden developer-only escape hatch. Domain tools remain preferred,
 			// while RBAC + step-up + the existing three approval modes decide if
 			// a concrete command may actually execute.
-			handler := func(ctx context.Context, args map[string]any) (xiaoyucontract.ToolExecution, error) {
+			shellHandler := func(ctx context.Context, args map[string]any) (xiaoyucontract.ToolExecution, error) {
+				if !a.platformConfig.Permissions.AllowArbitraryShell {
+					return xiaoyucontract.ToolExecution{}, errors.New("管理员已显式关闭 XiaoYu 通用 Shell 能力")
+				}
+				command, _ := args["command"].(string)
+				cwd, _ := args["cwd"].(string)
+				result, err := a.runAuthorizedShellTool(ctx, command, cwd)
+				if err != nil {
+					return xiaoyucontract.ToolExecution{}, err
+				}
+				return xiaoyucontract.ToolExecution{Summary: fmt.Sprintf("受控 Shell 命令执行完成，退出码 %d。", result.ExitCode), Data: result}, nil
+			}
+			compatHandler := func(ctx context.Context, args map[string]any) (xiaoyucontract.ToolExecution, error) {
 				if !a.platformConfig.Permissions.AllowArbitraryShell {
 					return xiaoyucontract.ToolExecution{}, errors.New("管理员已显式关闭 XiaoYu 通用 Shell 能力")
 				}
@@ -270,13 +282,13 @@ func (a *Application) registerXiaoYuTools() {
 				if err != nil {
 					return xiaoyucontract.ToolExecution{}, err
 				}
-				return xiaoyucontract.ToolExecution{Summary: fmt.Sprintf("受控 Shell 命令执行完成，退出码 %d。", result.ExitCode), Data: result}, nil
+				return xiaoyucontract.ToolExecution{Summary: fmt.Sprintf("兼容 Shell 命令执行完成，退出码 %d。", result.ExitCode), Data: result}, nil
 			}
 			schema := map[string]any{"type": "object", "properties": map[string]any{"command": map[string]any{"type": "string"}, "cwd": map[string]any{"type": "string"}}, "required": []string{"command"}, "additionalProperties": false}
 			if err := host.RegisterTool(xiaoyucontract.ToolSpec{
 				Name: "shell.exec", Description: "通用受控 Shell 后备能力。没有合适的领域 Tool、或领域 Tool 无法覆盖异常情况时可自主使用；优先使用 Domain Tool。命令只能在 AGMP 工作区 CWD 中运行，真实执行仍受 RBAC、敏感操作 Step-up、三种审批模式、超时与输出限制保护。", Risk: xiaoyucontract.RiskSystem,
 				Category: "terminal", Manual: true, XiaoYu: true, Source: "agmp.terminal", Parameters: schema,
-			}, handler); err != nil {
+			}, shellHandler); err != nil {
 				return nil, err
 			}
 			// Compatibility alias for the existing manual terminal API. New XiaoYu
@@ -285,7 +297,7 @@ func (a *Application) registerXiaoYuTools() {
 			if err := host.RegisterTool(xiaoyucontract.ToolSpec{
 				Name: "process.run", Description: "兼容旧版的受控命令入口；XiaoYu 应优先使用 shell.exec。", Risk: xiaoyucontract.RiskSystem,
 				Category: "terminal", Manual: true, XiaoYu: false, Source: "agmp.terminal", Parameters: schema,
-			}, handler); err != nil {
+			}, compatHandler); err != nil {
 				return nil, err
 			}
 			return nil, nil

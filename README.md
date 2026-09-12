@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.19**  
+当前版本：**0.2.20**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 当前状态：[`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)  
 架构边界：[`docs/PROJECT-ARCHITECTURE.md`](docs/PROJECT-ARCHITECTURE.md) / [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)
@@ -47,6 +47,14 @@ build/
 
 
 
+
+## 0.2.20 Approved Agent Native Terminal Wiring
+
+0.2.19 已在 GitHub Actions 上实现四条主 Job 全绿，Linux PTY 与 Windows ConPTY 的真实 integration/workspace tests 均通过，Native Terminal 因此冻结为跨平台稳定执行原语。
+
+0.2.20 开始把**已经经过 Go Host 身份、RBAC、敏感操作 step-up、审批策略与精确指纹恢复**的 server-owned XiaoYu `shell.exec` 动作接入 Rust Native Terminal。Agent Run 使用一次性 `terminal/start → output/status → close` 路径，CWD 仍由工作区 Service 解析，`HostAuthorized=true` 只由 Host 内部设置，输出继续限制为 512 KiB 并继承 Tool timeout。人工 `shell.exec` 调用与兼容 `process.run` 暂时保留既有 `platform/runtime` 路径；Agent Native Terminal 失败时不静默回退，避免同一批准动作出现双执行权威。
+
+本版不新增模型权限、不绕过审批、不开放任意路径。下一阶段进入 Sandbox / Capability Lease，把 Host 授权进一步绑定到可执行能力与作用域。
 
 ## 0.2.19 Windows ConPTY Input Pipe Convergence
 

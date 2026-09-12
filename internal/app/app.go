@@ -40,9 +40,20 @@ const (
 	// Name 与 Slogan 仅作为 configs/app.json 无法读取时的安全回退。
 	// 正常运行时，产品名称与标语均从统一配置中心读取，避免散落硬编码。
 	Name    = "AI游戏管理器面板"
-	Version = "0.2.19"
+	Version = "0.2.20"
 	Slogan  = "现代化智能 AI 一键游戏服务器部署与管理平台"
 )
+
+type xiaoyuRuntimeClient interface {
+	Start(context.Context) error
+	Close()
+	Status() xiaoyuruntime.Status
+	SearchTools(context.Context, string, []xiaoyuruntime.ToolSpec, int) (xiaoyuruntime.ToolSearchResponse, error)
+	StartTerminal(context.Context, xiaoyuruntime.TerminalStartRequest) (xiaoyuruntime.TerminalSnapshot, error)
+	GetTerminal(context.Context, string) (xiaoyuruntime.TerminalSnapshot, error)
+	TerminalOutput(context.Context, string, uint64, int) (xiaoyuruntime.TerminalOutputResponse, error)
+	CloseTerminal(context.Context, string) (xiaoyuruntime.TerminalSnapshot, error)
+}
 
 // Info is the stable application metadata exposed to adapters such as Wails or a future HTTP API.
 type Info struct {
@@ -77,7 +88,7 @@ type Application struct {
 	environment        *environmentservice.Service
 	license            *licenseservice.Service
 	updater            *updaterservice.Service
-	xiaoyuRuntime      *xiaoyuruntime.Service
+	xiaoyuRuntime      xiaoyuRuntimeClient
 	xiaoyuApprovals    *xiaoyucontrol.Store
 	xiaoyuTools        *xiaoyucontract.Registry
 	xiaoyuHost         *xiaoyuhost.Kernel
