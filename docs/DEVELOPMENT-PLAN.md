@@ -5,6 +5,18 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.19：Windows ConPTY Input Pipe Convergence
+
+- 以 0.2.18 Windows Runner 的真实日志为唯一修复依据，不继续猜测 CR/LF；
+- Windows ConPTY child 启动必须设置 `STARTF_USESTDHANDLES`；
+- `hStdInput / hStdOutput / hStdError` 必须保持 NULL，阻止 redirected/captured parent stdio 绕过 ConPTY pipes；
+- `bInheritHandles=false`、cwd normalize、CR Enter、resize lock scope、fallback cfg 与 Host authorization 全部保持；
+- Terminal/PTY Gate 必须冻结 stdio isolation，并有 Windows 单元回归；
+- AI 继续主动检查 GitHub `main`、Actions、失败 Job/日志，再决定下一版本；
+- 正式交付继续使用完整 `agmp-<version>.zip` + SHA-256 → `AGMP-Sync.bat` → `AGMP-GitHub.bat`。
+
+**冻结条件：** Windows `cargo check`、`windows_terminal_` integration、workspace tests 全绿，且 Safety / Linux Headless / Windows Helper 不回退。
+
 ## 0.2.18：Windows ConPTY Input Convergence
 
 - 以 0.2.17 Windows Runner 的真实失败日志为唯一修复依据，不扩大模型执行权限；

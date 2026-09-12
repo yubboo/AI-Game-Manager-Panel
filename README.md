@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.18**  
+当前版本：**0.2.19**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 当前状态：[`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)  
 架构边界：[`docs/PROJECT-ARCHITECTURE.md`](docs/PROJECT-ARCHITECTURE.md) / [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)
@@ -47,6 +47,12 @@ build/
 
 
 
+
+## 0.2.19 Windows ConPTY Input Pipe Convergence
+
+0.2.18 的真实 Windows Runner 进一步证明：ConPTY 能创建、`cmd.exe` 能启动、cwd 正确、CR 规则也正确，但 `cmd.exe` 的 banner/prompt 直接出现在 Rust test harness 的父进程输出中，而写入 ConPTY input pipe 的命令没有被 shell 接收。这与微软 Terminal 对“父进程 stdout/stderr 被重定向/捕获”场景的已知行为一致。
+
+0.2.19 在 `CreateProcessW` 边界显式启用 `STARTF_USESTDHANDLES`，并把 `hStdInput / hStdOutput / hStdError` 保持为 `NULL`，阻止 Windows 自动复制父进程标准句柄到子进程，从而强制交互 I/O 走 ConPTY pipes。CR、cwd normalize、resize lock 与 Host authorization 均保持不变；本版不扩大模型可见 Terminal 权限。
 
 ## 0.2.18 Windows ConPTY Input Convergence
 

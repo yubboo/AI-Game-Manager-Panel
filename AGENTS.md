@@ -412,6 +412,14 @@ All contributors and AI agents must follow `docs/NAMING-CONVENTIONS.md` before c
 - Windows 源码同步禁止直接显示 Robocopy OEM 报表；中文路径诊断必须使用 Unicode 日志或 PowerShell 自身输出。
 - 新增/修改 Worker 必须通过 `check-xiaoyu-worker.mjs`，并继续通过 Rust fmt/check/test、Go test/vet 与 Agent Bench。
 
+### 0.2.19 Windows ConPTY stdio isolation 硬规则
+
+- 真实 Windows Runner 中，若父进程 stdout/stderr 被 test harness/CI 捕获，Windows console child 可能在 `bInheritHandles=false` 时仍获得父标准句柄；这会绕过 ConPTY pipes。
+- Windows ConPTY `STARTUPINFOEXW` 必须设置 `STARTF_USESTDHANDLES`，且 `hStdInput / hStdOutput / hStdError` 必须为 NULL 后再调用 `CreateProcessW`。
+- `bInheritHandles` 继续为 false；不得用继承父标准句柄来“修复”测试。
+- Windows ConPTY Enter 继续使用单个 CR；cwd normalize、resize lock scope、fallback cfg 与 per-input Host authorization 不得回退。
+- `check-xiaoyu-terminal.mjs` 与 Windows 单元测试必须冻结 stdio isolation；Windows integration/workspace tests 全绿前不扩大模型可见 Terminal 权限。
+
 ### 0.2.18 Windows ConPTY Input 硬规则
 
 - 0.2.17 的 CRLF 输入尝试已被真实 Windows Runner 证伪；Windows ConPTY 的 Enter / `appendNewline` 必须发送单个 CR（`\r` / `0x0D`）。

@@ -146,6 +146,10 @@ The benchmark entry point is `go test ./internal/xiaoyu/host -run '^TestAgentBen
 
 这一步仍不等于把模型可见 `shell.exec` 直接切到 Rust。下一阶段只迁移**已经通过 Host Approval**的长任务，并保留 Domain Tool 优先和执行后验证。
 
+## 0.2.19 Windows ConPTY Input Pipe Convergence
+
+0.2.18 Runner 显示 ConPTY child 在测试捕获环境里仍可得到父进程 stdio，导致 prompt 直接泄到 test harness，而 input pipe 无效。0.2.19 在 Rust Windows spawn 边界设置 `STARTF_USESTDHANDLES` 并把三个标准句柄置空，强制交互经过 ConPTY。模型可见 `shell.exec` 与 Host approval 边界不变。
+
 ## 0.2.18 Windows ConPTY Input Convergence
 
 0.2.17 Windows Runner 已把剩余失败收缩到交互输入。0.2.18 把 Windows ConPTY `appendNewline` 从 CRLF 修正为单个 CR（`\r`），并同步单元测试与静态 Gate；Linux PTY / fallback 保持 LF。模型可见 `shell.exec`、Go Host 审批链与 Domain Service 均保持不变。

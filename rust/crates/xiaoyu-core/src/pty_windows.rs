@@ -16,7 +16,7 @@ use windows_sys::Win32::System::Threading::{
     CREATE_UNICODE_ENVIRONMENT, CreateProcessW, DeleteProcThreadAttributeList,
     EXTENDED_STARTUPINFO_PRESENT, GetExitCodeProcess, InitializeProcThreadAttributeList,
     LPPROC_THREAD_ATTRIBUTE_LIST, PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, PROCESS_INFORMATION,
-    STARTUPINFOEXW, TerminateProcess, UpdateProcThreadAttribute,
+    STARTF_USESTDHANDLES, STARTUPINFOEXW, TerminateProcess, UpdateProcThreadAttribute,
 };
 
 const STILL_ACTIVE: u32 = 259;
@@ -179,9 +179,7 @@ pub fn spawn(
     let pseudo_console = PseudoConsole(pseudo_console);
     let attributes = AttributeList::new(pseudo_console.0)?;
 
-    let mut startup: STARTUPINFOEXW = unsafe { zeroed() };
-    startup.StartupInfo.cb = size_of::<STARTUPINFOEXW>() as u32;
-    startup.lpAttributeList = attributes.ptr;
+    let startup = startup_info_for_conpty(attributes.ptr);
 
     let mut process_info: PROCESS_INFORMATION = unsafe { zeroed() };
     let mut command_line = command_line(executable, arguments);
@@ -222,6 +220,19 @@ pub fn spawn(
         reader: output_read,
         writer: input_write,
     })
+}
+
+fn startup_info_for_conpty(attributes: LPPROC_THREAD_ATTRIBUTE_LIST) -> STARTUPINFOEXW {
+    let mut startup: STARTUPINFOEXW = unsafe { zeroed() };
+    startup.StartupInfo.cb = size_of::<STARTUPINFOEXW>() as u32;
+    // A redirected/captured parent can otherwise have its standard handles duplicated into
+    // the child even when bInheritHandles is false, bypassing the ConPTY input/output pipes.
+    startup.StartupInfo.dwFlags |= STARTF_USESTDHANDLES;
+    startup.StartupInfo.hStdInput = null_mut();
+    startup.StartupInfo.hStdOutput = null_mut();
+    startup.StartupInfo.hStdError = null_mut();
+    startup.lpAttributeList = attributes;
+    startup
 }
 
 fn create_pipe() -> io::Result<(File, File)> {
@@ -307,7 +318,10 @@ fn quote_windows_argument(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{normalize_windows_current_directory, quote_windows_argument};
+    use super::{
+        STARTF_USESTDHANDLES, normalize_windows_current_directory, quote_windows_argument,
+        startup_info_for_conpty,
+    };
     use std::path::{Path, PathBuf};
 
     #[test]
@@ -320,6 +334,15 @@ mod tests {
             quote_windows_argument("C:\\path with space\\"),
             "\"C:\\path with space\\\\\""
         );
+    }
+
+    #[test]
+    fn windows_conpty_startup_disables_parent_standard_handles() {
+        let startup = startup_info_for_conpty(std::ptr::null_mut());
+        assert_ne!(startup.StartupInfo.dwFlags & STARTF_USESTDHANDLES, 0);
+        assert!(startup.StartupInfo.hStdInput.is_null());
+        assert!(startup.StartupInfo.hStdOutput.is_null());
+        assert!(startup.StartupInfo.hStdError.is_null());
     }
 
     #[test]

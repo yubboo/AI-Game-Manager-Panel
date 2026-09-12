@@ -1,5 +1,16 @@
 # AI-Game-Manager-Panel 项目历史
 
+## AI-Game-Manager-Panel 0.2.19
+
+### Windows ConPTY Input Pipe Convergence
+
+- 0.2.18 GitHub：Safety、Linux Headless/Web/XiaoYu、Windows Helper/Encoding 全绿；Windows `cargo fmt` 与 `cargo check` 也通过。
+- Windows ConPTY integration 仍是 17 passed / 2 failed；Runner 日志显示 `cmd.exe` banner/prompt 直接写入父 test harness 输出，而 ConPTY input pipe 命令未进入 shell。
+- 根因收敛到 Windows redirected/captured parent stdio：未设置 `STARTF_USESTDHANDLES` 时，console child 可能获得父进程标准句柄，即使 `bInheritHandles=false`。
+- `STARTUPINFOEXW` 现在显式设置 `STARTF_USESTDHANDLES`，并保持 stdin/stdout/stderr 为 NULL，强制 I/O 由 pseudoconsole 管理。
+- Terminal/PTY Gate 与 Windows 单元测试冻结 stdio isolation；CR、cwd、resize、RBAC/approval 不回退。
+- 完整源码交付与 GitHub 主动检查流程继续按已冻结规范执行。
+
 ## AI-Game-Manager-Panel 0.2.18
 
 ### Windows ConPTY Input Convergence

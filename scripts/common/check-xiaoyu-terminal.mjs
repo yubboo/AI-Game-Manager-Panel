@@ -71,6 +71,7 @@ try {
     'CreateProcessW',
     'EXTENDED_STARTUPINFO_PRESENT',
     'CREATE_UNICODE_ENVIRONMENT',
+    'STARTF_USESTDHANDLES',
     'CreatePipe',
   ]) {
     if (!windowsPty.includes(token)) failures.push(`Windows ConPTY backend 缺少 ${token}`)
@@ -80,6 +81,11 @@ try {
   if (!windowsPty.includes('normalize_windows_current_directory')) failures.push('Windows ConPTY 必须在 CreateProcessW 边界规范化 verbatim cwd')
   if (!windowsPty.includes('strip_prefix(r"\\\\?\\")')) failures.push('Windows ConPTY 必须移除本地盘符 cwd 的 \\?\ verbatim 前缀后再传给子进程')
   if (!windowsPty.includes('windows_current_directory_removes_verbatim_prefix_before_create_process')) failures.push('Windows ConPTY 缺少 cwd verbatim-prefix 单元测试')
+  if (!windowsPty.includes('startup.StartupInfo.dwFlags |= STARTF_USESTDHANDLES')) failures.push('Windows ConPTY 必须显式设置 STARTF_USESTDHANDLES，阻止重定向父进程标准句柄绕过 ConPTY')
+  for (const handle of ['hStdInput', 'hStdOutput', 'hStdError']) {
+    if (!windowsPty.includes(`startup.StartupInfo.${handle} = null_mut()`)) failures.push(`Windows ConPTY 必须把 ${handle} 置空后再 CreateProcessW`)
+  }
+  if (!windowsPty.includes('windows_conpty_startup_disables_parent_standard_handles')) failures.push('Windows ConPTY 缺少父进程 stdio 隔离单元测试')
 
   if (!terminal.includes('fn terminal_newline(backend: &str)')) failures.push('Terminal Runtime 缺少 backend-aware newline 语义')
   if (!terminal.includes('return b"\\r";')) failures.push('Windows ConPTY appendNewline 必须发送 CR/Enter 语义')
@@ -168,4 +174,4 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY cwd/CR · resize · per-input Host authorization)')
+console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY cwd/CR/stdio-isolation · resize · per-input Host authorization)')

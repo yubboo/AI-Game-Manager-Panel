@@ -199,6 +199,10 @@ Rust 作为 XiaoYu 内部 Runtime 随完整 AGMP 一起发行。未来只有当 
 - Go：监督 Rust Worker 生命周期并继续提供 Product/Domain authority。
 - 下一步：只把已通过 Host Approval 的长任务切到 Rust Jobs，然后再引入 PTY。
 
+### 0.2.19 Windows ConPTY stdio isolation
+
+Windows `CreateProcessW`/`STARTUPINFOEXW` 的标准句柄隔离继续属于 Rust Native Runtime。Go Host 不复制 Win32 handle 语义，只维持身份、RBAC、审批、审计与 Domain authority。
+
 ### 0.2.18 Windows ConPTY Input 收敛
 
 Rust 继续独占 PTY / ConPTY 平台输入语义。Windows ConPTY Enter 使用单个 CR（`\r`）；Linux PTY / fallback 使用 LF。Go Host 不复制 CR/LF 平台判断，只负责身份、RBAC、审批与 Domain Service authority。

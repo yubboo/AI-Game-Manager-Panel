@@ -4,21 +4,20 @@
 
 ## Current version
 
-**0.2.18 — Windows ConPTY Input Convergence**
+**0.2.19 — Windows ConPTY Input Pipe Convergence**
 
 ## Stable baseline
 
-0.2.17 proved that the Windows ConPTY ABI, `CreateProcessW` cwd normalization, resize lock scope and native/fallback compile boundaries reach the real Windows GitHub Runner. Windows `cargo fmt` and `cargo check --workspace --locked` pass. Safety, Linux native PTY, Linux Headless and Windows Helper remain green.
+0.2.18 confirmed that the complete source-delivery workflow, Windows PowerShell/helper encoding, Go tests/vet, Linux headless/Web/XiaoYu, Rust formatting/checking and Linux native PTY are green on GitHub. Windows ConPTY also starts `cmd.exe` in the correct repository cwd and the CR newline unit rule passes.
 
-The remaining failure is narrower: the ConPTY process starts and shows the correct repository cwd, but commands written with CRLF are not executed as Enter. The official ConPTY/terminal input behavior uses a single CR (`\r`, `0x0D`) for the Enter key.
+The remaining Windows failure is now isolated to process stdio routing under the GitHub/Rust test harness. The Runner log prints the `cmd.exe` banner and prompt directly into the parent test output while commands written to the ConPTY input pipe are ignored. Microsoft Terminal documents this redirected-parent case: without `STARTF_USESTDHANDLES`, Windows can duplicate the parent's standard handles into a console child even when `bInheritHandles` is false, bypassing the pseudoconsole communication pipes.
 
-## 0.2.18 changes
+## 0.2.19 changes
 
-- Windows ConPTY `appendNewline` sends a single CR (`\r`) instead of CRLF.
-- Linux PTY and fallback backends continue to use LF (`\n`).
-- Rename the Windows newline unit test to freeze CR semantics and update the Terminal/PTY source Gate accordingly.
-- Preserve the 0.2.17 cwd normalization, resize lock lifetime and fallback cfg fixes.
-- Freeze the development handoff: inspect GitHub first, deliver a complete `agmp-<version>.zip` + SHA-256, run `AGMP-Sync.bat`, then `AGMP-GitHub.bat -> 1. 一键推送`.
+- Build Windows ConPTY `STARTUPINFOEXW` with `STARTF_USESTDHANDLES`.
+- Explicitly keep `hStdInput`, `hStdOutput` and `hStdError` null so the child cannot fall back to redirected/captured parent stdio.
+- Preserve `bInheritHandles = false`, ConPTY cwd normalization, CR Enter semantics, resize locking and fallback cfg boundaries.
+- Add a Windows unit regression for the startup flags/null std handles and freeze the rule in `check-xiaoyu-terminal.mjs`.
 - Do not add new model-visible execution privileges in this release.
 
 ## Mandatory GitHub baseline workflow
@@ -34,7 +33,7 @@ Still in Go for compatibility:
 - current model-visible `shell.exec`;
 - AGMP Domain Tool registry and game/product services.
 
-Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs, Persistent RPC Worker and Terminal Runtime. Linux native PTY is CI-proven. Windows ConPTY is compile/start/cwd-proven and is waiting for input integration/workspace tests to turn green.
+Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs, Persistent RPC Worker and Terminal Runtime. Linux native PTY is CI-proven. Windows ConPTY is compile/start/cwd-proven; 0.2.19 targets the remaining redirected-parent stdio isolation required for real input/output integration.
 
 ## Next runtime milestones
 

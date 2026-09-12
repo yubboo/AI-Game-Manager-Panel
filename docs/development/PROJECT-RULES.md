@@ -169,6 +169,14 @@ AI 的主要职责始终围绕 AGMP：理解用户的开服/运维意图，自�
 - Host identity/RBAC/approval 仍是最终授权来源，Rust `hostAuthorized` 只是内部防线。
 - 应用关闭必须显式关闭 Worker；开发模式缺少 Rust binary 时允许降级并给出可诊断状态，不得导致整个 AGMP 无法启动。
 
+## 0.2.19 Windows ConPTY Stdio Isolation Rule
+
+- A Windows ConPTY child must use `STARTF_USESTDHANDLES` with null `hStdInput`, `hStdOutput` and `hStdError` before `CreateProcessW`.
+- This prevents redirected/captured parent standard handles from bypassing the pseudoconsole even when `bInheritHandles` is false.
+- Do not solve this by inheriting parent handles or weakening the ConPTY boundary.
+- CR Enter, cwd normalization, resize locking and Host authorization remain mandatory.
+- Real Windows ConPTY integration + workspace tests are the freeze evidence.
+
 ## 0.2.18 Windows ConPTY Input Rule
 
 - Windows ConPTY Enter / `appendNewline` 必须发送单个 CR（`\r` / `0x0D`），不得发送 CRLF。
