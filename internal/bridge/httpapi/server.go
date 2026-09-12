@@ -21,6 +21,8 @@ import (
 	"github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/logcenter"
 	dstprefs "github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/preferences"
 	dstruntime "github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/runtime"
+	minecraft "github.com/yubboo/AI-Game-Manager-Panel/internal/games/minecraft"
+	serverinstance "github.com/yubboo/AI-Game-Manager-Panel/internal/server/instance"
 
 	clusterops "github.com/yubboo/AI-Game-Manager-Panel/internal/games/steam/dst/cluster"
 	"github.com/yubboo/AI-Game-Manager-Panel/internal/games/steam/dst/kleiarchive"
@@ -1158,6 +1160,94 @@ func (s *Server) routes() http.Handler {
 			return
 		}
 		writeJSON(w, http.StatusOK, s.application.GameInstances())
+	})
+	mux.HandleFunc("POST /api/v1/minecraft/plan", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := s.application.ValidateSession(bearerToken(r)); err != nil {
+			writeAuthError(w, err)
+			return
+		}
+		var request minecraft.PlanRequest
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&request); err != nil {
+			writeError(w, http.StatusBadRequest, "Minecraft 部署计划格式无效")
+			return
+		}
+		request.Origin = serverinstance.OriginVisual
+		value, err := s.application.MinecraftPlan(request)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, value)
+	})
+	mux.HandleFunc("POST /api/v1/minecraft/deploy", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := s.application.RequireOrganizationAdministrator(bearerToken(r)); err != nil {
+			writeAuthError(w, err)
+			return
+		}
+		var request minecraft.PlanRequest
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&request); err != nil {
+			writeError(w, http.StatusBadRequest, "Minecraft 部署请求格式无效")
+			return
+		}
+		request.Origin = serverinstance.OriginVisual
+		value, err := s.application.DeployMinecraft(request)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusCreated, value)
+	})
+	mux.HandleFunc("POST /api/v1/minecraft/instances/{id}/start", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := s.application.RequireOrganizationAdministrator(bearerToken(r)); err != nil {
+			writeAuthError(w, err)
+			return
+		}
+		value, err := s.application.StartMinecraft(r.PathValue("id"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, value)
+	})
+	mux.HandleFunc("POST /api/v1/minecraft/instances/{id}/stop", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := s.application.RequireOrganizationAdministrator(bearerToken(r)); err != nil {
+			writeAuthError(w, err)
+			return
+		}
+		value, err := s.application.StopMinecraft(r.PathValue("id"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, value)
+	})
+	mux.HandleFunc("GET /api/v1/minecraft/instances/{id}/status", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := s.application.ValidateSession(bearerToken(r)); err != nil {
+			writeAuthError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, s.application.MinecraftStatus(r.PathValue("id")))
+	})
+	mux.HandleFunc("GET /api/v1/minecraft/instances/{id}/logs", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := s.application.ValidateSession(bearerToken(r)); err != nil {
+			writeAuthError(w, err)
+			return
+		}
+		after, _ := strconv.ParseUint(r.URL.Query().Get("after"), 10, 64)
+		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+		writeJSON(w, http.StatusOK, s.application.MinecraftLogs(r.PathValue("id"), after, limit))
+	})
+	mux.HandleFunc("GET /api/v1/minecraft/instances/{id}/probe", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := s.application.ValidateSession(bearerToken(r)); err != nil {
+			writeAuthError(w, err)
+			return
+		}
+		value, err := s.application.ProbeMinecraft(r.PathValue("id"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, value)
 	})
 	mux.HandleFunc("GET /api/v1/settings", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, s.application.Settings())

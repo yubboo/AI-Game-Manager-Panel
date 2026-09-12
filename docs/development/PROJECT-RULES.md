@@ -6,6 +6,17 @@
 本文件只定义不能被后续开发随意改变的产品与工程原则。0.1.83 完成第二轮核心架构收拢；本版通过 Gate 后冻结主要业务边界，后续功能开发不得随意增加一级域或恢复空占位包。
 
 
+### 0.3.0 Minecraft Vertical Slice 硬规则
+
+- `minecraft.java` 的 visual deployment 与 XiaoYu `game.deploy` 必须进入同一个 Go Service，并持久化为同一种 GameInstance。
+- Mojang/Paper/Fabric 版本事实必须实时查询官方上游；不存在的精确版本必须拒绝，不得回退到“差不多”的版本。
+- Minecraft `onlineMode` 必须显式确定；离线模式必须同时开启 whitelist。EULA 必须来自用户明确接受，任何 Agent/默认值不得代签。
+- 下载必须执行上游可提供的 hash 校验；若上游不提供整包 hash，必须明确标识并记录本地 SHA256，禁止伪造“官方校验”。
+- 开服前检查端口占用；实例目录存在时拒绝静默覆盖；Host 重启后旧 process health 不得伪装成实时状态。
+- Minecraft 完成证据固定为 Ready marker + Minecraft Java status protocol Ping；进程存在/端口打开都不够。
+- 0.3.0 只允许宣称 Vanilla/Paper/Fabric、Java、基础配置、console、network endpoint、Ready/Ping。Mods/Plugins/Tunnel/macOS 等未实现能力继续不得宣称完成。
+
+
 ### 0.2.23 Product Contracts 硬规则
 
 - Web 是浏览器控制面；Windows/macOS Desktop 是对应系统原生客户端；Node Runtime 必须在目标操作系统原生执行。远程控制不得被描述为“在 Windows 运行 Linux”。
@@ -14,7 +25,7 @@
 - Agent Provider（如 Codex CLI）在没有安全 Tool mediation 前不得成为 XiaoYu 默认 Brain，也不得拥有绕过 AGMP Host/Approval/Capability Lease 的副作用通道。
 - 可视化游戏库与 XiaoYu 必须读取同一个 Game Pack；planned Game Pack 不能伪装成 supported。
 - 可视化部署与 XiaoYu 一句话部署必须最终创建/管理同一种 GameInstance；禁止维护 AI-only server state。
-- 0.2.23 首先接管真实 DST GameInstance；Minecraft 仍保持 planned，直到完整部署/验证 vertical slice 真正落地。
+- Game Pack 状态必须随真实实现推进；0.3.0 已完成 Minecraft Java 首个 Windows/Linux vertical slice，因此从 planned 提升为 supported。
 
 ### 0.2.22 Capability Scope / Web Asset 硬规则
 

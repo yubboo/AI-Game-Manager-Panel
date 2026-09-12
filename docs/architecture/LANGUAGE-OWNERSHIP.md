@@ -3,6 +3,15 @@
 > 本文定义 AI Game Manager Panel 的长期语言职责边界。它不是“哪门语言更高级”的比较，而是为了让人类与 AI 开发代理在新增代码时，第一时间知道代码应该放到哪里。
 
 
+## 0.3.0 Minecraft Ownership
+
+- `internal/games/minecraft` belongs to the Go Game Domain: live upstream fact resolution, DeploymentPlan, server artifact/config, lifecycle and Minecraft protocol probe live here.
+- `internal/server/instance` remains the cross-game Go resource contract; Minecraft must not invent an AI-only or UI-only instance database.
+- Environment Manager owns Java provisioning; Minecraft consumes it instead of reimplementing a Java installer.
+- Vue owns deployment/management presentation only. XiaoYu invokes the same Go Domain Service through structured Tools; neither Vue nor the model may duplicate download/version rules.
+- Rust Native execution/security remains a shared platform boundary; 0.3.0 does not move Minecraft game rules into Rust and does not widen PTY/ConPTY permissions.
+
+
 ## 0.2.23 Product Contract Ownership
 
 - `internal/platform/contract` 属于 Go Product Host：它描述控制面与目标原生 Node 的产品边界，不替代 Rust Native Runtime。

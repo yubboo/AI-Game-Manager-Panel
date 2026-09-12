@@ -1,6 +1,15 @@
-# AGMP 0.2.23 模块边界
+# AGMP 0.3.0 模块边界
 
 > 0.2.9 冻结语言职责：Rust-first XiaoYu Agent Runtime、Go Domain Host、Vue UI。详细边界见 `docs/architecture/LANGUAGE-OWNERSHIP.md`。模块是否规划存在仍由 `configs/modules.json` 描述；源码目录只为真实实现创建。
+
+
+## 0.3.0 Minecraft Vertical Slice
+
+- `internal/games/minecraft`：实时版本事实、Vanilla/Paper/Fabric artifact、部署计划、配置、Native process lifecycle、Ready/Ping。
+- `internal/server/instance.Store`：持久化跨游戏 GameInstance；Visual/XiaoYu 共用。
+- `internal/deploy/environment`：继续作为 Java Runtime 唯一供给者，Minecraft 不复制 Runtime Manager。
+- `frontend/src/games/minecraft`：可视化部署与实例管理；只调用共享 backend API。
+- `game.deploy.plan` / `game.deploy`：XiaoYu 通过结构化 Tool 调同一 Minecraft Domain Service。
 
 
 ## 0.2.23 Shared Product Contracts

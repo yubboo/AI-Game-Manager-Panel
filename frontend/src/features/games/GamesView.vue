@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import StatusPill from '../../shared/components/StatusPill.vue'
 import { useAppStore } from '../../shared/store/app'
 import DstWorkspace from '../../games/steam/dst/DstWorkspace.vue'
+import MinecraftWorkspace from '../../games/minecraft/MinecraftWorkspace.vue'
 
 const app = useAppStore()
 const activeGameId = ref('steam.dst')
@@ -27,6 +28,7 @@ async function selectGame(id: string) {
 }
 
 function tabState(id: string) {
+  if (id === 'minecraft.java') return { tone: 'success' as const, label: '可部署' }
   if (id !== 'steam.dst') return { tone: 'muted' as const, label: '骨架已预留' }
   if (app.gameWorkspaceLoading || app.dstDedicatedLoading) return { tone: 'warning' as const, label: '检测中' }
   if (app.gameWorkspaceError || app.dstDedicatedError) return { tone: 'danger' as const, label: '检测失败' }
@@ -79,6 +81,8 @@ onMounted(() => {
         :environment="app.dstEnvironment"
         @refresh="refreshDst"
       />
+
+      <MinecraftWorkspace v-else-if="activeGameId === 'minecraft.java'" @deployed="app.loadGameInstances()" />
 
       <article v-else-if="activeGame && activeGame.state === 'planned'" class="panel game-planned-panel">
         <div class="game-planned-panel__mark">{{ activeGame.mark }}</div>

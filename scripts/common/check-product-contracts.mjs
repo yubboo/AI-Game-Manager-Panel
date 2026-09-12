@@ -54,7 +54,7 @@ try {
   const dst = games.templates?.find(item => item.id === 'steam.dst')
   if (!dst || dst.state !== 'supported' || !Array.isArray(dst.capabilities) || !Array.isArray(dst.uiPanels) || !Array.isArray(dst.supportedOs)) failures.push('DST Game Pack 必须声明真实支持状态/OS/能力/UI Panels')
   const mc = games.templates?.find(item => item.id === 'minecraft.java')
-  if (!mc || mc.state !== 'planned') failures.push('Minecraft 在完整 Vertical Slice 前必须继续诚实标记 planned')
+  if (!mc || mc.state !== 'supported' || !mc.supportedOs?.includes('windows') || !mc.supportedOs?.includes('linux')) failures.push('0.3.0 Minecraft Game Pack 必须在真实 Vertical Slice 落地后标记 supported，并声明 Windows/Linux 原生 Runtime')
 } catch (error) {
   failures.push(error instanceof Error ? error.message : String(error))
 }

@@ -4,11 +4,23 @@
 
 ## Current version
 
-**0.2.23 — Product Contracts / Shared Control Plane**
+**0.3.0 — Minecraft Vertical Slice**
 
 ## Stable baseline
 
-0.2.22 is the fully green GitHub baseline at commit `55f065527df91e2aefecf2f76bae970ab00d98ce`: `safety`, `Linux Headless + Web + XiaoYu`, `Windows Helper + Encoding`, and `Windows Rust Runtime + ConPTY` all completed successfully. Typed process Capability Scope, Capability Lease, Linux PTY and Windows ConPTY are CI-proven.
+0.2.23 is the fully green GitHub baseline at commit `a1892cae9e0412e56e3d57bbc2044b103c7e6985` (workflow run `34678472325`): `safety`, `Linux Headless + Web + XiaoYu`, `Windows Helper + Encoding`, and `Windows Rust Runtime + ConPTY` all completed successfully. Platform / Model Provider / Game Pack / GameInstance contracts are therefore frozen as the product-control baseline.
+
+## 0.3.0 changes
+
+- Promote `minecraft.java` from planned to supported on Windows/Linux as the first real Game Pack vertical slice.
+- Add live Mojang/Paper/Fabric fact resolution, including Mojang `javaVersion`, latest stable selection and exact-version rejection.
+- Add Vanilla/Paper/Fabric artifact resolution and integrity handling: official SHA1/SHA256 where upstream provides it, explicit local SHA256 recording where Fabric does not provide a full-jar hash.
+- Reuse Environment Manager for managed Java resolution/installation and write `eula.txt`, `server.properties` and an AGMP manifest into an isolated instance directory.
+- Add persistent cross-client `GameInstance` store plus Minecraft start/stop/status/logs/probe lifecycle. Host restart clears stale live health presentation instead of trusting persisted process state.
+- Add local port preflight, canonical `Done (...)! For help` readiness evidence and Minecraft Java status protocol Ping; only Ready + Ping marks the deployment healthy.
+- Add shared Visual/XiaoYu `game.deploy.plan` and `game.deploy` path. `onlineMode` is explicit, offline requires whitelist, and XiaoYu may never accept the Minecraft EULA on the user's behalf.
+- Add Web/Wails APIs and Vue deployment/instance controls for plan preview, deploy, start/stop, logs and protocol status.
+- Add Minecraft Vertical Slice Gate to Safety and Linux Headless CI.
 
 ## 0.2.23 changes
 
@@ -48,11 +60,11 @@ Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running J
 
 ## Next product milestones
 
-1. Product contracts / shared control plane — current 0.2.23 stage.
-2. Minecraft first real Game Pack vertical slice: facts → managed Java → server install → config → native start → ready/ping verification → GameInstance.
-3. Minecraft Mod/Plugin and public connectivity/tunnel capabilities.
+1. Minecraft first real Game Pack vertical slice — current 0.3.0 stage: facts → managed Java → verified install → config → native start → Ready/Ping → GameInstance.
+2. Minecraft Mod/Plugin capability and compatibility/dependency resolution.
+3. Public connectivity/tunnel capability plus end-to-end external reachability evidence.
 4. Game Pack SDK and second-game validation; adding a game must not require rewriting XiaoYu Core or the whole UI.
-5. Filesystem/network sandbox scope continues where concrete enforcement is required; security work does not stop, but it no longer blocks shipping the first real one-sentence game-server loop.
+5. Filesystem/network sandbox scope continues where concrete enforcement is required; security work remains mandatory but does not block validated product slices.
 
 ## Verification status
 

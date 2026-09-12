@@ -1,6 +1,15 @@
 # XiaoYu Agent Runtime
 
 
+## 0.3.0 Minecraft Shared Deployment Tool
+
+- XiaoYu 新增 `game.deploy.plan` / `game.deploy`，与可视化游戏库调用同一个 Minecraft Domain Service，而不是 shell 拼装另一套开服流程。
+- Minecraft Skill 要求先实时 Plan 再 Deploy；普通未说明认证模式的正版场景使用安全 online-mode，离线/混合认证有歧义时必须澄清。
+- `eulaAccepted=true` 只能来自用户明确同意；XiaoYu 不得代替用户接受 Minecraft EULA。
+- “开服完成”验证必须包含真实 `Done` Ready marker 和 Minecraft status protocol Ping；工具返回 success 本身不是 Completion Evidence。
+- Minecraft Domain 仍由 Go 拥有；Rust Agent Runtime/Capability Lease/PTY 边界不因首个游戏 vertical slice 扩权。
+
+
 ## 0.2.23 Model Provider / Shared Resource Contract
 
 - XiaoYu 的模型来源不再等同于 API Key；Host Provider Contract 支持 API Key、subscription/official CLI 与 local Runtime。

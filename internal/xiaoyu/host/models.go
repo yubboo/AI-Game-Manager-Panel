@@ -165,7 +165,7 @@ type ModelConnectionResult struct {
 func BuiltinModelPresets() []ModelPreset {
 	presets := []ModelPreset{
 		{ID: "openai", Name: "OpenAI API", Description: "OpenAI 官方 Responses API", Protocol: ProtocolOpenAIResponses, DefaultBaseURL: "https://api.openai.com/v1"},
-		{ID: "openai-codex", Name: "OpenAI Codex 套餐", Description: "使用本机官方 Codex CLI 的 ChatGPT/Codex 订阅登录；0.2.23 已接入状态探测，Brain Adapter 不会绕过 AGMP Tool/Approval 边界。", Protocol: ProtocolCodexAppServer, APIKeyOptional: true, Kind: ModelProviderAgent, AuthModes: []ModelAuthMode{ModelAuthSubscription}, DefaultAuthMode: ModelAuthSubscription, Executable: "codex", BrainEligible: false},
+		{ID: "openai-codex", Name: "OpenAI Codex 套餐", Description: "使用本机官方 Codex CLI 的 ChatGPT/Codex 订阅登录；0.3.0 继续使用官方状态探测，Brain Adapter 不会绕过 AGMP Tool/Approval 边界。", Protocol: ProtocolCodexAppServer, APIKeyOptional: true, Kind: ModelProviderAgent, AuthModes: []ModelAuthMode{ModelAuthSubscription}, DefaultAuthMode: ModelAuthSubscription, Executable: "codex", BrainEligible: false},
 		{ID: "deepseek", Name: "DeepSeek", Description: "DeepSeek 官方原生接口", Protocol: ProtocolDeepSeek, DefaultBaseURL: "https://api.deepseek.com"},
 		{ID: "minimax", Name: "MiniMax", Description: "MiniMax OpenAI 兼容接口", Protocol: ProtocolOpenAICompatible, DefaultBaseURL: "https://api.minimax.chat/v1"},
 		{ID: "qwen", Name: "通义千问", Description: "阿里云百炼 OpenAI 兼容接口", Protocol: ProtocolOpenAICompatible, DefaultBaseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1"},

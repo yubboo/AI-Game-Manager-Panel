@@ -1,6 +1,11 @@
 # AGMP XiaoYu Rust Runtime
 
 
+## 0.3.0 Minecraft Vertical Slice boundary
+
+0.3.0 intentionally keeps Minecraft domain implementation in Go. Live game facts, managed Java orchestration, artifact verification, GameInstance persistence and the Minecraft status protocol are Product/Game Domain responsibilities. Rust PTY/ConPTY, Capability Lease and typed process scope remain frozen shared execution primitives; the Minecraft slice introduces no new Rust execution authority.
+
+
 ## 0.2.23 Product Contract boundary
 
 0.2.23 does not widen the Rust Native Runtime. Platform/Game Pack/GameInstance/Provider contracts are introduced in the Go Product Host while the 0.2.22 typed Capability Scope / PTY / ConPTY execution boundary remains frozen. Future Agent-provider mediation must still route side effects through AGMP Host authority before reaching Rust Native execution.

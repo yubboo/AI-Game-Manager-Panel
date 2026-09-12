@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 原生运行端、浏览�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.23**  
+当前版本：**0.3.0**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 当前状态：[`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)  
 架构边界：[`docs/PROJECT-ARCHITECTURE.md`](docs/PROJECT-ARCHITECTURE.md) / [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)
@@ -46,6 +46,21 @@ build/
 `build/bin/` **不再是正式产物目录**。Wails CLI 可能在构建瞬间创建它，脚本会把有效文件转移到 `build/work/` / `build/release/` 后自动清掉，因此 Electron-only 发布时看到 `build/bin` 为空是正常的。
 
 
+
+
+## 0.3.0 Minecraft Vertical Slice
+
+0.2.23 已在 GitHub Actions 四条主 Job 全绿并冻结产品合同。0.3.0 开始把这些合同用于真正产品闭环：**Minecraft Java 成为第一个可执行 Game Pack**，可视化游戏库与 XiaoYu `game.deploy` 共用同一个部署内核，最终创建同一种持久化 `GameInstance`。
+
+- 实时查询 Mojang 版本清单和 `javaVersion`，Paper 使用 Fill API v3，Fabric 使用官方 Meta；版本/Java/构建事实不靠模型记忆猜测。
+- 当前支持 Vanilla / Paper / Fabric。Vanilla 使用 Mojang SHA1，Paper 使用官方 SHA256；Fabric 官方 server jar 无整包 hash 时，AGMP 明确记录本地 SHA256，不虚报官方校验。
+- 复用 Environment Manager 自动解析/安装受管 Java；部署目录固定在 AGMP `runtime/instances/minecraft/`，拒绝静默覆盖已有实例。
+- `online-mode` 必须显式确定；普通正版场景默认走安全的 online 模式，离线模式必须启用白名单。Minecraft EULA 只能由用户明确接受，Agent 不能代替用户同意。
+- 启动使用受管 Native process，先做本机端口预检，再等待真实 `Done (...)! For help` Ready marker，最后执行 Minecraft Java Edition status protocol Ping；只有两项都通过才标记 healthy。
+- GameInstance 持久化保存版本、服务端类型、端口、期望状态与健康状态；Host 重启后不会把旧的 `running/healthy` 状态伪装成当前真实运行状态。
+- Web/Wails 暴露同一组 Plan/Deploy/Start/Stop/Status/Logs/Probe API；Vue 提供 Minecraft 一键部署、计划预览、启动停止、控制台与协议状态可视化。
+
+本版**尚未**宣称 Mod/Plugin 自动安装、外网穿透、公网连通验证或 macOS Minecraft Runtime 已完成；这些能力只有实现并经过对应平台 CI 后才会进入 Game Pack capabilities。
 
 
 ## 0.2.23 Product Contracts / Shared Control Plane

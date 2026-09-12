@@ -905,8 +905,17 @@ export interface GameInstance {
   nodeArch: string
   installPath: string
   runtimeState: string
+  desiredState?: string
+  health?: string
+  gameVersion?: string
+  serverType?: string
+  serverVersion?: string
+  address?: string
+  port?: number
   capabilities: string[]
   managed: boolean
+  createdAt?: number
+  updatedAt?: number
 }
 
 export interface PlatformGamesConfig { templates: PlatformGameTemplate[] }
@@ -923,6 +932,17 @@ export interface GamePack {
   installStrategy?: string
   factSources?: string[]
 }
+
+export type MinecraftSoftware = 'vanilla' | 'paper' | 'fabric'
+export interface MinecraftArtifact { software: MinecraftSoftware; url: string; fileName: string; hashAlgorithm?: string; hash?: string; size?: number; build?: string; loader?: string; installer?: string; trust: string }
+export interface MinecraftVersionFacts { requestedVersion?: string; version: string; latestRelease: string; javaMajor: number; artifact: MinecraftArtifact; sources: string[] }
+export interface MinecraftPlanRequest { name: string; version?: string; software: MinecraftSoftware; memoryMb: number; port: number; onlineMode: boolean; whitelist: boolean; eulaAccepted: boolean; autoInstallJava: boolean; startAfterDeploy: boolean; origin?: GameInstanceOrigin }
+export interface MinecraftPlan { id: string; gameId: string; name: string; origin: GameInstanceOrigin; installPath: string; versionFacts: MinecraftVersionFacts; memoryMb: number; port: number; onlineMode: boolean; whitelist: boolean; eulaAccepted: boolean; autoInstallJava: boolean; startAfterDeploy: boolean; steps: string[] }
+export interface MinecraftRuntimeSnapshot { instanceId: string; state: string; pid?: number; ready: boolean; startedAt?: number; updatedAt?: number; exitCode?: number; error?: string; logCursor: number }
+export interface MinecraftProbeResult { online: boolean; version?: string; protocol?: number; playersOnline?: number; playersMax?: number; description?: string; latencyMs: number }
+export interface MinecraftDeploymentResult { plan: MinecraftPlan; instance: GameInstance; runtime: MinecraftRuntimeSnapshot; probe?: MinecraftProbeResult }
+export interface MinecraftLogLine { sequence: number; timestamp: number; text: string }
+export interface MinecraftLogBatch { lines: MinecraftLogLine[]; nextCursor: number; dropped: boolean }
 
 export interface PlatformModuleConfig {
   id: string
@@ -1746,6 +1766,13 @@ declare global {
           GetPlatformRuntimeContract: (token: string) => Promise<PlatformRuntimeContract>
           GetGamePacks: (token: string) => Promise<GamePack[]>
           GetGameInstances: (token: string) => Promise<GameInstance[]>
+          GetMinecraftPlan: (token: string, request: MinecraftPlanRequest) => Promise<MinecraftPlan>
+          DeployMinecraft: (token: string, request: MinecraftPlanRequest) => Promise<MinecraftDeploymentResult>
+          StartMinecraft: (token: string, id: string) => Promise<MinecraftRuntimeSnapshot>
+          StopMinecraft: (token: string, id: string) => Promise<MinecraftRuntimeSnapshot>
+          GetMinecraftStatus: (token: string, id: string) => Promise<MinecraftRuntimeSnapshot>
+          GetMinecraftLogs: (token: string, id: string, after: number, limit: number) => Promise<MinecraftLogBatch>
+          ProbeMinecraft: (token: string, id: string) => Promise<MinecraftProbeResult>
           GetSettings: (token: string) => Promise<AGMPSettings>
           SaveSettings: (token: string, value: AGMPSettings) => Promise<void>
           GetRecentLogs: (token: string, limit: number) => Promise<string[]>

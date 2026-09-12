@@ -1,6 +1,29 @@
-# AI Game Manager Panel 0.2.23 总架构
+# AI Game Manager Panel 0.3.0 总架构
 
 > AGMP 是唯一产品。用户与 XiaoYu 是“两个大脑、同一副身体”：用户拥有最终授权与接管权；XiaoYu 负责理解、规划、执行编排、验证、恢复与总结。0.2.9 起语言职责正式冻结为 **Rust-first Agent Runtime / Go Domain Host / Vue UI**。
+
+
+## 0.3.0 Minecraft Vertical Slice
+
+0.3.0 用第一个真实 Game Pack 验证 0.2.23 的共享控制面合同，而不是另造 Minecraft 专用旁路：
+
+```text
+Visual Game Library ─┐
+                     ├─→ Minecraft Plan/Deploy Domain Service
+XiaoYu game.deploy ──┘                 │
+                                       ├─ live facts (Mojang/Paper/Fabric)
+                                       ├─ managed Java
+                                       ├─ verified artifact/config
+                                       └─ persistent GameInstance
+                                                     │
+                                      Native process + bounded logs
+                                                     │
+                                        Done Ready + MC Protocol Ping
+                                                     │
+                                           Visual long-term management
+```
+
+Go Game Domain owns Minecraft facts/deploy/runtime lifecycle; Rust Native Terminal/Sandbox boundary remains frozen and is not duplicated into Minecraft-specific Rust code. Vue and XiaoYu are peer control surfaces over the same service and resource model. Current Minecraft capabilities are deliberately limited to `overview / console / config / network`; Mod/Plugin and tunnel capabilities will only be advertised when actual tools and verification exist.
 
 
 ## 0.2.23 Product Contracts / Shared Control Plane

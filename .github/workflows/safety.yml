@@ -31,6 +31,7 @@ jobs:
           test -f scripts/common/check-github-safety.mjs
           test -f scripts/common/check-project-layout.mjs
           test -f scripts/common/check-product-contracts.mjs
+          test -f scripts/common/check-minecraft.mjs
           test -f scripts/common/check-xiaoyu-harness.mjs
           test -f scripts/common/check-xiaoyu-lease.mjs
           test -f rust/Cargo.toml
@@ -75,6 +76,9 @@ jobs:
 
       - name: Product contracts gate
         run: node scripts/common/check-product-contracts.mjs
+
+      - name: Minecraft vertical slice gate
+        run: node scripts/common/check-minecraft.mjs
 
       - name: Module ownership gate
         run: node scripts/common/check-modules.mjs
@@ -210,6 +214,7 @@ jobs:
           test -f scripts/common/check-github-safety.mjs
           test -f scripts/common/check-project-layout.mjs
           test -f scripts/common/check-product-contracts.mjs
+          test -f scripts/common/check-minecraft.mjs
           test -f scripts/common/check-xiaoyu-harness.mjs
           test -f scripts/common/check-xiaoyu-lease.mjs
           test -f rust/Cargo.toml
@@ -240,6 +245,7 @@ jobs:
       - name: Enforce headless AI parity
         run: |
           node scripts/common/check-product-contracts.mjs
+          node scripts/common/check-minecraft.mjs
           node scripts/common/check-xiaoyu-harness.mjs
           node scripts/common/check-xiaoyu-model-center.mjs
           node scripts/common/check-xiaoyu-intelligence.mjs

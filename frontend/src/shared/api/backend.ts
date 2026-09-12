@@ -86,6 +86,12 @@ import type {
   PlatformRuntimeContract,
   GameInstance,
   GamePack,
+  MinecraftPlanRequest,
+  MinecraftPlan,
+  MinecraftDeploymentResult,
+  MinecraftRuntimeSnapshot,
+  MinecraftLogBatch,
+  MinecraftProbeResult,
   AGMPSettings,
   GlobalLogCatalogRequest,
   GlobalLogCatalogPage,
@@ -728,6 +734,34 @@ export const backend = {
   gameInstances(): Promise<GameInstance[]> {
     if (hasWailsBridge()) return requireWails().GetGameInstances(sessionToken)
     return httpJSON<GameInstance[]>('/api/v1/instances')
+  },
+  minecraftPlan(request: MinecraftPlanRequest): Promise<MinecraftPlan> {
+    if (hasWailsBridge()) return requireWails().GetMinecraftPlan(sessionToken, request)
+    return httpJSON<MinecraftPlan>('/api/v1/minecraft/plan', { method: 'POST', body: JSON.stringify(request) })
+  },
+  deployMinecraft(request: MinecraftPlanRequest): Promise<MinecraftDeploymentResult> {
+    if (hasWailsBridge()) return requireWails().DeployMinecraft(sessionToken, request)
+    return httpJSON<MinecraftDeploymentResult>('/api/v1/minecraft/deploy', { method: 'POST', body: JSON.stringify(request) })
+  },
+  startMinecraft(id: string): Promise<MinecraftRuntimeSnapshot> {
+    if (hasWailsBridge()) return requireWails().StartMinecraft(sessionToken, id)
+    return httpJSON<MinecraftRuntimeSnapshot>(`/api/v1/minecraft/instances/${encodeURIComponent(id)}/start`, { method: 'POST' })
+  },
+  stopMinecraft(id: string): Promise<MinecraftRuntimeSnapshot> {
+    if (hasWailsBridge()) return requireWails().StopMinecraft(sessionToken, id)
+    return httpJSON<MinecraftRuntimeSnapshot>(`/api/v1/minecraft/instances/${encodeURIComponent(id)}/stop`, { method: 'POST' })
+  },
+  minecraftStatus(id: string): Promise<MinecraftRuntimeSnapshot> {
+    if (hasWailsBridge()) return requireWails().GetMinecraftStatus(sessionToken, id)
+    return httpJSON<MinecraftRuntimeSnapshot>(`/api/v1/minecraft/instances/${encodeURIComponent(id)}/status`)
+  },
+  minecraftLogs(id: string, after = 0, limit = 300): Promise<MinecraftLogBatch> {
+    if (hasWailsBridge()) return requireWails().GetMinecraftLogs(sessionToken, id, after, limit)
+    return httpJSON<MinecraftLogBatch>(`/api/v1/minecraft/instances/${encodeURIComponent(id)}/logs?after=${encodeURIComponent(after)}&limit=${encodeURIComponent(limit)}`)
+  },
+  probeMinecraft(id: string): Promise<MinecraftProbeResult> {
+    if (hasWailsBridge()) return requireWails().ProbeMinecraft(sessionToken, id)
+    return httpJSON<MinecraftProbeResult>(`/api/v1/minecraft/instances/${encodeURIComponent(id)}/probe`)
   },
   settings(): Promise<AGMPSettings> {
     if (hasWailsBridge()) return requireWails().GetSettings(sessionToken)

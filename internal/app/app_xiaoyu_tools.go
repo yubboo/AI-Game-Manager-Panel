@@ -12,6 +12,7 @@ import (
 	dstruntimecore "github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/runtime"
 	opsfiles "github.com/yubboo/AI-Game-Manager-Panel/internal/ops/files"
 	platformruntime "github.com/yubboo/AI-Game-Manager-Panel/internal/platform/runtime"
+	serverinstance "github.com/yubboo/AI-Game-Manager-Panel/internal/server/instance"
 	systemsettings "github.com/yubboo/AI-Game-Manager-Panel/internal/system/settings"
 	xiaoyucontract "github.com/yubboo/AI-Game-Manager-Panel/internal/xiaoyu/contract"
 	xiaoyuhost "github.com/yubboo/AI-Game-Manager-Panel/internal/xiaoyu/host"
@@ -380,8 +381,30 @@ func (a *Application) registerXiaoYuTools() {
 				{xiaoyucontract.ToolSpec{Name: "game.pack.list", Description: "读取可视化游戏库与 XiaoYu 共用的 Game Pack 合同，包含支持状态、原生 OS、领域能力、UI Panels、安装策略和事实来源。planned Pack 不可当作已支持。", Risk: xiaoyucontract.RiskRead, Category: "games", Manual: false, XiaoYu: true, Source: "agmp.games", Parameters: emptyObjectSchema()}, func(_ context.Context, _ map[string]any) (xiaoyucontract.ToolExecution, error) {
 					return xiaoyucontract.ToolExecution{Summary: "已读取共享 Game Pack 合同。", Data: a.GamePacks()}, nil
 				}},
-				{xiaoyucontract.ToolSpec{Name: "game.instance.list", Description: "读取可视化服务器页与 XiaoYu 共用的 GameInstance 资源。0.2.23 首先接管真实 DST 集群；以后游戏库部署与一句话部署都必须创建同一种实例。", Risk: xiaoyucontract.RiskRead, Category: "games", Manual: false, XiaoYu: true, Source: "agmp.games", Parameters: emptyObjectSchema()}, func(_ context.Context, _ map[string]any) (xiaoyucontract.ToolExecution, error) {
+				{xiaoyucontract.ToolSpec{Name: "game.instance.list", Description: "读取可视化服务器页与 XiaoYu 共用的 GameInstance 资源。0.3.0 已让 DST 与 Minecraft 共用 GameInstance；游戏库部署和一句话部署创建同一种实例。", Risk: xiaoyucontract.RiskRead, Category: "games", Manual: false, XiaoYu: true, Source: "agmp.games", Parameters: emptyObjectSchema()}, func(_ context.Context, _ map[string]any) (xiaoyucontract.ToolExecution, error) {
 					return xiaoyucontract.ToolExecution{Summary: "已读取共享 GameInstance 列表。", Data: a.GameInstances()}, nil
+				}},
+				{xiaoyucontract.ToolSpec{Name: "game.deploy.plan", Description: "为 Game Pack 生成确定性部署计划并实时查证版本事实。当前首个可执行实现是 minecraft.java；版本、Java 与服务端构建必须由上游事实源返回，禁止凭模型记忆猜测。", Risk: xiaoyucontract.RiskRead, Category: "games", Manual: false, XiaoYu: true, Source: "agmp.games", Parameters: map[string]any{"type": "object", "properties": map[string]any{"gameId": map[string]any{"type": "string", "enum": []string{"minecraft.java"}}, "name": map[string]any{"type": "string"}, "version": map[string]any{"type": "string"}, "software": map[string]any{"type": "string", "enum": []string{"vanilla", "paper", "fabric"}}, "memoryMb": map[string]any{"type": "integer", "minimum": 512}, "port": map[string]any{"type": "integer", "minimum": 1, "maximum": 65535}, "onlineMode": map[string]any{"type": "boolean"}, "whitelist": map[string]any{"type": "boolean"}, "eulaAccepted": map[string]any{"type": "boolean"}, "autoInstallJava": map[string]any{"type": "boolean"}, "startAfterDeploy": map[string]any{"type": "boolean"}}, "required": []string{"gameId", "name", "software", "onlineMode", "whitelist", "eulaAccepted", "autoInstallJava", "startAfterDeploy"}, "additionalProperties": false}}, func(_ context.Context, args map[string]any) (xiaoyucontract.ToolExecution, error) {
+					var request gameDeployRequest
+					if err := decodeToolArgs(args, &request); err != nil {
+						return xiaoyucontract.ToolExecution{}, err
+					}
+					if request.GameID != "minecraft.java" {
+						return xiaoyucontract.ToolExecution{}, fmt.Errorf("当前 game.deploy.plan 只开放 minecraft.java，其他 Game Pack 仍是 planned")
+					}
+					value, err := a.MinecraftPlan(request.minecraft(serverinstance.OriginAgent))
+					return xiaoyucontract.ToolExecution{Summary: "已生成 Minecraft 实时部署计划。", Data: value}, err
+				}},
+				{xiaoyucontract.ToolSpec{Name: "game.deploy", Description: "通过与可视化游戏库相同的部署内核创建 GameInstance。Minecraft 部署会实时查版本、准备 Java、下载并校验服务端、写配置；startAfterDeploy=true 时必须等待 Done 并执行协议 Ping。eulaAccepted 只能在用户明确同意 EULA 后设为 true。", Risk: xiaoyucontract.RiskModify, Category: "games", Manual: false, XiaoYu: true, Source: "agmp.games", Parameters: map[string]any{"type": "object", "properties": map[string]any{"gameId": map[string]any{"type": "string", "enum": []string{"minecraft.java"}}, "name": map[string]any{"type": "string"}, "version": map[string]any{"type": "string"}, "software": map[string]any{"type": "string", "enum": []string{"vanilla", "paper", "fabric"}}, "memoryMb": map[string]any{"type": "integer", "minimum": 512}, "port": map[string]any{"type": "integer", "minimum": 1, "maximum": 65535}, "onlineMode": map[string]any{"type": "boolean"}, "whitelist": map[string]any{"type": "boolean"}, "eulaAccepted": map[string]any{"type": "boolean"}, "autoInstallJava": map[string]any{"type": "boolean"}, "startAfterDeploy": map[string]any{"type": "boolean"}}, "required": []string{"gameId", "name", "software", "onlineMode", "whitelist", "eulaAccepted", "autoInstallJava", "startAfterDeploy"}, "additionalProperties": false}}, func(_ context.Context, args map[string]any) (xiaoyucontract.ToolExecution, error) {
+					var request gameDeployRequest
+					if err := decodeToolArgs(args, &request); err != nil {
+						return xiaoyucontract.ToolExecution{}, err
+					}
+					if request.GameID != "minecraft.java" {
+						return xiaoyucontract.ToolExecution{}, fmt.Errorf("当前 game.deploy 只开放 minecraft.java，其他 Game Pack 仍是 planned")
+					}
+					value, err := a.DeployMinecraft(request.minecraft(serverinstance.OriginAgent))
+					return xiaoyucontract.ToolExecution{Summary: "Minecraft GameInstance 已通过共享部署内核处理。", Data: value}, err
 				}},
 				{xiaoyucontract.ToolSpec{Name: "steam.snapshot", Description: "读取 Steam/SteamCMD 与已安装游戏的当前环境快照。", Risk: xiaoyucontract.RiskRead, Category: "deployment", Manual: true, XiaoYu: true, Source: "agmp.deploy", Parameters: emptyObjectSchema()}, func(_ context.Context, _ map[string]any) (xiaoyucontract.ToolExecution, error) {
 					value, err := a.SteamSnapshot()

@@ -1,4 +1,11 @@
-# AI Game Manager Panel Scripts 0.2.23
+# AI Game Manager Panel Scripts 0.3.0
+
+
+## 0.3.0 Minecraft Vertical Slice
+
+- `check-minecraft.mjs` freezes live Mojang/Paper/Fabric facts, managed Java reuse, artifact verification, explicit EULA/account mode, shared GameInstance, Native process, port preflight, Ready marker, protocol Ping and Visual/XiaoYu shared deploy.
+- GitHub `safety` and Linux Headless lanes run the Minecraft gate before build/test completion.
+- Product Contracts Gate now requires `minecraft.java` to be Windows/Linux `supported`, but only advertises capabilities actually implemented in this slice.
 
 
 ## 0.2.23 Product Contracts / Shared Control Plane

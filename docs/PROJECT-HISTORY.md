@@ -1,6 +1,22 @@
 # AI-Game-Manager-Panel 项目历史
 
 
+## AI-Game-Manager-Panel 0.3.0
+
+### Minecraft Vertical Slice
+
+- 0.2.23 在 GitHub Actions 四条主 Job 全绿后冻结 Platform / Model Provider / Game Pack / GameInstance 合同。
+- `minecraft.java` 成为首个真实可执行 Game Pack，Windows/Linux 进入 supported。
+- 新增 Mojang/Paper/Fabric 实时事实解析，Minecraft/Java/构建版本不再依赖模型记忆。
+- 新增 Vanilla/Paper/Fabric 下载、官方 hash 校验（可用时）与 Fabric 本地 SHA256 记录。
+- 复用受管 Java Runtime，生成 EULA、`server.properties` 与 AGMP Minecraft manifest。
+- 新增持久化 GameInstance Store、Native process 生命周期、bounded console、启动/停止/status/logs。
+- 新增端口预检、严格 Done Ready marker 与 Minecraft Java status protocol Ping。
+- 可视化游戏库和 XiaoYu `game.deploy.plan` / `game.deploy` 共用同一部署内核；EULA/离线模式保持 fail-closed。
+- 新增 Web/Wails Minecraft API 和 Vue 一键部署/实例控制组件。
+- 0.3.0 不宣称 Mods/Plugins、内网穿透/公网验证或 macOS Minecraft Runtime 已完成。
+
+
 ## AI-Game-Manager-Panel 0.2.23
 
 ### Product Contracts / Shared Control Plane

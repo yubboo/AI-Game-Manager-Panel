@@ -10,14 +10,35 @@ import (
 )
 
 // GameInstances returns the shared instance model consumed by the visual UI and
-// XiaoYu. 0.2.23 adopts existing DST clusters first; later deployers create the
-// same Instance shape instead of inventing a second AI-only resource model.
+// XiaoYu. 0.3.0 adds managed Minecraft instances to the same resource model
+// already used for discovered DST clusters; origin never changes management semantics.
 func (a *Application) GameInstances() []serverinstance.Instance {
 	if a == nil {
 		return []serverinstance.Instance{}
 	}
 	env := a.DSTEnvironment()
-	items := make([]serverinstance.Instance, 0, len(env.Clusters))
+	items := make([]serverinstance.Instance, 0, len(env.Clusters)+8)
+	if a.instanceStore != nil {
+		for _, item := range a.instanceStore.List() {
+			if item.GameID == "minecraft.java" && a.minecraft != nil {
+				snapshot := a.minecraft.Status(item.ID)
+				item.RuntimeState = snapshot.State
+				switch {
+				case snapshot.Ready:
+					item.Health = "healthy"
+				case snapshot.State == "starting" || snapshot.State == "running":
+					item.Health = "starting"
+				case snapshot.State == "failed":
+					item.Health = "unhealthy"
+				case snapshot.State == "stopped":
+					// Runtime ownership is intentionally in-memory. After a Host restart an
+					// old persisted "healthy/running" value must not be presented as live.
+					item.Health = "unknown"
+				}
+			}
+			items = append(items, item)
+		}
+	}
 	ctx := a.Context()
 	if ctx == nil {
 		ctx = context.Background()

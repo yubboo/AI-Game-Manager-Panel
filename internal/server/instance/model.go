@@ -17,16 +17,25 @@ const (
 // Instance is the shared resource rendered by the visual control plane and
 // addressed by XiaoYu. Creation origin does not change the management model.
 type Instance struct {
-	ID           string   `json:"id"`
-	Name         string   `json:"name"`
-	GameID       string   `json:"gameId"`
-	Origin       Origin   `json:"origin"`
-	NodeOS       string   `json:"nodeOs"`
-	NodeArch     string   `json:"nodeArch"`
-	InstallPath  string   `json:"installPath"`
-	RuntimeState string   `json:"runtimeState"`
-	Capabilities []string `json:"capabilities,omitempty"`
-	Managed      bool     `json:"managed"`
+	ID            string   `json:"id"`
+	Name          string   `json:"name"`
+	GameID        string   `json:"gameId"`
+	Origin        Origin   `json:"origin"`
+	NodeOS        string   `json:"nodeOs"`
+	NodeArch      string   `json:"nodeArch"`
+	InstallPath   string   `json:"installPath"`
+	RuntimeState  string   `json:"runtimeState"`
+	DesiredState  string   `json:"desiredState,omitempty"`
+	Health        string   `json:"health,omitempty"`
+	GameVersion   string   `json:"gameVersion,omitempty"`
+	ServerType    string   `json:"serverType,omitempty"`
+	ServerVersion string   `json:"serverVersion,omitempty"`
+	Address       string   `json:"address,omitempty"`
+	Port          int      `json:"port,omitempty"`
+	Capabilities  []string `json:"capabilities,omitempty"`
+	Managed       bool     `json:"managed"`
+	CreatedAt     int64    `json:"createdAt,omitempty"`
+	UpdatedAt     int64    `json:"updatedAt,omitempty"`
 }
 
 // StableID gives discovered/imported servers a repeatable identity without

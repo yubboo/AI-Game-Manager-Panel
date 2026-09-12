@@ -5,6 +5,21 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.3.0：Minecraft Vertical Slice
+
+- 以 0.2.23 commit `a1892cae9e0412e56e3d57bbc2044b103c7e6985` 四条 GitHub Job 全绿为 Product Contract 冻结基线；
+- 将 `minecraft.java` 提升为首个 Windows/Linux supported Game Pack；Visual UI 与 XiaoYu 使用同一个 Plan/Deploy Domain Service；
+- 实时查证 Mojang 版本/Java、PaperMC Fill API v3 与 Fabric Meta，不接受模型记忆作为版本事实；
+- 复用 Environment Manager 解析/安装受管 Java，并完成 Vanilla/Paper/Fabric 服务端下载与可用的上游哈希校验；
+- 生成 EULA、`server.properties` 与 AGMP manifest；已有实例目录拒绝静默覆盖；
+- 建立持久化 GameInstance Store，并把版本、server type、端口、desired/runtime state、health 纳入共同资源模型；
+- 启动前检查端口；通过 Native process 启动，等待真实 Done marker，再执行 Minecraft status protocol Ping；只有 Ready + Ping 才算健康；
+- Web/Wails/Vue 增加 Minecraft Plan/Deploy/Start/Stop/Status/Logs/Probe，可视化游戏库与一句话开服创建同一种实例；
+- XiaoYu 明确 EULA 必须用户同意，`online-mode` 不可因零值变成离线，离线模式必须白名单。
+
+**冻结条件：** Minecraft Gate、Product Contracts、Go tests/vet、Frontend build、Linux Headless、Windows Helper、Rust tests、Linux PTY、Windows ConPTY 全绿；不虚报 Mods/Plugins、Tunnel/Public Reachability 或 macOS 支持。
+
+
 ## 0.2.23：Product Contracts / Shared Control Plane
 
 - 以 0.2.22 GitHub 四条 Job 全绿为稳定基线；

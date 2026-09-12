@@ -1,8 +1,8 @@
 ; AI游戏管理器面板 Windows 正式安装器（Inno Setup）
 ; 0.1.74：全中文已有目录提示 + 版本升级识别 + 用户数据保留 + 自动更新安装器衔接
 #define MyAppName "AI游戏管理器面板"
-#define MyAppVersion "0.2.23"
-#define MyAppVersionNumeric "0.2.23.0"
+#define MyAppVersion "0.3.0"
+#define MyAppVersionNumeric "0.3.0.0"
 #define MyAppPublisher "AI Game Manager Panel"
 #define MyAppURL "https://github.com/yubboo/AI-Game-Manager-Panel"
 #define MyAppExeName "AI-Game-Manager-Panel.exe"
@@ -23,7 +23,7 @@ DisableProgramGroupPage=no
 AllowNoIcons=yes
 PrivilegesRequired=lowest
 OutputDir=..\..\..\build\work\windows-wails\release-stage\installer
-OutputBaseFilename=AI-Game-Manager-Panel-0.2.23-Windows-x64-Setup
+OutputBaseFilename=AI-Game-Manager-Panel-0.3.0-Windows-x64-Setup
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern

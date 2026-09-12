@@ -25,6 +25,17 @@ AI Game Manager Panel（AI游戏管理器面板）定位为：**现代化、智�
 **语言归属先读规则：** 新增或迁移代码前必须阅读 `docs/architecture/LANGUAGE-OWNERSHIP.md`。Agent 通用能力默认 Rust-first；游戏/产品 Domain 默认 Go；UI 默认 Vue/TypeScript。
 
 
+### 0.3.0 Minecraft Vertical Slice 硬规则
+
+- `minecraft.java` 是首个真实可执行 Game Pack；Visual UI 与 XiaoYu 必须共用 `game.deploy.plan` / `game.deploy` 对应的同一 Go Domain Service，并创建同一种持久化 GameInstance。
+- Minecraft 版本、Java 主版本、Paper/Fabric 构建必须实时查官方上游；模型记忆、静态 Prompt 和硬编码版本表不能作为版本事实来源。
+- 当前只宣称 Vanilla / Paper / Fabric 部署、受管 Java、服务端校验、基础配置、Native process、Ready marker 与 Minecraft status Ping；未实现的 Mod/Plugin、Tunnel/Public Reachability 不得写成 supported capability。
+- `online-mode` 不得因 bool 零值静默变成离线；离线模式必须显式选择并启用 whitelist。EULA 只能在用户明确接受后写入 `eula=true`。
+- “开服完成”必须同时有 Minecraft `Done` Ready 证据和协议 Ping 成功；只下载 jar、只存在进程、只打开端口都不能宣告完成。
+- 启动前必须进行本机端口占用预检；已有实例目录禁止静默覆盖。Host 重启后未知进程状态不得沿用旧 `healthy/running` 作为实时事实。
+- 0.3.0 Game Pack 只承诺 Windows/Linux；macOS 没有原生 Runner/build 证据前继续 planned。
+
+
 ### 0.2.23 Product Contracts 硬规则
 
 - Web = browser control plane；Windows/macOS Desktop = 对应 OS 原生客户端；Windows/macOS/Linux Runtime = 对应 OS 原生执行端。控制端与执行端禁止混淆。
@@ -33,7 +44,7 @@ AI Game Manager Panel（AI游戏管理器面板）定位为：**现代化、智�
 - `openai-codex` 0.2.23 只允许官方 `codex login status` 状态探测，`BrainEligible=false`；没有 app-server 安全中介前不得给它 XiaoYu 执行权。
 - Game Pack 是游戏库和 XiaoYu 的共同能力目录；GameInstance 是 UI 与 XiaoYu 的共同服务器资源。
 - 所有未来 `game.deploy` 必须落到 GameInstance；严禁再做“AI 开的服”和“面板开的服”两套资源/执行逻辑。
-- Minecraft 在真实 vertical slice 完成前继续标记 planned，不以设计文档代替实现进度。
+- Game Pack 支持状态必须由真实实现和 CI 证据推进；0.3.0 已按该规则把 Minecraft Java 提升为 Windows/Linux supported。
 
 ### 0.2.22 Capability Scope / Web Asset 硬规则
 

@@ -67,35 +67,28 @@
       "family": "minecraft",
       "nameZh": "Minecraft Java",
       "nameEn": "Minecraft Java Edition",
-      "state": "planned",
+      "state": "supported",
       "capabilities": [
         "overview",
         "console",
-        "players",
         "config",
-        "mods",
-        "plugins",
-        "network",
-        "backups",
-        "files"
+        "network"
       ],
       "uiPanels": [
         "overview",
         "console",
-        "players",
         "config",
-        "mods",
-        "plugins",
-        "network",
-        "backups",
-        "files"
+        "network"
       ],
-      "installStrategy": "game-pack-planned",
+      "installStrategy": "agmp-native-download",
       "factSources": [
         "mojang",
         "papermc",
-        "fabric",
-        "modrinth"
+        "fabric"
+      ],
+      "supportedOs": [
+        "windows",
+        "linux"
       ]
     },
     {

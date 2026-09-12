@@ -3,10 +3,11 @@ import { computed, onMounted } from 'vue'
 import EmptyState from '../../shared/components/EmptyState.vue'
 import StatusPill from '../../shared/components/StatusPill.vue'
 import { useAppStore } from '../../shared/store/app'
+import MinecraftInstance from '../../games/minecraft/MinecraftInstance.vue'
 
 const app = useAppStore()
 
-const gameNames = computed(() => new Map((app.platformConfig?.games.templates ?? []).map(item => [item.id, item.nameZh])))
+const gameNames = computed(() => new Map((app.gamePacks.length ? app.gamePacks : (app.platformConfig?.games.templates ?? [])).map(item => [item.id, item.nameZh])))
 
 function stateTone(state: string) {
   const value = state.toLowerCase()
@@ -44,15 +45,17 @@ onMounted(() => {
           <StatusPill :tone="stateTone(instance.runtimeState)" :label="instance.runtimeState || 'unknown'" />
         </div>
         <p>{{ instance.nodeOs }} / {{ instance.nodeArch }} · {{ instance.origin === 'agent' ? 'XiaoYu 创建' : instance.origin === 'visual' ? '可视化创建' : '现有实例接管' }}</p>
+        <p v-if="instance.gameVersion || instance.serverType"><small>{{ instance.gameVersion }}<span v-if="instance.serverType"> · {{ instance.serverType }}</span><span v-if="instance.address"> · {{ instance.address }}</span></small></p>
         <small>{{ instance.installPath }}</small>
+        <MinecraftInstance v-if="instance.gameId === 'minecraft.java'" :instance="instance" @changed="app.loadGameInstances()" />
         <div class="chip-row">
           <span v-for="capability in instance.capabilities" :key="capability" class="chip">{{ capability }}</span>
         </div>
       </article>
     </div>
 
-    <EmptyState v-else-if="!app.gameInstancesLoading" icon="servers" title="还没有可管理的服务器实例" description="当前 0.2.23 已把真实 DST 集群接入通用 GameInstance 合同；后续游戏库部署与 XiaoYu game.deploy 会创建同一种实例，不会维护两套服务器记录。">
-      <button class="btn btn--disabled" disabled>＋ 通用 Game Pack 部署器开发中</button>
+    <EmptyState v-else-if="!app.gameInstancesLoading" icon="servers" title="还没有可管理的服务器实例" description="0.3.0 开始，真实 DST 集群与 Minecraft 可视化/XiaoYu 部署都进入同一个 GameInstance 合同，不维护两套服务器记录。">
+      <button class="btn btn--disabled" disabled>从游戏库部署，或让 XiaoYu 一句话开服</button>
     </EmptyState>
   </section>
 </template>

@@ -13,6 +13,7 @@ import (
 	"github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/logcenter"
 	dstprefs "github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/preferences"
 	dstruntimecore "github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/runtime"
+	minecraft "github.com/yubboo/AI-Game-Manager-Panel/internal/games/minecraft"
 	platformcontract "github.com/yubboo/AI-Game-Manager-Panel/internal/platform/contract"
 	serverinstance "github.com/yubboo/AI-Game-Manager-Panel/internal/server/instance"
 
@@ -564,6 +565,57 @@ func (a *App) GetGameInstances(token string) ([]serverinstance.Instance, error) 
 		return nil, err
 	}
 	return a.application.GameInstances(), nil
+}
+
+func (a *App) GetMinecraftPlan(token string, request minecraft.PlanRequest) (minecraft.Plan, error) {
+	if err := a.requireSession(token); err != nil {
+		return minecraft.Plan{}, err
+	}
+	request.Origin = serverinstance.OriginVisual
+	return a.application.MinecraftPlan(request)
+}
+
+func (a *App) DeployMinecraft(token string, request minecraft.PlanRequest) (minecraft.DeploymentResult, error) {
+	if err := a.requireAdministrator(token); err != nil {
+		return minecraft.DeploymentResult{}, err
+	}
+	request.Origin = serverinstance.OriginVisual
+	return a.application.DeployMinecraft(request)
+}
+
+func (a *App) StartMinecraft(token string, id string) (minecraft.RuntimeSnapshot, error) {
+	if err := a.requireAdministrator(token); err != nil {
+		return minecraft.RuntimeSnapshot{}, err
+	}
+	return a.application.StartMinecraft(id)
+}
+
+func (a *App) StopMinecraft(token string, id string) (minecraft.RuntimeSnapshot, error) {
+	if err := a.requireAdministrator(token); err != nil {
+		return minecraft.RuntimeSnapshot{}, err
+	}
+	return a.application.StopMinecraft(id)
+}
+
+func (a *App) GetMinecraftStatus(token string, id string) (minecraft.RuntimeSnapshot, error) {
+	if err := a.requireSession(token); err != nil {
+		return minecraft.RuntimeSnapshot{}, err
+	}
+	return a.application.MinecraftStatus(id), nil
+}
+
+func (a *App) GetMinecraftLogs(token string, id string, after uint64, limit int) (minecraft.LogBatch, error) {
+	if err := a.requireSession(token); err != nil {
+		return minecraft.LogBatch{}, err
+	}
+	return a.application.MinecraftLogs(id, after, limit), nil
+}
+
+func (a *App) ProbeMinecraft(token string, id string) (minecraft.ProbeResult, error) {
+	if err := a.requireSession(token); err != nil {
+		return minecraft.ProbeResult{}, err
+	}
+	return a.application.ProbeMinecraft(id)
 }
 
 func (a *App) GetSettings(token string) (settings.Settings, error) {

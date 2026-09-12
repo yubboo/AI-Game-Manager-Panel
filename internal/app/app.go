@@ -19,6 +19,7 @@ import (
 	dstruntimecore "github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/runtime"
 	dstsetup "github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/setup"
 	dstworkspace "github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/workspace"
+	minecraft "github.com/yubboo/AI-Game-Manager-Panel/internal/games/minecraft"
 	"github.com/yubboo/AI-Game-Manager-Panel/internal/games/steam/dst"
 	opsfiles "github.com/yubboo/AI-Game-Manager-Panel/internal/ops/files"
 	globallogs "github.com/yubboo/AI-Game-Manager-Panel/internal/ops/logs"
@@ -26,6 +27,7 @@ import (
 	"github.com/yubboo/AI-Game-Manager-Panel/internal/platform/steam"
 	steamprotocol "github.com/yubboo/AI-Game-Manager-Panel/internal/platform/steam/protocol"
 	"github.com/yubboo/AI-Game-Manager-Panel/internal/platform/telemetry"
+	serverinstance "github.com/yubboo/AI-Game-Manager-Panel/internal/server/instance"
 	gameworkspace "github.com/yubboo/AI-Game-Manager-Panel/internal/server/workspace"
 	authservice "github.com/yubboo/AI-Game-Manager-Panel/internal/system/auth"
 	licenseservice "github.com/yubboo/AI-Game-Manager-Panel/internal/system/license"
@@ -40,7 +42,7 @@ const (
 	// Name 与 Slogan 仅作为 configs/app.json 无法读取时的安全回退。
 	// 正常运行时，产品名称与标语均从统一配置中心读取，避免散落硬编码。
 	Name    = "AI游戏管理器面板"
-	Version = "0.2.23"
+	Version = "0.3.0"
 	Slogan  = "现代化智能 AI 一键游戏服务器部署与管理平台"
 )
 
@@ -82,6 +84,8 @@ type Application struct {
 	dstRuntime         *dstruntimecore.Service
 	dstLogs            *logcenter.Service
 	dstSetup           *dstsetup.Service
+	minecraft          *minecraft.Service
+	instanceStore      *serverinstance.Store
 	logHub             *globallogs.Service
 	steamMaintenance   *steammaintenance.Service
 	auth               *authservice.Service
@@ -172,6 +176,11 @@ func NewWithOptions(options Options) *Application {
 		Root: runtimeRoot, DataDir: dataDir, InstanceDir: instanceDir, BackupDir: backupDir,
 		TempDir: tempDir, ExportDir: exportDir, PluginDir: pluginDir, CacheDir: cacheDir, Steam: steamService,
 	})
+	instanceStore, instanceStoreErr := serverinstance.NewStore(filepath.Join(dataDir, "instances", "index.json"))
+	if instanceStoreErr != nil && platformConfigErr == nil {
+		platformConfigErr = instanceStoreErr
+	}
+	minecraftService := minecraft.New(minecraft.Options{Root: runtimeRoot, InstancesRoot: instanceDir, Environment: environmentService, Store: instanceStore})
 	// 许可证公钥是发行信任根，必须编译进二进制，不能从用户可编辑配置读取。
 	licenseService := licenseservice.New(licenseservice.DefaultConfig(), filepath.Join(dataDir, "license", "activation.json"))
 	xiaoyuRuntimeService := xiaoyuruntime.New(xiaoyuruntime.Options{
@@ -212,6 +221,8 @@ func NewWithOptions(options Options) *Application {
 		dstRuntime:         dstruntimecore.New(dstWorkspaceService, dstSetupService, dstRuntimeManager),
 		dstLogs:            dstLogService,
 		dstSetup:           dstSetupService,
+		minecraft:          minecraftService,
+		instanceStore:      instanceStore,
 		logHub:             logHubService,
 		steamMaintenance:   steamMaintenanceService,
 		auth:               authService,
