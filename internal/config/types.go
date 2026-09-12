@@ -170,13 +170,18 @@ type GamesConfig struct {
 }
 
 type GameTemplate struct {
-	ID          string `json:"id"`
-	Family      string `json:"family"`
-	NameZh      string `json:"nameZh"`
-	NameEn      string `json:"nameEn"`
-	State       string `json:"state"`
-	GameAppID   int    `json:"gameAppId,omitempty"`
-	ServerAppID int    `json:"serverAppId,omitempty"`
+	ID              string   `json:"id"`
+	Family          string   `json:"family"`
+	NameZh          string   `json:"nameZh"`
+	NameEn          string   `json:"nameEn"`
+	State           string   `json:"state"`
+	GameAppID       int      `json:"gameAppId,omitempty"`
+	ServerAppID     int      `json:"serverAppId,omitempty"`
+	SupportedOS     []string `json:"supportedOs,omitempty"`
+	Capabilities    []string `json:"capabilities,omitempty"`
+	UIPanels        []string `json:"uiPanels,omitempty"`
+	InstallStrategy string   `json:"installStrategy,omitempty"`
+	FactSources     []string `json:"factSources,omitempty"`
 }
 
 type ModulesConfig struct {

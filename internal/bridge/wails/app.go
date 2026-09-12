@@ -7,11 +7,14 @@ import (
 	environmentservice "github.com/yubboo/AI-Game-Manager-Panel/internal/deploy/environment"
 	steammaintenance "github.com/yubboo/AI-Game-Manager-Panel/internal/deploy/steam/maintenance"
 	updaterservice "github.com/yubboo/AI-Game-Manager-Panel/internal/deploy/updater"
+	game "github.com/yubboo/AI-Game-Manager-Panel/internal/games/common"
 	dstdomain "github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst"
 	"github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/dedicated"
 	"github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/logcenter"
 	dstprefs "github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/preferences"
 	dstruntimecore "github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/runtime"
+	platformcontract "github.com/yubboo/AI-Game-Manager-Panel/internal/platform/contract"
+	serverinstance "github.com/yubboo/AI-Game-Manager-Panel/internal/server/instance"
 
 	"github.com/yubboo/AI-Game-Manager-Panel/internal/games/dst/workspace"
 	clusterops "github.com/yubboo/AI-Game-Manager-Panel/internal/games/steam/dst/cluster"
@@ -540,6 +543,27 @@ func (a *App) GetPlatformConfig(token string) (config.PlatformConfig, error) {
 		return zero, err
 	}
 	return a.application.PlatformConfig()
+}
+
+func (a *App) GetPlatformRuntimeContract(token string) (platformcontract.RuntimeContract, error) {
+	if err := a.requireSession(token); err != nil {
+		return platformcontract.RuntimeContract{}, err
+	}
+	return a.application.PlatformRuntimeContract(), nil
+}
+
+func (a *App) GetGamePacks(token string) ([]game.Pack, error) {
+	if err := a.requireSession(token); err != nil {
+		return nil, err
+	}
+	return a.application.GamePacks(), nil
+}
+
+func (a *App) GetGameInstances(token string) ([]serverinstance.Instance, error) {
+	if err := a.requireSession(token); err != nil {
+		return nil, err
+	}
+	return a.application.GameInstances(), nil
 }
 
 func (a *App) GetSettings(token string) (settings.Settings, error) {

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { backend } from '../api/backend'
-import type { AppInfo, PlatformConfig, AGMPSettings, DSTDedicatedSnapshot, DSTEnvironment, DSTWorkspaceSnapshot, GameWorkspaceSnapshot, LicenseStatus, SteamAppInventory, SteamEnvironment, UpdateStatus } from '../types/backend'
+import type { AppInfo, PlatformConfig, PlatformRuntimeContract, AGMPSettings, DSTDedicatedSnapshot, DSTEnvironment, DSTWorkspaceSnapshot, GameWorkspaceSnapshot, GameInstance, GamePack, LicenseStatus, SteamAppInventory, SteamEnvironment, UpdateStatus } from '../types/backend'
 
 
 let systemThemeQuery: MediaQueryList | null = null
@@ -68,6 +68,13 @@ export const useAppStore = defineStore('app', () => {
   const backendAdapter = backend.adapter()
   const info = ref<AppInfo | null>(null)
   const platformConfig = ref<PlatformConfig | null>(null)
+  const platformRuntime = ref<PlatformRuntimeContract | null>(null)
+  const gamePacks = ref<GamePack[]>([])
+  const gamePacksLoading = ref(false)
+  const gamePacksError = ref('')
+  const gameInstances = ref<GameInstance[]>([])
+  const gameInstancesLoading = ref(false)
+  const gameInstancesError = ref('')
   const platformConfigError = ref('')
   const settings = ref<AGMPSettings | null>(null)
   const resolvedTheme = ref<'light' | 'dark'>(resolveTheme(readPersistedThemeChoice()))
@@ -279,6 +286,46 @@ export const useAppStore = defineStore('app', () => {
   }
 
 
+  async function loadPlatformRuntime() {
+    try {
+      platformRuntime.value = await backend.platformRuntime()
+      return true
+    } catch {
+      platformRuntime.value = null
+      return false
+    }
+  }
+
+  async function loadGamePacks() {
+    gamePacksLoading.value = true
+    gamePacksError.value = ''
+    try {
+      gamePacks.value = await backend.gamePacks()
+      return true
+    } catch (error) {
+      gamePacks.value = []
+      gamePacksError.value = error instanceof Error ? error.message : String(error)
+      return false
+    } finally {
+      gamePacksLoading.value = false
+    }
+  }
+
+  async function loadGameInstances() {
+    gameInstancesLoading.value = true
+    gameInstancesError.value = ''
+    try {
+      gameInstances.value = await backend.gameInstances()
+      return true
+    } catch (error) {
+      gameInstances.value = []
+      gameInstancesError.value = error instanceof Error ? error.message : String(error)
+      return false
+    } finally {
+      gameInstancesLoading.value = false
+    }
+  }
+
   async function loadPlatformConfig() {
     platformConfigError.value = ''
     try {
@@ -427,6 +474,7 @@ export const useAppStore = defineStore('app', () => {
     backendAdapter,
     info,
     platformConfig,
+    platformRuntime,
     platformConfigError,
     settings,
     resolvedTheme,
@@ -452,6 +500,12 @@ export const useAppStore = defineStore('app', () => {
     gameWorkspace,
     gameWorkspaceLoading,
     gameWorkspaceError,
+    gamePacks,
+    gamePacksLoading,
+    gamePacksError,
+    gameInstances,
+    gameInstancesLoading,
+    gameInstancesError,
     backendReady,
     backendMessage,
     workbenchLayout,
@@ -468,6 +522,9 @@ export const useAppStore = defineStore('app', () => {
     setBottomPanelHeight,
     commitWorkbenchLayout,
     loadInfo,
+    loadPlatformRuntime,
+    loadGamePacks,
+    loadGameInstances,
     loadPlatformConfig,
     loadSettings,
     loadLicense,

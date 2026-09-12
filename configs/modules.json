@@ -6,7 +6,7 @@
       "category": "智能核心",
       "route": "/",
       "status": "partial",
-      "phase": "0.2.22 · Capability Scope / Web Asset Safety",
+      "phase": "0.2.23 · Product Contracts / Shared Control Plane",
       "features": [
         "小鱼自然语言主入口",
         "XiaoYu Agent Runtime（Rust-first）",
@@ -35,7 +35,10 @@
         "Short-lived Capability Lease / exact fingerprint binding",
         "Single-use Native Terminal lease gate",
         "Typed process.exec:workspace-cwd Capability Scope",
-        "Headless Web hash assets excluded from Git source"
+        "Headless Web hash assets excluded from Git source",
+        "Platform Contract：Web / Windows Desktop / macOS Desktop / Native Node Runtime",
+        "Model Provider Contract：API / Subscription / Local / Agent Provider",
+        "Game Pack / GameInstance shared visual + XiaoYu resource model"
       ],
       "sourceRefs": [
         "rust:xiaoyu-core/tool_search",

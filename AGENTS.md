@@ -25,6 +25,16 @@ AI Game Manager Panel（AI游戏管理器面板）定位为：**现代化、智�
 **语言归属先读规则：** 新增或迁移代码前必须阅读 `docs/architecture/LANGUAGE-OWNERSHIP.md`。Agent 通用能力默认 Rust-first；游戏/产品 Domain 默认 Go；UI 默认 Vue/TypeScript。
 
 
+### 0.2.23 Product Contracts 硬规则
+
+- Web = browser control plane；Windows/macOS Desktop = 对应 OS 原生客户端；Windows/macOS/Linux Runtime = 对应 OS 原生执行端。控制端与执行端禁止混淆。
+- 当前没有 macOS Runner/build 证据，因此 macOS surface 必须保持 planned。
+- Model Provider 必须支持并区分 API Key、Subscription/官方 CLI、Local Runtime；禁止读取/复制第三方 Token 文件。
+- `openai-codex` 0.2.23 只允许官方 `codex login status` 状态探测，`BrainEligible=false`；没有 app-server 安全中介前不得给它 XiaoYu 执行权。
+- Game Pack 是游戏库和 XiaoYu 的共同能力目录；GameInstance 是 UI 与 XiaoYu 的共同服务器资源。
+- 所有未来 `game.deploy` 必须落到 GameInstance；严禁再做“AI 开的服”和“面板开的服”两套资源/执行逻辑。
+- Minecraft 在真实 vertical slice 完成前继续标记 planned，不以设计文档代替实现进度。
+
 ### 0.2.22 Capability Scope / Web Asset 硬规则
 
 - Capability Lease `scope` 禁止继续使用任意自由字符串；当前模型执行只允许已注册的 `process.exec:workspace-cwd`。

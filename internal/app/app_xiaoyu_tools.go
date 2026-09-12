@@ -374,8 +374,14 @@ func (a *Application) registerXiaoYuTools() {
 				spec    xiaoyucontract.ToolSpec
 				handler xiaoyucontract.ToolHandler
 			}{
-				{xiaoyucontract.ToolSpec{Name: "games.list", Description: "列出当前 AGMP 已注册的游戏能力。", Risk: xiaoyucontract.RiskRead, Category: "games", Manual: true, XiaoYu: true, Source: "agmp.games", Parameters: emptyObjectSchema()}, func(_ context.Context, _ map[string]any) (xiaoyucontract.ToolExecution, error) {
-					return xiaoyucontract.ToolExecution{Summary: "已读取 AGMP 游戏能力列表。", Data: a.platformConfig.Games.Templates}, nil
+				{xiaoyucontract.ToolSpec{Name: "games.list", Description: "列出当前 AGMP Game Pack 合同；supported 才表示已可执行，planned 仅表示路线图。", Risk: xiaoyucontract.RiskRead, Category: "games", Manual: true, XiaoYu: true, Source: "agmp.games", Parameters: emptyObjectSchema()}, func(_ context.Context, _ map[string]any) (xiaoyucontract.ToolExecution, error) {
+					return xiaoyucontract.ToolExecution{Summary: "已读取 AGMP Game Pack 列表。", Data: a.GamePacks()}, nil
+				}},
+				{xiaoyucontract.ToolSpec{Name: "game.pack.list", Description: "读取可视化游戏库与 XiaoYu 共用的 Game Pack 合同，包含支持状态、原生 OS、领域能力、UI Panels、安装策略和事实来源。planned Pack 不可当作已支持。", Risk: xiaoyucontract.RiskRead, Category: "games", Manual: false, XiaoYu: true, Source: "agmp.games", Parameters: emptyObjectSchema()}, func(_ context.Context, _ map[string]any) (xiaoyucontract.ToolExecution, error) {
+					return xiaoyucontract.ToolExecution{Summary: "已读取共享 Game Pack 合同。", Data: a.GamePacks()}, nil
+				}},
+				{xiaoyucontract.ToolSpec{Name: "game.instance.list", Description: "读取可视化服务器页与 XiaoYu 共用的 GameInstance 资源。0.2.23 首先接管真实 DST 集群；以后游戏库部署与一句话部署都必须创建同一种实例。", Risk: xiaoyucontract.RiskRead, Category: "games", Manual: false, XiaoYu: true, Source: "agmp.games", Parameters: emptyObjectSchema()}, func(_ context.Context, _ map[string]any) (xiaoyucontract.ToolExecution, error) {
+					return xiaoyucontract.ToolExecution{Summary: "已读取共享 GameInstance 列表。", Data: a.GameInstances()}, nil
 				}},
 				{xiaoyucontract.ToolSpec{Name: "steam.snapshot", Description: "读取 Steam/SteamCMD 与已安装游戏的当前环境快照。", Risk: xiaoyucontract.RiskRead, Category: "deployment", Manual: true, XiaoYu: true, Source: "agmp.deploy", Parameters: emptyObjectSchema()}, func(_ context.Context, _ map[string]any) (xiaoyucontract.ToolExecution, error) {
 					value, err := a.SteamSnapshot()

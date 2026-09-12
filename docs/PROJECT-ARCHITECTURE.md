@@ -1,7 +1,26 @@
-# AI Game Manager Panel 0.2.22 总架构
+# AI Game Manager Panel 0.2.23 总架构
 
 > AGMP 是唯一产品。用户与 XiaoYu 是“两个大脑、同一副身体”：用户拥有最终授权与接管权；XiaoYu 负责理解、规划、执行编排、验证、恢复与总结。0.2.9 起语言职责正式冻结为 **Rust-first Agent Runtime / Go Domain Host / Vue UI**。
 
+
+## 0.2.23 Product Contracts / Shared Control Plane
+
+AGMP 现在把“控制端、模型来源、游戏能力、服务器资源”拆成四个互不混淆的合同：
+
+```text
+Web / Windows Desktop / macOS Desktop
+                ↓ control
+          AGMP Product Host
+                ↓
+      Game Pack / GameInstance
+                ↓
+ Windows / macOS / Linux Native Node
+
+XiaoYu ──→ 同一个 Domain Tool / GameInstance
+Visual UI ─→ 同一个 Domain Tool / GameInstance
+```
+
+Web 不执行游戏进程；Desktop 不模拟其他操作系统；远程控制只选择目标 Node。Model Provider 同时容纳 API、subscription/CLI 与 local Runtime，但任何 Agent Provider 的副作用仍必须经 AGMP Host。Game Pack 决定领域能力和 UI Panels，GameInstance 是创建后的长期管理资源。
 
 ## 0.2.22 Capability Scope / Web Asset Safety
 

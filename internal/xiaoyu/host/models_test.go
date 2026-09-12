@@ -338,3 +338,46 @@ func TestNativeVisionSerializersAndUnsupportedProvider(t *testing.T) {
 		t.Fatal("text-only provider must not silently drop image")
 	}
 }
+
+func TestSubscriptionProviderDoesNotRequireAPIKey(t *testing.T) {
+	root := t.TempDir()
+	manager := NewModelManager(filepath.Join(root, "models.json"), filepath.Join(root, "vault"))
+	saved, err := manager.Save(SaveModelRequest{Name: "Codex Plan", Provider: "openai-codex", Protocol: ProtocolCodexAppServer, AuthMode: ModelAuthSubscription, Enabled: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if saved.AuthMode != ModelAuthSubscription || saved.ProviderKind != ModelProviderAgent || saved.BrainEligible || saved.HasAPIKey || !saved.HasCredential {
+		t.Fatalf("unexpected subscription profile: %+v", saved)
+	}
+	if saved.IsDefault {
+		t.Fatal("agent provider without AGMP Brain mediation must not become default automatically")
+	}
+	if _, err := manager.SetDefault(saved.ID); err == nil || !strings.Contains(err.Error(), "Brain") {
+		t.Fatalf("expected fail-closed default brain rejection, got %v", err)
+	}
+}
+
+func TestModelAuthModeMustMatchProviderContract(t *testing.T) {
+	root := t.TempDir()
+	manager := NewModelManager(filepath.Join(root, "models.json"), filepath.Join(root, "vault"))
+	_, err := manager.Save(SaveModelRequest{Name: "Unsafe Codex", Provider: "openai-codex", Protocol: ProtocolCodexAppServer, AuthMode: ModelAuthAPIKey, Enabled: true})
+	if err == nil || !strings.Contains(err.Error(), "不支持授权方式") {
+		t.Fatalf("expected auth mode rejection, got %v", err)
+	}
+}
+
+func TestLegacyProfileMigratesAuthMode(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "models.json")
+	if err := os.WriteFile(path, []byte(`{"version":1,"profiles":[{"id":"old","name":"Old","provider":"ollama","protocol":"openai-compatible","baseUrl":"http://127.0.0.1:11434/v1","model":"qwen","enabled":true}]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	manager := NewModelManager(path, filepath.Join(root, "vault"))
+	catalog, err := manager.Catalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(catalog.Profiles) != 1 || catalog.Profiles[0].AuthMode != ModelAuthLocal {
+		t.Fatalf("legacy auth mode was not migrated: %+v", catalog.Profiles)
+	}
+}

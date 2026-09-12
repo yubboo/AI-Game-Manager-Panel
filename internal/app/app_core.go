@@ -10,6 +10,7 @@ import (
 	"github.com/yubboo/AI-Game-Manager-Panel/internal/config"
 	updaterservice "github.com/yubboo/AI-Game-Manager-Panel/internal/deploy/updater"
 	globallogs "github.com/yubboo/AI-Game-Manager-Panel/internal/ops/logs"
+	platformcontract "github.com/yubboo/AI-Game-Manager-Panel/internal/platform/contract"
 	platformfiles "github.com/yubboo/AI-Game-Manager-Panel/internal/platform/files"
 	"github.com/yubboo/AI-Game-Manager-Panel/internal/system/settings"
 )
@@ -34,6 +35,13 @@ func (a *Application) PlatformConfig() (config.PlatformConfig, error) {
 		return config.PlatformConfig{}, a.platformConfigErr
 	}
 	return a.platformConfig, nil
+}
+
+// PlatformRuntimeContract reports the operating system that actually owns game
+// processes. Browser/Desktop clients are control surfaces and never rewrite this
+// execution identity.
+func (a *Application) PlatformRuntimeContract() platformcontract.RuntimeContract {
+	return platformcontract.Current()
 }
 
 func (a *Application) Info() Info {

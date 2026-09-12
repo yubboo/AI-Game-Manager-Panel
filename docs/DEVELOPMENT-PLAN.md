@@ -5,6 +5,19 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.23：Product Contracts / Shared Control Plane
+
+- 以 0.2.22 GitHub 四条 Job 全绿为稳定基线；
+- 实现 Platform Contract，禁止把 Web/Desktop/Node Runtime 混成同一个执行环境；Web 永远是浏览器控制面，目标 Node 原生执行；
+- Windows Desktop 与 macOS Desktop 分开建模；macOS 在真实构建/CI 前保持 planned；
+- 模型中心从“API Key 配置页”升级为 Model Provider Contract：API、subscription/CLI、本地 Runtime 都是一等授权方式；
+- 首个 subscription Provider 为 OpenAI Codex：只调用官方 CLI 登录状态检查，不读取 Token；在 AGMP Tool/Approval 安全中介完成前禁止成为默认 Brain；
+- 实现 Game Pack 合同与通用 GameInstance 资源；游戏库与 XiaoYu 共用同一份 Pack/Instance 数据；
+- 先将真实 DST 集群接入 GameInstance，验证“可视化操作 + AI 操作 = 同一资源模型”；
+- 增加 `game.pack.list` / `game.instance.list` 只读 Tool、HTTP/Wails Contract API 与 Product Contracts Gate。
+
+**冻结条件：** Go 合同/Host/API 测试、Frontend build、Model Center Gate、Product Contracts Gate、原有 Capability Lease/Terminal/Windows Helper/Linux Headless/ConPTY 全绿；不得把 Codex 状态探测描述为完整 Brain Adapter，不得把 planned Game Pack/macOS 描述为已支持。
+
 ## 0.2.22：Capability Scope / Web Asset Safety
 
 - 以 0.2.21 GitHub Actions 四条主 Job 全绿作为 Capability Lease 冻结基线；

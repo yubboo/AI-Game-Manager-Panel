@@ -1,10 +1,10 @@
 # AI游戏管理器面板（AI Game Manager Panel）
 
-AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部署、管理与 AI 辅助平台。全局产品品牌从 0.1.67 起统一为 **AI游戏管理器面板 / AI Game Manager Panel**。
+AI游戏管理器面板是一个面向 Windows / Linux 原生运行端、浏览器 Web 控制面，并规划 macOS 原生桌面端的多游戏服务器部署、管理与 AI Agent 平台。全局产品品牌从 0.1.67 起统一为 **AI游戏管理器面板 / AI Game Manager Panel**。
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.22**  
+当前版本：**0.2.23**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 当前状态：[`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)  
 架构边界：[`docs/PROJECT-ARCHITECTURE.md`](docs/PROJECT-ARCHITECTURE.md) / [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)
@@ -47,6 +47,17 @@ build/
 
 
 
+
+## 0.2.23 Product Contracts / Shared Control Plane
+
+0.2.22 已在 GitHub Actions 四条主 Job 全绿并冻结。0.2.23 不再继续堆“只有底层、没有产品”的基础设施，而是把已经和产品方向对齐的三个合同真正落入代码：**Platform Contract、Model Provider Contract、Game Pack + GameInstance Contract**。
+
+- **Platform Contract**：Web 是浏览器控制面；Windows Desktop 只作为 Windows 原生桌面端；macOS Desktop 作为独立原生目标，当前诚实标记 `planned`；Windows/Linux Runtime 在各自系统原生执行。远程控制只改变目标 Node，不会把 Linux“运行在 Windows 里”。
+- **Model Provider Contract**：模型中心开始统一 `api-key / subscription / local` 授权方式与 `model-api / agent-provider / local-runtime` Provider 类型。OpenAI Codex 套餐作为首个 subscription/Agent Provider 接入，当前只通过官方 `codex login status` 探测登录状态，不读取或复制 Codex Token，也**暂不能**设为 XiaoYu 默认 Brain；安全 app-server Brain Adapter 后续单独实现。
+- **Game Pack Contract**：可视化游戏库和 XiaoYu `game.pack.list` 读取同一个 Game Pack 合同。`supported/planned`、原生 OS、Capabilities、UI Panels、安装策略与事实源成为结构化字段；planned 不能伪装成已支持。
+- **GameInstance Contract**：可视化服务器页和 XiaoYu `game.instance.list` 读取同一个实例模型。0.2.23 首先把真实 DST Cluster 接入该合同；未来“游戏库点击部署”和“一句话开服”都必须创建同一种 GameInstance，而不是维护 AI/面板两套服务器记录。
+
+本版不是 Minecraft 一句话开服完成版，也没有虚报 macOS 原生构建已完成。它的目标是把后续 Minecraft vertical slice 所依赖的产品合同做成真实代码和 API，而不是继续停留在方案文档。
 
 ## 0.2.22 Capability Scope / Web Asset Safety
 

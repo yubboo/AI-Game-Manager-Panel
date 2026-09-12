@@ -43,12 +43,12 @@ function iconName(value: string): AppIconName {
     <div class="codex-project-card">
       <span>当前项目</span>
       <strong><i :class="{ online: app.backendReady }"></i>本机游戏服务器</strong>
-      <small>0.2.22 · Capability Scope / Web Asset Safety</small>
+      <small>0.2.23 · Product Contracts / Shared Control Plane</small>
     </div>
 
     <div class="sidebar-footer codex-sidebar-footer">
       <span><i :class="{ online: app.backendReady }"></i>{{ app.backendReady ? 'Core 正常' : 'Core 未连接' }}</span>
-      <span>v{{ app.info?.version ?? '0.2.22' }}</span>
+      <span>v{{ app.info?.version ?? '0.2.23' }}</span>
     </div>
   </aside>
 </template>

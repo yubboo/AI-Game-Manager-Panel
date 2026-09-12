@@ -49,12 +49,14 @@ func (m *ModelManager) Catalog() (ModelCatalog, error) {
 	ready := false
 	message := "请先在系统设置 → 模型管理中配置小鱼的大模型。"
 	if data.DefaultBrainID != "" {
-		if profile, ok := findProfile(data.Profiles, data.DefaultBrainID); ok && profile.Enabled {
-			ready = strings.TrimSpace(profile.Model) != "" && strings.TrimSpace(profile.BaseURL) != "" && (m.vault.Exists(profile.SecretRef) || presetAPIKeyOptional(profile.Provider))
+		if profile, ok := findProfile(data.Profiles, data.DefaultBrainID); ok {
+			ready = ModelProfileReady(profile, m.vault.Exists(profile.SecretRef))
 			if ready {
 				message = "小鱼默认大脑已配置。"
+			} else if !ModelBrainEligible(profile) {
+				message = "该 Provider 已接入模型中心，但尚未完成 XiaoYu Brain 安全适配。"
 			} else {
-				message = "默认模型配置不完整，请检查接口、模型名称和 API Key。"
+				message = "默认模型配置不完整，请检查授权方式、接口和模型名称。"
 			}
 		}
 	}
@@ -96,15 +98,15 @@ func (m *ModelManager) Save(request SaveModelRequest) (ModelProfileView, error) 
 			return ModelProfileView{}, fmt.Errorf("保存模型密钥失败: %w", err)
 		}
 	}
-	if !m.vault.Exists(profile.SecretRef) && !presetAPIKeyOptional(profile.Provider) {
-		return ModelProfileView{}, errors.New("该模型服务需要 API Key")
+	if ModelAuthNeedsSecret(profile) && !m.vault.Exists(profile.SecretRef) {
+		return ModelProfileView{}, errors.New("该模型服务的 API Key 尚未配置")
 	}
 	if exists {
 		data.Profiles[index] = profile
 	} else {
 		data.Profiles = append(data.Profiles, profile)
 	}
-	if data.DefaultBrainID == "" && profile.Enabled {
+	if data.DefaultBrainID == "" && ModelProfileReady(profile, m.vault.Exists(profile.SecretRef)) {
 		data.DefaultBrainID = profile.ID
 	}
 	if err := m.saveLocked(data); err != nil {
@@ -158,11 +160,11 @@ func (m *ModelManager) SetDefault(id string) (ModelProfileView, error) {
 	if !profile.Enabled {
 		return ModelProfileView{}, errors.New("不能把已禁用模型设为小鱼默认大脑")
 	}
-	if strings.TrimSpace(profile.Model) == "" || strings.TrimSpace(profile.BaseURL) == "" {
-		return ModelProfileView{}, errors.New("模型配置不完整")
+	if !ModelBrainEligible(profile) {
+		return ModelProfileView{}, errors.New("该 Provider 尚未完成 XiaoYu Brain 安全适配，不能设为默认大脑")
 	}
-	if !m.vault.Exists(profile.SecretRef) && !presetAPIKeyOptional(profile.Provider) {
-		return ModelProfileView{}, errors.New("模型 API Key 尚未配置")
+	if !ModelProfileReady(profile, m.vault.Exists(profile.SecretRef)) {
+		return ModelProfileView{}, errors.New("模型配置不完整，请检查授权方式、接口和模型名称")
 	}
 	data.DefaultBrainID = profile.ID
 	if err := m.saveLocked(data); err != nil {
@@ -182,7 +184,7 @@ func (m *ModelManager) Default() (ModelProfile, string, error) {
 		return ModelProfile{}, "", ErrBrainUnavailable
 	}
 	profile, ok := findProfile(data.Profiles, data.DefaultBrainID)
-	if !ok || !profile.Enabled {
+	if !ok || !profile.Enabled || !ModelBrainEligible(profile) {
 		return ModelProfile{}, "", ErrBrainUnavailable
 	}
 	secret := ""
@@ -192,7 +194,7 @@ func (m *ModelManager) Default() (ModelProfile, string, error) {
 			return ModelProfile{}, "", err
 		}
 	}
-	if secret == "" && !presetAPIKeyOptional(profile.Provider) {
+	if secret == "" && ModelAuthNeedsSecret(profile) {
 		return ModelProfile{}, "", errors.New("xiaoyu model api key is missing")
 	}
 	return cloneModelProfile(profile), secret, nil
@@ -201,7 +203,7 @@ func (m *ModelManager) Default() (ModelProfile, string, error) {
 func (m *ModelManager) ResolveConnection(request ModelConnectionRequest) (ModelProfile, string, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	profile := ModelProfile{ID: strings.TrimSpace(request.ID), Provider: strings.TrimSpace(request.Provider), Protocol: request.Protocol, BaseURL: strings.TrimSpace(request.BaseURL), Model: strings.TrimSpace(request.Model), ThinkingMode: strings.TrimSpace(request.ThinkingMode), ReasoningEffort: strings.TrimSpace(request.ReasoningEffort), Extra: cloneMap(request.Extra), Enabled: true}
+	profile := ModelProfile{ID: strings.TrimSpace(request.ID), Provider: strings.TrimSpace(request.Provider), Protocol: request.Protocol, AuthMode: request.AuthMode, BaseURL: strings.TrimSpace(request.BaseURL), Model: strings.TrimSpace(request.Model), ThinkingMode: strings.TrimSpace(request.ThinkingMode), ReasoningEffort: strings.TrimSpace(request.ReasoningEffort), Extra: cloneMap(request.Extra), Enabled: true}
 	if profile.ID != "" {
 		data, err := m.loadLocked()
 		if err != nil {
@@ -213,6 +215,9 @@ func (m *ModelManager) ResolveConnection(request ModelConnectionRequest) (ModelP
 			}
 			if profile.Protocol == "" {
 				profile.Protocol = existing.Protocol
+			}
+			if profile.AuthMode == "" {
+				profile.AuthMode = existing.AuthMode
 			}
 			if profile.BaseURL == "" {
 				profile.BaseURL = existing.BaseURL
@@ -244,7 +249,7 @@ func (m *ModelManager) ResolveConnection(request ModelConnectionRequest) (ModelP
 			return ModelProfile{}, "", err
 		}
 	}
-	if secret == "" && !presetAPIKeyOptional(profile.Provider) {
+	if secret == "" && ModelAuthNeedsSecret(profile) {
 		return ModelProfile{}, "", errors.New("API Key 未配置")
 	}
 	return profile, secret, nil
@@ -292,6 +297,9 @@ func (m *ModelManager) loadLocked() (modelStoreData, error) {
 	for i := range data.Profiles {
 		data.Profiles[i].SecretRef = modelSecretRef(data.Profiles[i].ID)
 		migrateBuiltinProtocol(&data.Profiles[i])
+		if data.Profiles[i].AuthMode == "" {
+			data.Profiles[i].AuthMode = ResolveModelAuthMode(data.Profiles[i])
+		}
 	}
 	return data, nil
 }
@@ -316,7 +324,10 @@ func (m *ModelManager) saveLocked(data modelStoreData) error {
 }
 
 func (m *ModelManager) viewLocked(profile ModelProfile, defaultID string) ModelProfileView {
-	return ModelProfileView{ID: profile.ID, Name: profile.Name, Provider: profile.Provider, Protocol: profile.Protocol, BaseURL: profile.BaseURL, Model: profile.Model, Enabled: profile.Enabled, ContextWindow: profile.ContextWindow, MaxOutputTokens: profile.MaxOutputTokens, ThinkingMode: profile.ThinkingMode, ReasoningEffort: profile.ReasoningEffort, Extra: cloneMap(profile.Extra), Capabilities: ResolveModelCapabilities(profile), HasAPIKey: m.vault.Exists(profile.SecretRef), LastTestAt: profile.LastTestAt, LastTestOK: profile.LastTestOK, LastTestMessage: profile.LastTestMessage, IsDefault: profile.ID == defaultID, CreatedAt: profile.CreatedAt, UpdatedAt: profile.UpdatedAt}
+	hasAPIKey := m.vault.Exists(profile.SecretRef)
+	authMode := ResolveModelAuthMode(profile)
+	hasCredential := hasAPIKey || authMode == ModelAuthSubscription || authMode == ModelAuthLocal
+	return ModelProfileView{ID: profile.ID, Name: profile.Name, Provider: profile.Provider, Protocol: profile.Protocol, AuthMode: authMode, ProviderKind: ModelProviderKindFor(profile), BrainEligible: ModelBrainEligible(profile), BaseURL: profile.BaseURL, Model: profile.Model, Enabled: profile.Enabled, ContextWindow: profile.ContextWindow, MaxOutputTokens: profile.MaxOutputTokens, ThinkingMode: profile.ThinkingMode, ReasoningEffort: profile.ReasoningEffort, Extra: cloneMap(profile.Extra), Capabilities: ResolveModelCapabilities(profile), HasAPIKey: hasAPIKey, HasCredential: hasCredential, LastTestAt: profile.LastTestAt, LastTestOK: profile.LastTestOK, LastTestMessage: profile.LastTestMessage, IsDefault: profile.ID == defaultID, CreatedAt: profile.CreatedAt, UpdatedAt: profile.UpdatedAt}
 }
 
 func profileFromRequest(request SaveModelRequest, profiles []ModelProfile) (ModelProfile, int, bool) {
@@ -331,7 +342,7 @@ func profileFromRequest(request SaveModelRequest, profiles []ModelProfile) (Mode
 			}
 		}
 	}
-	profile := ModelProfile{ID: id, Name: strings.TrimSpace(request.Name), Provider: strings.TrimSpace(request.Provider), Protocol: request.Protocol, BaseURL: strings.TrimSpace(request.BaseURL), Model: strings.TrimSpace(request.Model), Enabled: request.Enabled, ContextWindow: request.ContextWindow, MaxOutputTokens: request.MaxOutputTokens, ThinkingMode: strings.TrimSpace(request.ThinkingMode), ReasoningEffort: strings.TrimSpace(request.ReasoningEffort), Extra: cloneMap(request.Extra)}
+	profile := ModelProfile{ID: id, Name: strings.TrimSpace(request.Name), Provider: strings.TrimSpace(request.Provider), Protocol: request.Protocol, AuthMode: request.AuthMode, BaseURL: strings.TrimSpace(request.BaseURL), Model: strings.TrimSpace(request.Model), Enabled: request.Enabled, ContextWindow: request.ContextWindow, MaxOutputTokens: request.MaxOutputTokens, ThinkingMode: strings.TrimSpace(request.ThinkingMode), ReasoningEffort: strings.TrimSpace(request.ReasoningEffort), Extra: cloneMap(request.Extra)}
 	applyPresetDefaults(&profile)
 	return profile, index, exists
 }
@@ -347,10 +358,16 @@ func applyPresetDefaults(profile *ModelProfile) {
 		if profile.Protocol == "" {
 			profile.Protocol = preset.Protocol
 		}
+		if profile.AuthMode == "" {
+			profile.AuthMode = preset.DefaultAuthMode
+		}
 		if strings.TrimSpace(profile.BaseURL) == "" {
 			profile.BaseURL = preset.DefaultBaseURL
 		}
 		break
+	}
+	if profile.AuthMode == "" {
+		profile.AuthMode = ModelAuthAPIKey
 	}
 	profile.BaseURL = strings.TrimRight(strings.TrimSpace(profile.BaseURL), "/")
 	if profile.ContextWindow <= 0 {
@@ -394,19 +411,32 @@ func validateModelProfile(profile ModelProfile) error {
 	if strings.TrimSpace(profile.Provider) == "" {
 		return errors.New("服务商不能为空")
 	}
-	if strings.TrimSpace(profile.Model) == "" {
+	if strings.TrimSpace(profile.Model) == "" && ModelBrainEligible(profile) {
 		return errors.New("模型代码不能为空")
 	}
 	return validateConnectionProfile(profile)
 }
 
 func validateConnectionProfile(profile ModelProfile) error {
-	if profile.Protocol != ProtocolOpenAIResponses && profile.Protocol != ProtocolDeepSeek && profile.Protocol != ProtocolOpenAICompatible && profile.Protocol != ProtocolAnthropic && profile.Protocol != ProtocolGemini {
+	if profile.Protocol != ProtocolOpenAIResponses && profile.Protocol != ProtocolDeepSeek && profile.Protocol != ProtocolOpenAICompatible && profile.Protocol != ProtocolAnthropic && profile.Protocol != ProtocolGemini && profile.Protocol != ProtocolCodexAppServer {
 		return fmt.Errorf("不支持的模型协议: %s", profile.Protocol)
 	}
-	parsed, err := url.Parse(strings.TrimSpace(profile.BaseURL))
-	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
-		return errors.New("Base URL 必须是有效的 HTTP/HTTPS 地址")
+	mode := ResolveModelAuthMode(profile)
+	if !ModelAuthModeAllowed(profile.Provider, mode) {
+		return fmt.Errorf("服务商 %s 不支持授权方式 %s", profile.Provider, mode)
+	}
+	if profile.Protocol == ProtocolCodexAppServer {
+		if mode != ModelAuthSubscription {
+			return errors.New("Codex Provider 必须使用套餐/订阅授权")
+		}
+		if strings.TrimSpace(ModelProviderExecutable(profile)) == "" {
+			return errors.New("Codex Provider 缺少官方 CLI 执行器")
+		}
+	} else {
+		parsed, err := url.Parse(strings.TrimSpace(profile.BaseURL))
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+			return errors.New("Base URL 必须是有效的 HTTP/HTTPS 地址")
+		}
 	}
 	if err := validateModelExtra(profile.Extra); err != nil {
 		return err

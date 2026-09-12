@@ -87,7 +87,9 @@ export interface XiaoYuBrainInfo {
   capabilities?: XiaoYuModelCapabilities
 }
 
-export type XiaoYuModelProtocol = 'openai-responses' | 'deepseek' | 'openai-compatible' | 'anthropic' | 'gemini' | string
+export type XiaoYuModelProtocol = 'openai-responses' | 'deepseek' | 'openai-compatible' | 'anthropic' | 'gemini' | 'codex-app-server' | string
+export type XiaoYuModelAuthMode = 'api-key' | 'subscription' | 'local' | string
+export type XiaoYuModelProviderKind = 'model-api' | 'local-runtime' | 'agent-provider' | string
 
 export interface XiaoYuModelCapabilities {
   adapter: string
@@ -114,6 +116,11 @@ export interface XiaoYuModelPreset {
   defaultBaseUrl: string
   local: boolean
   apiKeyOptional: boolean
+  kind: XiaoYuModelProviderKind
+  authModes: XiaoYuModelAuthMode[]
+  defaultAuthMode: XiaoYuModelAuthMode
+  executable?: string
+  brainEligible: boolean
 }
 
 export interface XiaoYuModelProfile {
@@ -121,6 +128,9 @@ export interface XiaoYuModelProfile {
   name: string
   provider: string
   protocol: XiaoYuModelProtocol
+  authMode: XiaoYuModelAuthMode
+  providerKind: XiaoYuModelProviderKind
+  brainEligible: boolean
   baseUrl: string
   model: string
   enabled: boolean
@@ -131,6 +141,7 @@ export interface XiaoYuModelProfile {
   extra?: Record<string, unknown>
   capabilities: XiaoYuModelCapabilities
   hasApiKey: boolean
+  hasCredential: boolean
   lastTestAt?: string
   lastTestOk?: boolean
   lastTestMessage?: string
@@ -152,6 +163,7 @@ export interface XiaoYuSaveModelRequest {
   name: string
   provider: string
   protocol: XiaoYuModelProtocol
+  authMode?: XiaoYuModelAuthMode
   baseUrl: string
   model: string
   apiKey?: string
@@ -167,6 +179,7 @@ export interface XiaoYuModelConnectionRequest {
   id?: string
   provider: string
   protocol: XiaoYuModelProtocol
+  authMode?: XiaoYuModelAuthMode
   baseUrl: string
   model: string
   apiKey?: string
@@ -669,6 +682,29 @@ export interface PreparedUpdate {
   size: number
 }
 
+export type PlatformSurfaceKind = 'web-client' | 'desktop-client' | 'node-runtime' | string
+
+export interface PlatformSurfaceContract {
+  id: string
+  name: string
+  kind: PlatformSurfaceKind
+  state: string
+  supportedOs?: string[]
+  installRequired: boolean
+  browser: boolean
+  controlsNodes: boolean
+  executesOnNode: boolean
+}
+
+export interface PlatformRuntimeContract {
+  hostOs: string
+  hostArch: string
+  nodeKind: string
+  nativeExecution: boolean
+  remoteControl: boolean
+  surfaces: PlatformSurfaceContract[]
+}
+
 export interface PlatformConfig {
   app: PlatformAppConfig
   ui: PlatformUIConfig
@@ -851,9 +887,42 @@ export interface PlatformGameTemplate {
   state: string
   gameAppId?: number
   serverAppId?: number
+  supportedOs?: string[]
+  capabilities?: string[]
+  uiPanels?: string[]
+  installStrategy?: string
+  factSources?: string[]
+}
+
+export type GameInstanceOrigin = 'discovered' | 'visual' | 'agent' | string
+
+export interface GameInstance {
+  id: string
+  name: string
+  gameId: string
+  origin: GameInstanceOrigin
+  nodeOs: string
+  nodeArch: string
+  installPath: string
+  runtimeState: string
+  capabilities: string[]
+  managed: boolean
 }
 
 export interface PlatformGamesConfig { templates: PlatformGameTemplate[] }
+
+export interface GamePack {
+  id: string
+  family: string
+  nameZh: string
+  nameEn: string
+  state: string
+  supportedOs?: string[]
+  capabilities?: string[]
+  uiPanels?: string[]
+  installStrategy?: string
+  factSources?: string[]
+}
 
 export interface PlatformModuleConfig {
   id: string
@@ -1674,6 +1743,9 @@ declare global {
           Ping: () => Promise<string>
           GetAppInfo: (token: string) => Promise<AppInfo>
           GetPlatformConfig: (token: string) => Promise<PlatformConfig>
+          GetPlatformRuntimeContract: (token: string) => Promise<PlatformRuntimeContract>
+          GetGamePacks: (token: string) => Promise<GamePack[]>
+          GetGameInstances: (token: string) => Promise<GameInstance[]>
           GetSettings: (token: string) => Promise<AGMPSettings>
           SaveSettings: (token: string, value: AGMPSettings) => Promise<void>
           GetRecentLogs: (token: string, limit: number) => Promise<string[]>

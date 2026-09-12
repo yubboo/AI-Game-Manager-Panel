@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sort"
 
 	steammaintenance "github.com/yubboo/AI-Game-Manager-Panel/internal/deploy/steam/maintenance"
 	"github.com/yubboo/AI-Game-Manager-Panel/internal/games/common"
@@ -525,6 +526,23 @@ func countDSTClusters(env dstdomain.Environment, distribution dstdomain.Distribu
 		}
 	}
 	return count
+}
+
+// GamePacks returns the single game catalog contract used by both the visual
+// library and XiaoYu capability discovery. Planned packs remain visible but are
+// never promoted to executable support.
+func (a *Application) GamePacks() []game.Pack {
+	items := make([]game.Pack, 0, len(a.platformConfig.Games.Templates))
+	for _, template := range a.platformConfig.Games.Templates {
+		items = append(items, game.Pack{
+			ID: game.ID(template.ID), Family: game.Family(template.Family), NameZh: template.NameZh, NameEn: template.NameEn,
+			State: game.PackState(template.State), SupportedOS: append([]string(nil), template.SupportedOS...),
+			Capabilities: append([]string(nil), template.Capabilities...), UIPanels: append([]string(nil), template.UIPanels...),
+			InstallStrategy: template.InstallStrategy, FactSources: append([]string(nil), template.FactSources...),
+		})
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].ID < items[j].ID })
+	return items
 }
 
 // Games exposes the registry to application services. Game modules will register here in later versions.

@@ -1,6 +1,13 @@
 # XiaoYu Agent Runtime
 
 
+## 0.2.23 Model Provider / Shared Resource Contract
+
+- XiaoYu 的模型来源不再等同于 API Key；Host Provider Contract 支持 API Key、subscription/official CLI 与 local Runtime。
+- `openai-codex` 是首个 Agent Provider，但 0.2.23 仅通过官方 `codex login status` 探测账号状态，保持 `BrainEligible=false`。
+- 任何未来 Codex app-server Brain Adapter 必须把工具提议重新路由到 AGMP Tool Registry / Approval / Capability Lease；禁止形成第二套隐形 Shell 权威。
+- XiaoYu 新增 `game.pack.list` / `game.instance.list`，读取与可视化 UI 相同的 Game Pack / GameInstance，不建立 AI-only 服务器模型。
+
 ## 0.2.22 Capability Scope
 
 - 0.2.21 Capability Lease / Native Terminal 已经 GitHub Actions 全绿，继续作为稳定执行基线。

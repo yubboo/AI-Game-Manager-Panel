@@ -7,11 +7,11 @@ import DstWorkspace from '../../games/steam/dst/DstWorkspace.vue'
 const app = useAppStore()
 const activeGameId = ref('steam.dst')
 
-const gameTabs = computed(() => (app.platformConfig?.games.templates ?? []).map(item => ({
+const gameTabs = computed(() => (app.gamePacks.length ? app.gamePacks : (app.platformConfig?.games.templates ?? [])).map(item => ({
   ...item,
   mark: item.nameZh.slice(0, 1) || '+',
   state: item.state === 'supported' ? 'active' : 'planned',
-  description: item.state === 'supported' ? `${item.family} · 当前已接入` : `${item.family} · 骨架已预留`,
+  description: item.state === 'supported' ? `${item.family} · 当前已接入 · ${(item.supportedOs ?? []).join('/') || '平台检测中'}` : `${item.family} · Game Pack 已预留`,
 })))
 const activeGame = computed(() => gameTabs.value.find((item) => item.id === activeGameId.value) ?? gameTabs.value[0])
 const dstState = computed(() => app.gameWorkspace?.game.catalog.id === 'steam.dst' ? app.gameWorkspace.game : null)
@@ -35,6 +35,7 @@ function tabState(id: string) {
 }
 
 onMounted(() => {
+  if (!app.gamePacks.length && !app.gamePacksLoading) void app.loadGamePacks()
   if (!app.gameWorkspace && !app.gameWorkspaceLoading) void refreshDst()
 })
 </script>
@@ -84,7 +85,9 @@ onMounted(() => {
         <span class="eyebrow">COMING GAME PROVIDER</span>
         <h2>{{ activeGame.nameZh }}</h2>
         <strong>{{ activeGame.nameEn }}</strong>
-        <p>当前只预留入口，不伪装成已支持。对应 Game Provider 完成以后才开放真实检测和服务器管理。</p>
+        <p>当前只预留 Game Pack 合同，不伪装成已支持。对应安装器、Runtime、验证器与领域 Tool 完成以后才开放真实部署。</p>
+        <p v-if="activeGame.factSources?.length"><small>计划事实源：{{ activeGame.factSources.join(' · ') }}</small></p>
+        <p v-if="activeGame.capabilities?.length"><small>目标能力：{{ activeGame.capabilities.join(' · ') }}</small></p>
         <StatusPill tone="muted" label="开发中" />
       </article>
 

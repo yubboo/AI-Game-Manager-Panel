@@ -7,56 +7,120 @@
       "nameEn": "Don't Starve Together",
       "state": "supported",
       "gameAppId": 322330,
-      "serverAppId": 343050
+      "serverAppId": 343050,
+      "supportedOs": [
+        "windows"
+      ],
+      "capabilities": [
+        "overview",
+        "console",
+        "players",
+        "config",
+        "mods",
+        "network",
+        "backups",
+        "files",
+        "shards"
+      ],
+      "uiPanels": [
+        "overview",
+        "console",
+        "players",
+        "config",
+        "mods",
+        "network",
+        "backups",
+        "files",
+        "shards"
+      ],
+      "installStrategy": "steamcmd",
+      "factSources": [
+        "steam"
+      ]
     },
     {
       "id": "steam.palworld",
       "family": "steam",
       "nameZh": "幻兽帕鲁",
       "nameEn": "Palworld",
-      "state": "planned"
+      "state": "planned",
+      "installStrategy": "game-pack-planned"
     },
     {
       "id": "steam.projectzomboid",
       "family": "steam",
       "nameZh": "僵尸毁灭工程",
       "nameEn": "Project Zomboid",
-      "state": "planned"
+      "state": "planned",
+      "installStrategy": "game-pack-planned"
     },
     {
       "id": "steam.terraria",
       "family": "steam",
       "nameZh": "泰拉瑞亚",
       "nameEn": "Terraria",
-      "state": "planned"
+      "state": "planned",
+      "installStrategy": "game-pack-planned"
     },
     {
       "id": "minecraft.java",
       "family": "minecraft",
       "nameZh": "Minecraft Java",
       "nameEn": "Minecraft Java Edition",
-      "state": "planned"
+      "state": "planned",
+      "capabilities": [
+        "overview",
+        "console",
+        "players",
+        "config",
+        "mods",
+        "plugins",
+        "network",
+        "backups",
+        "files"
+      ],
+      "uiPanels": [
+        "overview",
+        "console",
+        "players",
+        "config",
+        "mods",
+        "plugins",
+        "network",
+        "backups",
+        "files"
+      ],
+      "installStrategy": "game-pack-planned",
+      "factSources": [
+        "mojang",
+        "papermc",
+        "fabric",
+        "modrinth"
+      ]
     },
     {
       "id": "steam.factorio",
       "family": "steam",
       "nameZh": "异星工厂",
       "nameEn": "Factorio",
-      "state": "planned"
+      "state": "planned",
+      "installStrategy": "game-pack-planned"
     },
     {
       "id": "steam.tmodloader",
       "family": "steam",
       "nameZh": "tModLoader",
       "nameEn": "tModLoader",
-      "state": "planned"
+      "state": "planned",
+      "installStrategy": "game-pack-planned"
     },
     {
       "id": "steam.generic",
       "family": "steam",
       "nameZh": "自定义 Steam 服务端",
       "nameEn": "Generic Steam Dedicated Server",
-      "state": "planned"
+      "state": "planned",
+      "installStrategy": "game-pack-planned"
     }
   ]
 }

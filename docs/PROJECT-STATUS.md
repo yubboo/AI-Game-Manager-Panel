@@ -4,11 +4,21 @@
 
 ## Current version
 
-**0.2.22 — Capability Scope / Web Asset Safety**
+**0.2.23 — Product Contracts / Shared Control Plane**
 
 ## Stable baseline
 
-0.2.21 is the fully green GitHub baseline at commit `9349d845338e45889998ee3ebd5031c71673f050`: `safety`, `Linux Headless + Web + XiaoYu`, `Windows Helper + Encoding`, and `Windows Rust Runtime + ConPTY` all completed successfully. Capability Lease, Approved Agent → Native Terminal, Linux PTY and Windows ConPTY are CI-proven.
+0.2.22 is the fully green GitHub baseline at commit `55f065527df91e2aefecf2f76bae970ab00d98ce`: `safety`, `Linux Headless + Web + XiaoYu`, `Windows Helper + Encoding`, and `Windows Rust Runtime + ConPTY` all completed successfully. Typed process Capability Scope, Capability Lease, Linux PTY and Windows ConPTY are CI-proven.
+
+## 0.2.23 changes
+
+- Add a real Platform Contract exposed through Application, HTTP and Wails: Web stays browser/control-only; execution belongs to the target native Node Runtime.
+- Mark current platform truth honestly: Web/Windows Desktop/Windows Runtime/Linux Runtime are current supported surfaces; macOS Desktop/Runtime remain planned until native build/CI exists.
+- Add Model Provider auth/kind contracts: API Key, subscription and local authorization are no longer conflated.
+- Add the `openai-codex` subscription Provider with official CLI `login status` probing only. It is intentionally `brainEligible=false` until Codex app-server mediation can preserve AGMP Tool/Approval/Lease authority.
+- Add shared Game Pack and GameInstance contracts. Visual UI and XiaoYu expose the same resource records through HTTP/Wails and read-only Tools.
+- Adopt real detected DST clusters into `GameInstance` instead of leaving the generic Instances page as a placeholder.
+- Add Product Contracts Gate and Model Center regression rules to GitHub Safety/Headless CI.
 
 ## 0.2.22 changes
 
@@ -36,13 +46,13 @@ Still in Go for compatibility and authority:
 
 Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs, Persistent RPC Worker and the CI-proven cross-platform Native Terminal Runtime. Server-owned Agent `shell.exec` crosses into Native Terminal only after Go Host authorization, a single-use Capability Lease and the exact `process.exec:workspace-cwd` scope.
 
-## Next runtime milestones
+## Next product milestones
 
-1. Typed process-exec Capability Scope — current 0.2.22 stage.
-2. Filesystem capability scope with real path-operation enforcement.
-3. Apply Patch / generic filesystem mutation.
-4. Reflection / experience pipeline.
-5. Subagent / specialist dispatch.
+1. Product contracts / shared control plane — current 0.2.23 stage.
+2. Minecraft first real Game Pack vertical slice: facts → managed Java → server install → config → native start → ready/ping verification → GameInstance.
+3. Minecraft Mod/Plugin and public connectivity/tunnel capabilities.
+4. Game Pack SDK and second-game validation; adding a game must not require rewriting XiaoYu Core or the whole UI.
+5. Filesystem/network sandbox scope continues where concrete enforcement is required; security work does not stop, but it no longer blocks shipping the first real one-sentence game-server loop.
 
 ## Verification status
 

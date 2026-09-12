@@ -1,5 +1,11 @@
-# AI Game Manager Panel Scripts 0.2.22
+# AI Game Manager Panel Scripts 0.2.23
 
+
+## 0.2.23 Product Contracts / Shared Control Plane
+
+- `check-product-contracts.mjs` 锁定 Platform / Model Provider / Game Pack / GameInstance 四个共享合同。
+- `check-xiaoyu-model-center.mjs` 现在同时检查 API、subscription/CLI、local Provider 与 Brain eligibility。
+- CI Headless 路径也运行 Product Contracts Gate，保证 Web 与 Desktop 不出现两套资源合同。
 
 ## 0.2.22 Capability Scope / Web Asset Safety
 

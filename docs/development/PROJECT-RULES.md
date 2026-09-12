@@ -6,6 +6,16 @@
 本文件只定义不能被后续开发随意改变的产品与工程原则。0.1.83 完成第二轮核心架构收拢；本版通过 Gate 后冻结主要业务边界，后续功能开发不得随意增加一级域或恢复空占位包。
 
 
+### 0.2.23 Product Contracts 硬规则
+
+- Web 是浏览器控制面；Windows/macOS Desktop 是对应系统原生客户端；Node Runtime 必须在目标操作系统原生执行。远程控制不得被描述为“在 Windows 运行 Linux”。
+- 未经真实构建/CI 的平台必须标记 planned；当前 macOS Desktop/Runtime 不得宣称已完成。
+- Model Provider 授权必须显式区分 `api-key / subscription / local`。禁止通过扫描/复制第三方 CLI Token 文件来“接入套餐”。
+- Agent Provider（如 Codex CLI）在没有安全 Tool mediation 前不得成为 XiaoYu 默认 Brain，也不得拥有绕过 AGMP Host/Approval/Capability Lease 的副作用通道。
+- 可视化游戏库与 XiaoYu 必须读取同一个 Game Pack；planned Game Pack 不能伪装成 supported。
+- 可视化部署与 XiaoYu 一句话部署必须最终创建/管理同一种 GameInstance；禁止维护 AI-only server state。
+- 0.2.23 首先接管真实 DST GameInstance；Minecraft 仍保持 planned，直到完整部署/验证 vertical slice 真正落地。
+
 ### 0.2.22 Capability Scope / Web Asset 硬规则
 
 - Capability Lease `scope` 禁止继续使用任意自由字符串；当前模型执行只允许已注册的 `process.exec:workspace-cwd`。

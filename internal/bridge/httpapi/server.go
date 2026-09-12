@@ -1142,6 +1142,23 @@ func (s *Server) routes() http.Handler {
 		}
 		writeJSON(w, http.StatusOK, value)
 	})
+	mux.HandleFunc("GET /api/v1/platform/runtime", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, s.application.PlatformRuntimeContract())
+	})
+	mux.HandleFunc("GET /api/v1/game-packs", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := s.application.ValidateSession(bearerToken(r)); err != nil {
+			writeAuthError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, s.application.GamePacks())
+	})
+	mux.HandleFunc("GET /api/v1/instances", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := s.application.ValidateSession(bearerToken(r)); err != nil {
+			writeAuthError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, s.application.GameInstances())
+	})
 	mux.HandleFunc("GET /api/v1/settings", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, s.application.Settings())
 	})

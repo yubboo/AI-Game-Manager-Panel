@@ -56,7 +56,7 @@ function enterApp() {
 }
 
 async function hydrateApp() {
-  await Promise.allSettled([app.loadInfo(), app.loadPlatformConfig(), app.loadSettings(), app.loadLicense()])
+  await Promise.allSettled([app.loadInfo(), app.loadPlatformRuntime(), app.loadPlatformConfig(), app.loadGamePacks(), app.loadGameInstances(), app.loadSettings(), app.loadLicense()])
   app.normalizeWorkbenchLayout()
   if (app.platformConfig?.update?.checkOnStartup !== false) void app.checkForUpdates(false)
 }

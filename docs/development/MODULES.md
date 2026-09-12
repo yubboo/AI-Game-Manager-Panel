@@ -1,6 +1,14 @@
-# AGMP 0.2.22 模块边界
+# AGMP 0.2.23 模块边界
 
 > 0.2.9 冻结语言职责：Rust-first XiaoYu Agent Runtime、Go Domain Host、Vue UI。详细边界见 `docs/architecture/LANGUAGE-OWNERSHIP.md`。模块是否规划存在仍由 `configs/modules.json` 描述；源码目录只为真实实现创建。
+
+
+## 0.2.23 Shared Product Contracts
+
+- `internal/platform/contract`：控制面/原生 Node 平台合同。
+- `internal/games/common.Pack`：可视化游戏库与 XiaoYu 共用 Game Pack。
+- `internal/server/instance`：跨游戏 GameInstance 长期资源合同。
+- `internal/xiaoyu/host` Model Provider：API/subscription/local 授权与 Brain eligibility；Provider 不能绕过 Host。
 
 ## 1. 一级领域
 

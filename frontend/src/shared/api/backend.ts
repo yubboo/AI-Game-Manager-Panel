@@ -83,6 +83,9 @@ import type {
   EnvironmentInstallSystemPrerequisiteRequest,
   AppInfo,
   PlatformConfig,
+  PlatformRuntimeContract,
+  GameInstance,
+  GamePack,
   AGMPSettings,
   GlobalLogCatalogRequest,
   GlobalLogCatalogPage,
@@ -713,6 +716,18 @@ export const backend = {
   platformConfig(): Promise<PlatformConfig> {
     if (hasWailsBridge()) return requireWails().GetPlatformConfig(sessionToken)
     return httpJSON<PlatformConfig>('/api/v1/platform/config')
+  },
+  platformRuntime(): Promise<PlatformRuntimeContract> {
+    if (hasWailsBridge()) return requireWails().GetPlatformRuntimeContract(sessionToken)
+    return httpJSON<PlatformRuntimeContract>('/api/v1/platform/runtime')
+  },
+  gamePacks(): Promise<GamePack[]> {
+    if (hasWailsBridge()) return requireWails().GetGamePacks(sessionToken)
+    return httpJSON<GamePack[]>('/api/v1/game-packs')
+  },
+  gameInstances(): Promise<GameInstance[]> {
+    if (hasWailsBridge()) return requireWails().GetGameInstances(sessionToken)
+    return httpJSON<GameInstance[]>('/api/v1/instances')
   },
   settings(): Promise<AGMPSettings> {
     if (hasWailsBridge()) return requireWails().GetSettings(sessionToken)

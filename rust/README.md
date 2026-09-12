@@ -1,6 +1,10 @@
 # AGMP XiaoYu Rust Runtime
 
 
+## 0.2.23 Product Contract boundary
+
+0.2.23 does not widen the Rust Native Runtime. Platform/Game Pack/GameInstance/Provider contracts are introduced in the Go Product Host while the 0.2.22 typed Capability Scope / PTY / ConPTY execution boundary remains frozen. Future Agent-provider mediation must still route side effects through AGMP Host authority before reaching Rust Native execution.
+
 ## 0.2.22 Capability Scope
 
 - 0.2.21 的 Lease + Linux PTY + Windows ConPTY 全绿基线保持不变。

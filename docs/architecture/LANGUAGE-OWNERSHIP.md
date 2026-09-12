@@ -3,6 +3,13 @@
 > 本文定义 AI Game Manager Panel 的长期语言职责边界。它不是“哪门语言更高级”的比较，而是为了让人类与 AI 开发代理在新增代码时，第一时间知道代码应该放到哪里。
 
 
+## 0.2.23 Product Contract Ownership
+
+- `internal/platform/contract` 属于 Go Product Host：它描述控制面与目标原生 Node 的产品边界，不替代 Rust Native Runtime。
+- Game Pack / GameInstance 属于 Go Game Domain / Product Host；Rust Agent Runtime 通过结构化 Tool 使用，不复制游戏领域状态。
+- Model Provider 账号/授权属于 Go Host；Rust/模型不得读取第三方登录凭证。Agent Provider 的动作仍回到 AGMP Host 安全边界。
+- Vue 只渲染 Platform/Game Pack/GameInstance/Provider 合同，不自行判断“当前浏览器是什么 OS”来决定服务器能力。
+
 ## 0.2.22 Capability Scope Ownership
 
 - Go Host 继续负责 identity / RBAC / step-up / Approval，并只为已批准动作签发已注册 Capability Scope。

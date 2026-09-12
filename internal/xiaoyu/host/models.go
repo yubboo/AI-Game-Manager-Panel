@@ -15,6 +15,23 @@ const (
 	ProtocolOpenAICompatible ModelProtocol = "openai-compatible"
 	ProtocolAnthropic        ModelProtocol = "anthropic"
 	ProtocolGemini           ModelProtocol = "gemini"
+	ProtocolCodexAppServer   ModelProtocol = "codex-app-server"
+)
+
+type ModelAuthMode string
+
+const (
+	ModelAuthAPIKey       ModelAuthMode = "api-key"
+	ModelAuthSubscription ModelAuthMode = "subscription"
+	ModelAuthLocal        ModelAuthMode = "local"
+)
+
+type ModelProviderKind string
+
+const (
+	ModelProviderAPI   ModelProviderKind = "model-api"
+	ModelProviderLocal ModelProviderKind = "local-runtime"
+	ModelProviderAgent ModelProviderKind = "agent-provider"
 )
 
 type ModelCapabilities struct {
@@ -35,13 +52,18 @@ type ModelCapabilities struct {
 }
 
 type ModelPreset struct {
-	ID             string        `json:"id"`
-	Name           string        `json:"name"`
-	Description    string        `json:"description"`
-	Protocol       ModelProtocol `json:"protocol"`
-	DefaultBaseURL string        `json:"defaultBaseUrl"`
-	Local          bool          `json:"local"`
-	APIKeyOptional bool          `json:"apiKeyOptional"`
+	ID              string            `json:"id"`
+	Name            string            `json:"name"`
+	Description     string            `json:"description"`
+	Protocol        ModelProtocol     `json:"protocol"`
+	DefaultBaseURL  string            `json:"defaultBaseUrl"`
+	Local           bool              `json:"local"`
+	APIKeyOptional  bool              `json:"apiKeyOptional"`
+	Kind            ModelProviderKind `json:"kind"`
+	AuthModes       []ModelAuthMode   `json:"authModes"`
+	DefaultAuthMode ModelAuthMode     `json:"defaultAuthMode"`
+	Executable      string            `json:"executable,omitempty"`
+	BrainEligible   bool              `json:"brainEligible"`
 }
 
 type ModelProfile struct {
@@ -49,6 +71,7 @@ type ModelProfile struct {
 	Name            string         `json:"name"`
 	Provider        string         `json:"provider"`
 	Protocol        ModelProtocol  `json:"protocol"`
+	AuthMode        ModelAuthMode  `json:"authMode"`
 	BaseURL         string         `json:"baseUrl"`
 	Model           string         `json:"model"`
 	Enabled         bool           `json:"enabled"`
@@ -70,6 +93,9 @@ type ModelProfileView struct {
 	Name            string            `json:"name"`
 	Provider        string            `json:"provider"`
 	Protocol        ModelProtocol     `json:"protocol"`
+	AuthMode        ModelAuthMode     `json:"authMode"`
+	ProviderKind    ModelProviderKind `json:"providerKind"`
+	BrainEligible   bool              `json:"brainEligible"`
 	BaseURL         string            `json:"baseUrl"`
 	Model           string            `json:"model"`
 	Enabled         bool              `json:"enabled"`
@@ -80,6 +106,7 @@ type ModelProfileView struct {
 	Extra           map[string]any    `json:"extra,omitempty"`
 	Capabilities    ModelCapabilities `json:"capabilities"`
 	HasAPIKey       bool              `json:"hasApiKey"`
+	HasCredential   bool              `json:"hasCredential"`
 	LastTestAt      time.Time         `json:"lastTestAt,omitempty"`
 	LastTestOK      bool              `json:"lastTestOk,omitempty"`
 	LastTestMessage string            `json:"lastTestMessage,omitempty"`
@@ -101,6 +128,7 @@ type SaveModelRequest struct {
 	Name            string         `json:"name"`
 	Provider        string         `json:"provider"`
 	Protocol        ModelProtocol  `json:"protocol"`
+	AuthMode        ModelAuthMode  `json:"authMode,omitempty"`
 	BaseURL         string         `json:"baseUrl"`
 	Model           string         `json:"model"`
 	APIKey          string         `json:"apiKey,omitempty"`
@@ -116,6 +144,7 @@ type ModelConnectionRequest struct {
 	ID              string         `json:"id,omitempty"`
 	Provider        string         `json:"provider"`
 	Protocol        ModelProtocol  `json:"protocol"`
+	AuthMode        ModelAuthMode  `json:"authMode,omitempty"`
 	BaseURL         string         `json:"baseUrl"`
 	Model           string         `json:"model"`
 	APIKey          string         `json:"apiKey,omitempty"`
@@ -134,8 +163,9 @@ type ModelConnectionResult struct {
 }
 
 func BuiltinModelPresets() []ModelPreset {
-	return []ModelPreset{
-		{ID: "openai", Name: "OpenAI", Description: "OpenAI 官方 Responses 接口", Protocol: ProtocolOpenAIResponses, DefaultBaseURL: "https://api.openai.com/v1"},
+	presets := []ModelPreset{
+		{ID: "openai", Name: "OpenAI API", Description: "OpenAI 官方 Responses API", Protocol: ProtocolOpenAIResponses, DefaultBaseURL: "https://api.openai.com/v1"},
+		{ID: "openai-codex", Name: "OpenAI Codex 套餐", Description: "使用本机官方 Codex CLI 的 ChatGPT/Codex 订阅登录；0.2.23 已接入状态探测，Brain Adapter 不会绕过 AGMP Tool/Approval 边界。", Protocol: ProtocolCodexAppServer, APIKeyOptional: true, Kind: ModelProviderAgent, AuthModes: []ModelAuthMode{ModelAuthSubscription}, DefaultAuthMode: ModelAuthSubscription, Executable: "codex", BrainEligible: false},
 		{ID: "deepseek", Name: "DeepSeek", Description: "DeepSeek 官方原生接口", Protocol: ProtocolDeepSeek, DefaultBaseURL: "https://api.deepseek.com"},
 		{ID: "minimax", Name: "MiniMax", Description: "MiniMax OpenAI 兼容接口", Protocol: ProtocolOpenAICompatible, DefaultBaseURL: "https://api.minimax.chat/v1"},
 		{ID: "qwen", Name: "通义千问", Description: "阿里云百炼 OpenAI 兼容接口", Protocol: ProtocolOpenAICompatible, DefaultBaseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1"},
@@ -150,6 +180,21 @@ func BuiltinModelPresets() []ModelPreset {
 		{ID: "lmstudio", Name: "LM Studio 本地部署", Description: "本机 LM Studio OpenAI 兼容服务", Protocol: ProtocolOpenAICompatible, DefaultBaseURL: "http://127.0.0.1:1234/v1", Local: true, APIKeyOptional: true},
 		{ID: "custom", Name: "自定义 / 第三方中转", Description: "自定义兼容接口与中转站", Protocol: ProtocolOpenAICompatible, APIKeyOptional: true},
 	}
+	for i := range presets {
+		if presets[i].Kind == "" {
+			if presets[i].Local {
+				presets[i].Kind = ModelProviderLocal
+				presets[i].AuthModes = []ModelAuthMode{ModelAuthLocal, ModelAuthAPIKey}
+				presets[i].DefaultAuthMode = ModelAuthLocal
+			} else {
+				presets[i].Kind = ModelProviderAPI
+				presets[i].AuthModes = []ModelAuthMode{ModelAuthAPIKey}
+				presets[i].DefaultAuthMode = ModelAuthAPIKey
+			}
+			presets[i].BrainEligible = true
+		}
+	}
+	return presets
 }
 
 func ResolveModelCapabilities(profile ModelProfile) ModelCapabilities {
@@ -183,6 +228,10 @@ func ResolveModelCapabilities(profile ModelProfile) ModelCapabilities {
 		caps.ReasoningReplay = true
 		caps.InputModalities = []string{"text", "image"}
 		caps.Notes = []string{"Claude thinking/signature content is preserved"}
+	case ProtocolCodexAppServer:
+		caps.Adapter, caps.Native = "codex-app-server", true
+		caps.ToolCalling, caps.ToolChoice, caps.Replay, caps.Streaming = false, false, false, false
+		caps.Notes = []string{"subscription login status is probed through the official Codex CLI", "XiaoYu Brain Adapter is not enabled until Codex app-server tool mediation is wired through AGMP Host"}
 	case ProtocolGemini:
 		caps.Adapter, caps.Native, caps.Reasoning, caps.Vision = "gemini-native", true, true, true
 		caps.ReasoningReplay = true

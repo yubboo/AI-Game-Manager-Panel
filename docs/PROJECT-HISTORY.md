@@ -1,6 +1,18 @@
 # AI-Game-Manager-Panel 项目历史
 
 
+## AI-Game-Manager-Panel 0.2.23
+
+### Product Contracts / Shared Control Plane
+
+- 0.2.22 GitHub Actions 四条主 Job 全绿后冻结为新基线。
+- 新增 Platform Contract：Web/Windows Desktop/macOS Desktop/Native Runtime 分层，目标节点原生执行。
+- 新增 Model Provider auth/kind 合同，并加入 OpenAI Codex subscription Provider 官方 CLI 登录状态探测；未开放 Brain Adapter。
+- 新增 Game Pack 合同：support state / OS / capabilities / UI panels / install strategy / fact sources 成为统一结构。
+- 新增共享 GameInstance，真实 DST 集群开始进入通用实例页；XiaoYu 与 UI 读取同一实例资源。
+- 新增 HTTP/Wails Game Pack、GameInstance、Platform Runtime Contract API 与 XiaoYu `game.pack.list` / `game.instance.list`。
+- 新增 Product Contracts Gate，防止后续再次把平台、模型授权和 AI/可视化资源模型做成两套。
+
 ## AI-Game-Manager-Panel 0.2.22
 
 ### Capability Scope / Web Asset Safety
