@@ -1,22 +1,12 @@
 {
   "name": "ai-game-manager-panel-electron",
   "private": true,
-  "version": "0.3.1",
+  "version": "0.4.0",
   "type": "module",
   "main": "dist/main.js",
-  "scripts": {
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "build": "tsc -p tsconfig.json",
-    "dev": "pnpm run build && electron . --agmp-dev",
-    "dist:win": "pnpm run build && electron-builder --win nsis portable --x64"
-  },
-  "devDependencies": {
-    "@types/node": "24.10.0",
-    "electron": "44.3.0",
-    "electron-builder": "26.16.1",
-    "typescript": "5.9.2"
-  },
+  "scripts": { "typecheck": "tsc -p tsconfig.json --noEmit", "build": "tsc -p tsconfig.json", "dev": "pnpm run build && electron . --agmp-dev", "dist:win": "pnpm run build && electron-builder --win nsis portable --x64" },
+  "devDependencies": { "@types/node": "24.10.0", "electron": "44.3.0", "electron-builder": "26.16.1", "typescript": "5.9.2" },
   "packageManager": "pnpm@11.17.0",
-  "description": "AI游戏管理器面板 Electron 桌面端：复用统一 Go Core 与 Vue 工作台。",
+  "description": "AGMP 0.4 Electron Desktop: TypeScript Agent Core + Rust Native Runtime.",
   "author": "AI Game Manager Panel Project"
 }

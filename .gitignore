@@ -1,30 +1,22 @@
-# AI Game Manager Panel GitHub Safety Baseline - 0.1.85
-# 原则：仓库只提交源码、公开配置模板、文档和许可证公钥；任何本机状态、密钥、授权材料、账号数据与构建产物不得进入 Git。
-
-# Go / build outputs
+# AGMP GitHub Safety Baseline — 0.4 TS Agent + Rust Native
 /bin/
+/build/
 *.exe
 *.test
-/build/
-
-# Frontend / Electron generated dependencies and outputs
 frontend/node_modules/
 frontend/dist/
-frontend/package.json.md5
-# Headless Web compiled hashes are regenerated from frontend/dist by sync-web-assets.mjs.
-cmd/aigame-manager-web/web/assets/
 desktop/electron/node_modules/
 desktop/electron/dist/
+node_modules/
+dist/
+.tmp-test/
 .pnpm-store/
 **/.pnpm-store/
-
-# Editors / OS
+crates/target/
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
-
-# Environment / local overrides
 .env
 .env.*
 !.env.example
@@ -32,13 +24,8 @@ Thumbs.db
 *.local.json
 configs/local/
 configs/*.local.json
-
-# AI Game Manager Panel runtime data: source repo keeps runtime/README.md only.
 runtime/*
 !runtime/README.md
-
-# Legacy 0.1.64 and earlier runtime paths: never commit local user/server state.
-# IMPORTANT: root-anchored rules avoid hiding source folders such as internal/ops/logs and frontend/src/features/instances.
 /data/
 /log/
 /logs/
@@ -48,9 +35,6 @@ runtime/*
 /exports/
 /plugins/
 /cache/
-
-# License / CDK / cryptographic private material
-# Public verification key must be embedded as source code or an explicitly reviewed *.pub file; generated *.key files stay local.
 *.key
 *.priv
 *.seed
@@ -66,30 +50,14 @@ runtime/*
 **/activation.json
 **/install.id
 **/device.id
-**/license-private.*
-**/agmp-license-private.*
-**/agmp-release-private.*
-**/ReleaseKeys/
-**/release-keys/
-# legacy secret filename from pre-rebrand versions
-**/bonfire-license-private.*
-
-# Authentication / local administrator state
 **/accounts.json
 **/bootstrap.lock
 **/credentials.json
 **/secrets.json
 **/*security-key*.txt
 **/*Security-Key*.txt
-
-# Game server secrets / user-generated server state
 **/cluster_token.txt
 **/server_token.txt
-**/adminlist.txt
-**/whitelist.txt
-**/blocklist.txt
-
-# Local diagnostic / crash / package artifacts
 *.log
 *.dmp
 *.stackdump
@@ -98,6 +66,3 @@ runtime/*
 *.zip
 *.7z
 *.rar
-
-# Rust Agent Runtime build outputs
-rust/target/

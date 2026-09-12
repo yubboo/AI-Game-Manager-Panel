@@ -5,8 +5,6 @@ electronDist: node_modules/electron/dist
 npmRebuild: false
 asar: true
 compression: maximum
-# Electron 自带大量语言包，是 Windows 包体积的重要来源之一。
-# 当前产品默认中文，仅保留中文与英文兜底。
 electronLanguages:
   - zh-CN
   - en-US
@@ -16,16 +14,18 @@ files:
   - package.json
 
 extraResources:
-  - from: ../../build/work/electron-core
+  - from: ../../dist
     to: core
-    filter:
-      - AI-Game-Manager-Core.exe
-      - AI-Game-Manager-XiaoYu.exe
+  - from: ../../frontend/dist
+    to: core/frontend/dist
   - from: ../../configs
-    to: defaults/configs
-    filter:
-      - '*.json'
+    to: core/configs
+  - from: ../../skills
+    to: core/skills
+  - from: ../../crates/target/release/agmp-native.exe
+    to: native/agmp-native.exe
 
+# Build products stay under the ignored root build/ tree.
 directories:
   output: ../../build/work/electron-builder
   buildResources: ../../build

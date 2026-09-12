@@ -1,0 +1,19 @@
+[package]
+name = "agmp-native-runtime"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+[dependencies]
+agmp-native-protocol = { path = "../native-protocol" }
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+reqwest.workspace = true
+sha1.workspace = true
+sha2.workspace = true
+hex.workspace = true
+zip.workspace = true
+tar.workspace = true
+flate2.workspace = true

@@ -6,7 +6,7 @@
       "category": "智能核心",
       "route": "/",
       "status": "partial",
-      "phase": "0.3.0 · Minecraft Vertical Slice",
+      "phase": "0.2.17 · Windows ConPTY Runtime Convergence",
       "features": [
         "小鱼自然语言主入口",
         "XiaoYu Agent Runtime（Rust-first）",
@@ -31,19 +31,7 @@
         "agmp.capability.search Capability Recovery",
         "Completion Evidence Gate",
         "Inline Task Approval Card",
-        "Procedural Wait Rejection",
-        "Short-lived Capability Lease / exact fingerprint binding",
-        "Single-use Native Terminal lease gate",
-        "Typed process.exec:workspace-cwd Capability Scope",
-        "Headless Web hash assets excluded from Git source",
-        "Platform Contract：Web / Windows Desktop / macOS Desktop / Native Node Runtime",
-        "Model Provider Contract：API / Subscription / Local / Agent Provider",
-        "Game Pack / GameInstance shared visual + XiaoYu resource model",
-        "Minecraft live fact resolver（Mojang / PaperMC / Fabric）",
-        "Shared game.deploy visual/XiaoYu path",
-        "Managed Java + verified Minecraft server artifact",
-        "Minecraft Done + protocol ping verification",
-        "Persistent shared GameInstance store"
+        "Procedural Wait Rejection"
       ],
       "sourceRefs": [
         "rust:xiaoyu-core/tool_search",
@@ -85,18 +73,14 @@
       "category": "部署",
       "route": "/deployment",
       "status": "partial",
-      "phase": "0.3.0 · Minecraft 一键部署",
+      "phase": "部署中心阶段",
       "features": [
         "SteamCMD 部署",
         "在线部署",
         "文件部署",
         "云端构建",
         "手动部署向导",
-        "模板部署",
-        "Minecraft Vanilla / Paper / Fabric",
-        "实时版本与 Java 要求查证",
-        "受管 Java 自动供给",
-        "服务端下载与哈希校验"
+        "模板部署"
       ],
       "sourceRefs": [
         "client:GameDeploymentPage",
@@ -111,8 +95,8 @@
       "name": "实例管理",
       "category": "平台",
       "route": "/instances",
-      "status": "partial",
-      "phase": "0.3.0 · Shared GameInstance Runtime",
+      "status": "skeleton",
+      "phase": "实例管理阶段",
       "features": [
         "创建实例",
         "启动停止",
@@ -121,11 +105,7 @@
         "复制",
         "删除",
         "实例状态",
-        "资源监控",
-        "Minecraft 启动/停止",
-        "Minecraft 控制台日志",
-        "Minecraft Ready + 协议 Ping",
-        "持久化 GameInstance"
+        "资源监控"
       ],
       "sourceRefs": [
         "client:InstanceManagerPage",

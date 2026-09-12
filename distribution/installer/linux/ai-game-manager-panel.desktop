@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=AI游戏管理器面板
-Comment=现代化智能 AI 一键游戏服务器部署与管理平台
-Exec=/usr/bin/ai-game-manager-panel
-Icon=ai-game-manager-panel
-Terminal=false
-Categories=Game;Utility;

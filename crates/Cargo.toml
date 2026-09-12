@@ -1,0 +1,22 @@
+[workspace]
+members = ["native-protocol", "native-runtime"]
+resolver = "2"
+
+[workspace.package]
+version = "0.4.0"
+edition = "2024"
+rust-version = "1.85"
+
+[workspace.dependencies]
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.18", features = ["v4", "serde"] }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls", "json"] }
+sha1 = "0.10"
+sha2 = "0.10"
+hex = "0.4"
+zip = "2.4"
+tar = "0.4"
+flate2 = "1.1"

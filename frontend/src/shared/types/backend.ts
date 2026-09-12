@@ -87,9 +87,7 @@ export interface XiaoYuBrainInfo {
   capabilities?: XiaoYuModelCapabilities
 }
 
-export type XiaoYuModelProtocol = 'openai-responses' | 'deepseek' | 'openai-compatible' | 'anthropic' | 'gemini' | 'codex-app-server' | string
-export type XiaoYuModelAuthMode = 'api-key' | 'subscription' | 'local' | string
-export type XiaoYuModelProviderKind = 'model-api' | 'local-runtime' | 'agent-provider' | string
+export type XiaoYuModelProtocol = 'openai-responses' | 'deepseek' | 'openai-compatible' | 'anthropic' | 'gemini' | string
 
 export interface XiaoYuModelCapabilities {
   adapter: string
@@ -116,11 +114,6 @@ export interface XiaoYuModelPreset {
   defaultBaseUrl: string
   local: boolean
   apiKeyOptional: boolean
-  kind: XiaoYuModelProviderKind
-  authModes: XiaoYuModelAuthMode[]
-  defaultAuthMode: XiaoYuModelAuthMode
-  executable?: string
-  brainEligible: boolean
 }
 
 export interface XiaoYuModelProfile {
@@ -128,9 +121,6 @@ export interface XiaoYuModelProfile {
   name: string
   provider: string
   protocol: XiaoYuModelProtocol
-  authMode: XiaoYuModelAuthMode
-  providerKind: XiaoYuModelProviderKind
-  brainEligible: boolean
   baseUrl: string
   model: string
   enabled: boolean
@@ -141,7 +131,6 @@ export interface XiaoYuModelProfile {
   extra?: Record<string, unknown>
   capabilities: XiaoYuModelCapabilities
   hasApiKey: boolean
-  hasCredential: boolean
   lastTestAt?: string
   lastTestOk?: boolean
   lastTestMessage?: string
@@ -163,7 +152,6 @@ export interface XiaoYuSaveModelRequest {
   name: string
   provider: string
   protocol: XiaoYuModelProtocol
-  authMode?: XiaoYuModelAuthMode
   baseUrl: string
   model: string
   apiKey?: string
@@ -179,7 +167,6 @@ export interface XiaoYuModelConnectionRequest {
   id?: string
   provider: string
   protocol: XiaoYuModelProtocol
-  authMode?: XiaoYuModelAuthMode
   baseUrl: string
   model: string
   apiKey?: string
@@ -682,29 +669,6 @@ export interface PreparedUpdate {
   size: number
 }
 
-export type PlatformSurfaceKind = 'web-client' | 'desktop-client' | 'node-runtime' | string
-
-export interface PlatformSurfaceContract {
-  id: string
-  name: string
-  kind: PlatformSurfaceKind
-  state: string
-  supportedOs?: string[]
-  installRequired: boolean
-  browser: boolean
-  controlsNodes: boolean
-  executesOnNode: boolean
-}
-
-export interface PlatformRuntimeContract {
-  hostOs: string
-  hostArch: string
-  nodeKind: string
-  nativeExecution: boolean
-  remoteControl: boolean
-  surfaces: PlatformSurfaceContract[]
-}
-
 export interface PlatformConfig {
   app: PlatformAppConfig
   ui: PlatformUIConfig
@@ -887,62 +851,9 @@ export interface PlatformGameTemplate {
   state: string
   gameAppId?: number
   serverAppId?: number
-  supportedOs?: string[]
-  capabilities?: string[]
-  uiPanels?: string[]
-  installStrategy?: string
-  factSources?: string[]
-}
-
-export type GameInstanceOrigin = 'discovered' | 'visual' | 'agent' | string
-
-export interface GameInstance {
-  id: string
-  name: string
-  gameId: string
-  origin: GameInstanceOrigin
-  nodeOs: string
-  nodeArch: string
-  installPath: string
-  runtimeState: string
-  desiredState?: string
-  health?: string
-  gameVersion?: string
-  serverType?: string
-  serverVersion?: string
-  address?: string
-  port?: number
-  capabilities: string[]
-  managed: boolean
-  createdAt?: number
-  updatedAt?: number
 }
 
 export interface PlatformGamesConfig { templates: PlatformGameTemplate[] }
-
-export interface GamePack {
-  id: string
-  family: string
-  nameZh: string
-  nameEn: string
-  state: string
-  supportedOs?: string[]
-  capabilities?: string[]
-  uiPanels?: string[]
-  installStrategy?: string
-  factSources?: string[]
-}
-
-export type MinecraftSoftware = 'vanilla' | 'paper' | 'fabric'
-export interface MinecraftArtifact { software: MinecraftSoftware; url: string; fileName: string; hashAlgorithm?: string; hash?: string; size?: number; build?: string; loader?: string; installer?: string; trust: string }
-export interface MinecraftVersionFacts { requestedVersion?: string; version: string; latestRelease: string; javaMajor: number; artifact: MinecraftArtifact; sources: string[] }
-export interface MinecraftPlanRequest { name: string; version?: string; software: MinecraftSoftware; memoryMb: number; port: number; onlineMode: boolean; whitelist: boolean; eulaAccepted: boolean; autoInstallJava: boolean; startAfterDeploy: boolean; origin?: GameInstanceOrigin }
-export interface MinecraftPlan { id: string; gameId: string; name: string; origin: GameInstanceOrigin; installPath: string; versionFacts: MinecraftVersionFacts; memoryMb: number; port: number; onlineMode: boolean; whitelist: boolean; eulaAccepted: boolean; autoInstallJava: boolean; startAfterDeploy: boolean; steps: string[] }
-export interface MinecraftRuntimeSnapshot { instanceId: string; state: string; pid?: number; ready: boolean; startedAt?: number; updatedAt?: number; exitCode?: number; error?: string; logCursor: number }
-export interface MinecraftProbeResult { online: boolean; version?: string; protocol?: number; playersOnline?: number; playersMax?: number; description?: string; latencyMs: number }
-export interface MinecraftDeploymentResult { plan: MinecraftPlan; instance: GameInstance; runtime: MinecraftRuntimeSnapshot; probe?: MinecraftProbeResult }
-export interface MinecraftLogLine { sequence: number; timestamp: number; text: string }
-export interface MinecraftLogBatch { lines: MinecraftLogLine[]; nextCursor: number; dropped: boolean }
 
 export interface PlatformModuleConfig {
   id: string
@@ -1763,16 +1674,6 @@ declare global {
           Ping: () => Promise<string>
           GetAppInfo: (token: string) => Promise<AppInfo>
           GetPlatformConfig: (token: string) => Promise<PlatformConfig>
-          GetPlatformRuntimeContract: (token: string) => Promise<PlatformRuntimeContract>
-          GetGamePacks: (token: string) => Promise<GamePack[]>
-          GetGameInstances: (token: string) => Promise<GameInstance[]>
-          GetMinecraftPlan: (token: string, request: MinecraftPlanRequest) => Promise<MinecraftPlan>
-          DeployMinecraft: (token: string, request: MinecraftPlanRequest) => Promise<MinecraftDeploymentResult>
-          StartMinecraft: (token: string, id: string) => Promise<MinecraftRuntimeSnapshot>
-          StopMinecraft: (token: string, id: string) => Promise<MinecraftRuntimeSnapshot>
-          GetMinecraftStatus: (token: string, id: string) => Promise<MinecraftRuntimeSnapshot>
-          GetMinecraftLogs: (token: string, id: string, after: number, limit: number) => Promise<MinecraftLogBatch>
-          ProbeMinecraft: (token: string, id: string) => Promise<MinecraftProbeResult>
           GetSettings: (token: string) => Promise<AGMPSettings>
           SaveSettings: (token: string, value: AGMPSettings) => Promise<void>
           GetRecentLogs: (token: string, limit: number) => Promise<string[]>

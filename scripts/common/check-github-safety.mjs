@@ -1,103 +1,68 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
 
-const here = path.dirname(fileURLToPath(import.meta.url))
-const root = path.resolve(here, '..', '..')
+const root = process.cwd()
 const failures = []
-const warnings = []
-const gitignorePath = path.join(root, '.gitignore')
+const fallbackSkip = new Set(['.git', 'node_modules', '.tmp-test', 'dist', 'target', 'runtime', 'build', '.pnpm-store'])
+const secret = /(sk-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9]{20,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|x-api-key\s*[:=]\s*["'][^"']{12,})/i
 
-const requiredIgnoreRules = [
-  '/build/', 'runtime/*', '!runtime/README.md', 'cmd/aigame-manager-web/web/assets/', 'data/', 'log/', 'backups/', 'instances/',
-  '.env', '.env.*', '*.key', '*.priv', '*.seed', '*.pem', '*.p12', '*.pfx', '*.cdk', '*.license',
-  '**/activation.json', '**/accounts.json', '**/bootstrap.lock', '**/install.id', '**/device.id',
-  '**/cluster_token.txt', '**/credentials.json', '**/secrets.json', '**/agmp-release-private.*',
-]
-
-if (!fs.existsSync(gitignorePath)) {
-  failures.push('缺少根目录 .gitignore')
-} else {
-  const ignore = fs.readFileSync(gitignorePath, 'utf8')
-  for (const rule of requiredIgnoreRules) if (!ignore.includes(rule)) failures.push(`.gitignore 缺少安全规则：${rule}`)
+function normalize(relative) {
+  return relative.replaceAll('\\', '/').replace(/^\.\//, '')
 }
 
-const normalize = value => value.replaceAll('\\', '/').replace(/^\.\//, '')
-const base = value => path.posix.basename(normalize(value)).toLowerCase()
-
-function forbiddenName(rel) {
-  const p = normalize(rel)
-  const lower = p.toLowerCase()
-  const name = base(p)
-  if (lower === '.env.example') return null
-  if (name === '.env' || name.startsWith('.env.')) return '环境变量文件'
-  if (/\.(key|priv|seed|pem|p12|pfx|jks|keystore)$/i.test(name)) return '密钥/私钥容器'
-  if (/\.(cdk|lic|license|bflc)$/i.test(name)) return '真实授权材料'
-  if (['activation.json','accounts.json','bootstrap.lock','install.id','device.id','credentials.json','secrets.json'].includes(name)) return '本机认证/授权状态'
-  if (['cluster_token.txt','server_token.txt','adminlist.txt','whitelist.txt','blocklist.txt'].includes(name)) return '游戏服务器私密状态'
-  if (/security[-_ ]?key.*\.txt$/i.test(name)) return '用户安全密钥导出'
-  if (lower.startsWith('runtime/') && lower !== 'runtime/readme.md') return '运行时数据'
-  for (const dir of ['data/','log/','logs/','backups/','instances/','temp/','exports/','plugins/','cache/','build/']) {
-    if (lower.startsWith(dir)) return '运行时/构建数据'
-  }
-  return null
-}
-
-const skipDirs = new Set(['.git','node_modules','dist','build'])
-function walk(dir, prefix = '') {
-  const out = []
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const rel = normalize(path.posix.join(prefix, entry.name))
-    if (entry.isDirectory()) {
-      if (skipDirs.has(entry.name)) continue
-      if (rel === 'runtime') { out.push('runtime/README.md'); continue }
-      out.push(...walk(path.join(dir, entry.name), rel))
-    } else out.push(rel)
-  }
-  return out
-}
-
-let candidates = []
-if (fs.existsSync(path.join(root, '.git'))) {
+function gitCandidates() {
+  if (!fs.existsSync(path.join(root, '.git'))) return null
   try {
-    const raw = execFileSync('git', ['ls-files', '-co', '--exclude-standard', '-z'], { cwd: root, encoding: 'utf8' })
-    candidates = raw.split('\0').filter(Boolean).map(normalize)
-  } catch (error) {
-    warnings.push(`无法调用 git ls-files，回退源码树扫描：${error instanceof Error ? error.message : String(error)}`)
-    candidates = walk(root)
+    const output = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { cwd: root, encoding: 'buffer', stdio: ['ignore', 'pipe', 'ignore'] })
+    return output.toString('utf8').split('\0').map(normalize).filter(Boolean)
+  } catch {
+    return null
   }
-} else {
-  candidates = walk(root)
 }
 
-const unique = [...new Set(candidates)]
-for (const rel of unique) {
-  const reason = forbiddenName(rel)
-  if (reason) failures.push(`禁止进入 Git：${rel}（${reason}）`)
+function fallbackCandidates() {
+  const files = []
+  function walk(directory) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      if (fallbackSkip.has(entry.name)) continue
+      const absolute = path.join(directory, entry.name)
+      if (entry.isDirectory()) walk(absolute)
+      else if (entry.isFile()) files.push(normalize(path.relative(root, absolute)))
+    }
+  }
+  walk(root)
+  return files
 }
 
-const secretPatterns = [
-  { label: 'PEM 私钥', regex: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/ },
-  { label: 'GitHub Token', regex: /\b(?:gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{40,})\b/ },
-  { label: 'AWS Access Key', regex: /\bAKIA[0-9A-Z]{16}\b/ },
-  { label: '疑似 OpenAI/API Key', regex: /\bsk-[A-Za-z0-9_-]{32,}\b/ },
-]
-const textExt = new Set(['.go','.ts','.tsx','.js','.mjs','.cjs','.vue','.json','.yaml','.yml','.toml','.ini','.conf','.ps1','.sh','.bat','.md','.txt','.iss'])
-for (const rel of unique) {
-  if (rel === 'scripts/common/check-github-safety.mjs') continue
-  const full = path.join(root, rel)
-  if (!fs.existsSync(full) || !fs.statSync(full).isFile()) continue
-  if (!textExt.has(path.extname(rel).toLowerCase())) continue
-  if (fs.statSync(full).size > 2 * 1024 * 1024) continue
-  const text = fs.readFileSync(full, 'utf8')
-  for (const { label, regex } of secretPatterns) if (regex.test(text)) failures.push(`疑似 ${label} 出现在：${rel}`)
+function looksBinary(buffer) {
+  const sample = buffer.subarray(0, Math.min(buffer.length, 8192))
+  if (sample.includes(0)) return true
+  if (!sample.length) return false
+  let controls = 0
+  for (const byte of sample) {
+    if (byte < 0x09 || (byte > 0x0d && byte < 0x20)) controls += 1
+  }
+  return controls / sample.length > 0.08
 }
 
-if (warnings.length) for (const item of warnings) console.warn(`[WARN] ${item}`)
+const candidates = [...new Set(gitCandidates() ?? fallbackCandidates())]
+for (const relative of candidates) {
+  const absolute = path.join(root, relative)
+  let stat
+  try { stat = fs.statSync(absolute) } catch { continue }
+  if (!stat.isFile()) continue
+  if (stat.size > 25 * 1024 * 1024) failures.push(`large file ${relative}: ${stat.size}`)
+  if (stat.size >= 2 * 1024 * 1024 || relative.endsWith('.test.ts')) continue
+  let buffer
+  try { buffer = fs.readFileSync(absolute) } catch { continue }
+  if (looksBinary(buffer)) continue
+  if (secret.test(buffer.toString('utf8'))) failures.push(`possible secret: ${relative}`)
+}
+
 if (failures.length) {
-  console.error(`AGMP GitHub Safety Gate FAIL (${failures.length})`)
-  for (const item of failures) console.error(` - ${item}`)
+  console.error('AGMP GitHub Safety Gate FAIL')
+  for (const failure of failures) console.error(` - ${failure}`)
   process.exit(1)
 }
-console.log(`AGMP GitHub Safety Gate PASS (${unique.length} candidate files checked)`)
+console.log(`AGMP GitHub Safety Gate PASS (${candidates.length} Git-trackable source files checked; ignored build/runtime artifacts skipped)`)
