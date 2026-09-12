@@ -15,7 +15,7 @@ import (
 
 const (
 	approvedAgentTerminalOutputLimit = 512 * 1024
-	approvedAgentLeaseScope          = "native-terminal"
+	approvedAgentLeaseScope          = xiaoyucontrol.ScopeProcessExecWorkspaceCWD
 )
 
 // runAuthorizedShellTool preserves the existing manual shell Tool contract,
@@ -74,6 +74,7 @@ func (a *Application) runApprovedAgentTerminal(parent context.Context, command, 
 	executable, arguments := approvedAgentShell(command)
 	terminal, err := a.xiaoyuRuntime.StartTerminal(ctx, xiaoyuruntime.TerminalStartRequest{
 		CapabilityLeaseID: invocation.Lease.ID,
+		CapabilityScope:   string(approvedAgentLeaseScope),
 		Executable:        executable,
 		Arguments:         arguments,
 		Cwd:               resolvedCWD,

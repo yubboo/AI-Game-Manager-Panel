@@ -1,7 +1,15 @@
-# AI Game Manager Panel 0.2.21 总架构
+# AI Game Manager Panel 0.2.22 总架构
 
 > AGMP 是唯一产品。用户与 XiaoYu 是“两个大脑、同一副身体”：用户拥有最终授权与接管权；XiaoYu 负责理解、规划、执行编排、验证、恢复与总结。0.2.9 起语言职责正式冻结为 **Rust-first Agent Runtime / Go Domain Host / Vue UI**。
 
+
+## 0.2.22 Capability Scope / Web Asset Safety
+
+- 0.2.21 Capability Lease 与双平台 Native Terminal 已由 GitHub Actions 全绿验证，执行原语继续冻结。
+- Host-owned Lease Scope 现在是 typed registry；当前唯一模型执行 scope 为 `process.exec:workspace-cwd`。
+- Go→Rust `terminal/start` 同时携带 `capabilityLeaseId + capabilityScope`；Rust 必须在任何 child spawn 前做精确 scope 校验。
+- `workspace-cwd` 只约束启动 cwd，不能被描述成 filesystem/network sandbox；真正的文件能力边界留到后续明确实现。
+- Headless Web content-hash assets 是 build output，不再长期跟踪进 Git；源入口 `web/index.html` 与 `cmd/` 代码仍属于关键源码。
 
 ## 0.2.21 Sandbox / Capability Lease
 

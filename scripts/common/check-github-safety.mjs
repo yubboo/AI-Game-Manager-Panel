@@ -10,7 +10,7 @@ const warnings = []
 const gitignorePath = path.join(root, '.gitignore')
 
 const requiredIgnoreRules = [
-  '/build/', 'runtime/*', '!runtime/README.md', 'data/', 'log/', 'backups/', 'instances/',
+  '/build/', 'runtime/*', '!runtime/README.md', 'cmd/aigame-manager-web/web/assets/', 'data/', 'log/', 'backups/', 'instances/',
   '.env', '.env.*', '*.key', '*.priv', '*.seed', '*.pem', '*.p12', '*.pfx', '*.cdk', '*.license',
   '**/activation.json', '**/accounts.json', '**/bootstrap.lock', '**/install.id', '**/device.id',
   '**/cluster_token.txt', '**/credentials.json', '**/secrets.json', '**/agmp-release-private.*',

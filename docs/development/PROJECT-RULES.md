@@ -6,6 +6,15 @@
 本文件只定义不能被后续开发随意改变的产品与工程原则。0.1.83 完成第二轮核心架构收拢；本版通过 Gate 后冻结主要业务边界，后续功能开发不得随意增加一级域或恢复空占位包。
 
 
+### 0.2.22 Capability Scope / Web Asset 硬规则
+
+- Capability Lease `scope` 禁止继续使用任意自由字符串；当前模型执行只允许已注册的 `process.exec:workspace-cwd`。
+- `process.exec:workspace-cwd` 只授权一次已批准 process execution，并要求 cwd 经过 AGMP workspace resolver；不得把它解释为 filesystem/network/container 隔离。
+- Go Host、Go→Rust bridge、Rust Native Terminal 都必须对 `capabilityScope` fail-closed；`capabilityLeaseId`、`HostAuthorized=true` 任何一个都不能单独替代 scope。
+- `cmd/aigame-manager-web/web/assets/` 是 `frontend/dist` 经 `scripts/common/sync-web-assets.mjs` 生成的 hash 资产，必须被 `.gitignore` 忽略。
+- 一键推送删除白名单只能精确放行 `cmd/aigame-manager-web/web/assets/`；`web/index.html`、`cmd/aigame-manager-web/main.go` 与其他 `cmd/` 源码继续严格保护。
+- 禁止为了“通过推送”把旧 hash 构建资产复制回源码包，也禁止放宽整个 `cmd/` 的删除保护。
+
 ### 0.2.21 Capability Lease 硬规则
 
 - server-owned XiaoYu `shell.exec` 进入 Native Terminal 前必须持有 Host 签发的短时 Capability Lease。

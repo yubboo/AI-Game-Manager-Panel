@@ -1,6 +1,13 @@
 # 小鱼（XiaoYu）Agent Runtime
 
 
+## 0.2.22 Typed Process Capability Scope
+
+- 0.2.21 的 single-use Capability Lease 与 Runner-verified Native Terminal 保持冻结。
+- `process.exec:workspace-cwd` 成为第一个正式注册的 Capability Scope；Lease Store 拒绝自由字符串 scope。
+- `terminal/start` 必须同时携带 lease ID 与 exact capability scope；Go/Rust 两侧在 spawn 前 fail-closed。
+- Scope 只声明当前真实可证明的边界：process execution + workspace-resolved cwd。它不表示 shell 的文件访问或网络访问已经被 OS 隔离。
+
 ## 0.2.21 Capability Lease Runtime Boundary
 
 - 0.2.20 的 Approved Agent → Native Terminal / Linux PTY / Windows ConPTY 稳定基线保持不变。

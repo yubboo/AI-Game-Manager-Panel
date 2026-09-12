@@ -45,6 +45,7 @@ try {
     'linux_terminal_resize_updates_kernel_winsize',
     'windows_terminal_conpty_accepts_io_and_resize',
     'terminal_start_requires_capability_lease',
+    'terminal_start_requires_process_exec_workspace_cwd_scope',
   ]) {
     if (!terminal.includes(token)) failures.push(`Rust Terminal/PTY 缺少 ${token}`)
   }
@@ -115,6 +116,7 @@ try {
     'pub rows: u16',
     'pub cols: u16',
     'pub capability_lease_id: String',
+    'pub capability_scope: String',
   ]) {
     if (!protocol.includes(token)) failures.push(`xiaoyu.v1 Terminal 协议缺少 ${token}`)
   }
@@ -143,6 +145,9 @@ try {
   ]) {
     if (!core.includes(capability)) failures.push(`Rust Runtime capability 缺少 ${capability}`)
   }
+
+  if (!terminal.includes('PROCESS_EXEC_WORKSPACE_CWD_SCOPE')) failures.push('Rust Terminal/PTY 必须冻结 process.exec:workspace-cwd Capability Scope')
+  if (!terminal.includes('request.capability_scope.trim() != PROCESS_EXEC_WORKSPACE_CWD_SCOPE')) failures.push('Rust Terminal/PTY 必须在 spawn 前拒绝未知 Capability Scope')
 
   const service = read('internal/xiaoyu/runtime/service.go')
   for (const token of [
@@ -205,4 +210,4 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY · Approved Agent native wiring · Capability Lease · Host authorization)')
+console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY · Approved Agent wiring · process.exec:workspace-cwd scope · Capability Lease · Host authorization)')

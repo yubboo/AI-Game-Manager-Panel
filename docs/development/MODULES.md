@@ -1,4 +1,4 @@
-# AGMP 0.2.21 模块边界
+# AGMP 0.2.22 模块边界
 
 > 0.2.9 冻结语言职责：Rust-first XiaoYu Agent Runtime、Go Domain Host、Vue UI。详细边界见 `docs/architecture/LANGUAGE-OWNERSHIP.md`。模块是否规划存在仍由 `configs/modules.json` 描述；源码目录只为真实实现创建。
 
@@ -53,7 +53,7 @@ internal/xiaoyu/runtime       = Go <-> Rust Agent Runtime Bridge
   -> XiaoYu 继续规划或完成
 ```
 
-`shell.exec` 的身份、RBAC、step-up 与审批仍由 Go Host 权威执行；0.2.20 起 server-owned XiaoYu Run 的已授权命令进入 Rust Native Terminal，人工/兼容 Shell 暂留 Go `platform/runtime`。小鱼仍应优先 Domain Tool，但不能把“没有专用 Tool”误判为无能力；任何 Rust Native 执行同样必须受 Sandbox、审计和验证约束。
+`shell.exec` 的身份、RBAC、step-up 与审批仍由 Go Host 权威执行；0.2.20 起 server-owned XiaoYu Run 的已授权命令进入 Rust Native Terminal，0.2.21 加入 single-use Capability Lease，0.2.22 再把执行 scope 收紧为 `process.exec:workspace-cwd`。人工/兼容 Shell 暂留 Go `platform/runtime`。小鱼仍应优先 Domain Tool，但不能把“没有专用 Tool”误判为无能力；任何 Rust Native 执行同样必须受 Sandbox、审计和验证约束。
 
 ## 3.1 Capability / Tool Registry
 

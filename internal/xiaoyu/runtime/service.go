@@ -1,9 +1,9 @@
 // Package xiaoyuruntime connects AGMP to XiaoYu's Rust Agent Runtime.
 //
-// 0.2.21 keeps the runner-verified cross-platform Terminal RPC frozen and adds
-// a short-lived Capability Lease marker to model-facing terminal/start handoff.
+// 0.2.22 keeps the runner-verified cross-platform Terminal RPC frozen and
+// makes the approved process-exec Capability Scope explicit on terminal/start.
 // Go remains the source of truth for identity/RBAC/approval and AGMP domain
-// services; Rust continues to fail closed on missing Host authorization/lease.
+// services; Rust fails closed on missing Host authorization, lease or scope.
 package xiaoyuruntime
 
 import (
@@ -24,6 +24,8 @@ import (
 )
 
 const ProtocolVersion = "xiaoyu.v1"
+
+const TerminalCapabilityScopeProcessExecWorkspaceCWD = "process.exec:workspace-cwd"
 
 type Options struct {
 	Root           string
@@ -243,7 +245,7 @@ func (s *Service) Close() {
 }
 
 // SessionInfo, Job* and Terminal* structures mirror xiaoyu.v1. They are Host-internal
-// primitives in 0.2.21, including Linux PTY and Windows ConPTY/resize. Model-visible execution enters through AGMP Tool
+// primitives in 0.2.22, including Linux PTY and Windows ConPTY/resize. Model-visible execution enters through AGMP Tool
 // contracts, RBAC/approval and a short-lived Capability Lease before Native Terminal use.
 type SessionInfo struct {
 	ID           string `json:"id"`
@@ -291,6 +293,7 @@ type JobOutputResponse struct {
 type TerminalStartRequest struct {
 	SessionID         string   `json:"sessionId,omitempty"`
 	CapabilityLeaseID string   `json:"capabilityLeaseId"`
+	CapabilityScope   string   `json:"capabilityScope"`
 	Executable        string   `json:"executable"`
 	Arguments         []string `json:"arguments,omitempty"`
 	Cwd               string   `json:"cwd,omitempty"`
@@ -404,6 +407,9 @@ func (s *Service) StartTerminal(ctx context.Context, request TerminalStartReques
 	}
 	if strings.TrimSpace(request.CapabilityLeaseID) == "" {
 		return value, errors.New("XiaoYu Rust Terminal 必须携带短时 Capability Lease")
+	}
+	if strings.TrimSpace(request.CapabilityScope) != TerminalCapabilityScopeProcessExecWorkspaceCWD {
+		return value, errors.New("XiaoYu Rust Terminal Capability Scope 必须是 process.exec:workspace-cwd")
 	}
 	err := s.runRPC(ctx, "terminal/start", request, &value)
 	return value, err

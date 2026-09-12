@@ -11,6 +11,8 @@
 frontend/node_modules/
 frontend/dist/
 frontend/package.json.md5
+# Headless Web compiled hashes are regenerated from frontend/dist by sync-web-assets.mjs.
+cmd/aigame-manager-web/web/assets/
 desktop/electron/node_modules/
 desktop/electron/dist/
 .pnpm-store/

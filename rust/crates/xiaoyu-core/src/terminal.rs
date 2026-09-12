@@ -26,6 +26,7 @@ const MAX_OUTPUT_CHUNKS: usize = 1000;
 const MAX_WRITE_BYTES: usize = 64 * 1024;
 const DEFAULT_ROWS: u16 = 24;
 const DEFAULT_COLS: u16 = 80;
+const PROCESS_EXEC_WORKSPACE_CWD_SCOPE: &str = "process.exec:workspace-cwd";
 #[cfg(not(any(target_os = "linux", windows)))]
 const PIPE_BACKEND: &str = "stdio-pipe-v1";
 #[cfg(target_os = "linux")]
@@ -284,6 +285,9 @@ impl TerminalManager {
         }
         if request.capability_lease_id.trim().is_empty() {
             bail!("terminal start requires a short-lived capability lease");
+        }
+        if request.capability_scope.trim() != PROCESS_EXEC_WORKSPACE_CWD_SCOPE {
+            bail!("terminal start requires process.exec:workspace-cwd capability scope");
         }
         let executable = request.executable.trim();
         if executable.is_empty() {
@@ -668,6 +672,7 @@ mod tests {
         TerminalStartRequest {
             session_id: None,
             capability_lease_id: "LEASE-test".to_string(),
+            capability_scope: PROCESS_EXEC_WORKSPACE_CWD_SCOPE.to_string(),
             executable,
             arguments,
             cwd: Some(root.to_string_lossy().into_owned()),
@@ -694,6 +699,19 @@ mod tests {
         let mut request = shell_request(&root);
         request.capability_lease_id.clear();
         assert!(manager.start(request, None).is_err());
+    }
+
+    #[test]
+    fn terminal_start_requires_process_exec_workspace_cwd_scope() {
+        let root = std::env::current_dir().unwrap();
+        let manager = TerminalManager::new(root.clone());
+        let mut missing = shell_request(&root);
+        missing.capability_scope.clear();
+        assert!(manager.start(missing, None).is_err());
+
+        let mut wrong = shell_request(&root);
+        wrong.capability_scope = "network.any".to_string();
+        assert!(manager.start(wrong, None).is_err());
     }
 
     #[test]
@@ -879,6 +897,7 @@ mod tests {
                 TerminalStartRequest {
                     session_id: None,
                     capability_lease_id: "LEASE-windows-integration".to_string(),
+                    capability_scope: PROCESS_EXEC_WORKSPACE_CWD_SCOPE.to_string(),
                     executable: "cmd.exe".to_string(),
                     arguments: vec!["/Q".to_string()],
                     cwd: None,

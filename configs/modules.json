@@ -6,7 +6,7 @@
       "category": "智能核心",
       "route": "/",
       "status": "partial",
-      "phase": "0.2.21 · Sandbox / Capability Lease",
+      "phase": "0.2.22 · Capability Scope / Web Asset Safety",
       "features": [
         "小鱼自然语言主入口",
         "XiaoYu Agent Runtime（Rust-first）",
@@ -33,7 +33,9 @@
         "Inline Task Approval Card",
         "Procedural Wait Rejection",
         "Short-lived Capability Lease / exact fingerprint binding",
-        "Single-use Native Terminal lease gate"
+        "Single-use Native Terminal lease gate",
+        "Typed process.exec:workspace-cwd Capability Scope",
+        "Headless Web hash assets excluded from Git source"
       ],
       "sourceRefs": [
         "rust:xiaoyu-core/tool_search",

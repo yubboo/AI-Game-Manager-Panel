@@ -3,6 +3,14 @@
 > 本文定义 AI Game Manager Panel 的长期语言职责边界。它不是“哪门语言更高级”的比较，而是为了让人类与 AI 开发代理在新增代码时，第一时间知道代码应该放到哪里。
 
 
+## 0.2.22 Capability Scope Ownership
+
+- Go Host 继续负责 identity / RBAC / step-up / Approval，并只为已批准动作签发已注册 Capability Scope。
+- 当前 `process.exec:workspace-cwd` Scope 由 Go Lease Store 签发与消费；Go→Rust bridge 传递 scope，Rust Native Terminal 在 spawn 前再次校验。
+- Rust 负责 Native execution boundary，但不能自行扩大 scope；未知 scope 必须 fail-closed。
+- workspace CWD 不是 filesystem sandbox。文件/网络能力只有在存在实际 enforcement 时才能写入 Capability Scope。
+- Headless Web hash assets 是构建产物，不改变 Vue/Go/Rust 的语言归属。
+
 ## 0.2.21 Capability Lease Ownership
 
 - 0.2.20 的 Approved Agent → Native Terminal / Linux PTY / Windows ConPTY 稳定基线保持不变。

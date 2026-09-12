@@ -12,6 +12,24 @@ import (
 
 const DefaultCapabilityLeaseTTL = 30 * time.Second
 
+type CapabilityScope string
+
+const (
+	// ScopeProcessExecWorkspaceCWD authorizes one Host-approved process execution
+	// whose working directory must resolve inside the AGMP workspace. It does NOT
+	// claim filesystem or network isolation for the spawned process.
+	ScopeProcessExecWorkspaceCWD CapabilityScope = "process.exec:workspace-cwd"
+)
+
+func (scope CapabilityScope) Valid() bool {
+	switch scope {
+	case ScopeProcessExecWorkspaceCWD:
+		return true
+	default:
+		return false
+	}
+}
+
 var (
 	ErrLeaseNotFound = errors.New("能力租约不存在")
 	ErrLeaseExpired  = errors.New("能力租约已过期")
@@ -23,16 +41,16 @@ var (
 // only stable identifiers and the irreversible request fingerprint; raw Tool
 // arguments, commands, credentials and tokens never enter the lease record.
 type CapabilityLease struct {
-	ID          string `json:"id"`
-	Scope       string `json:"scope"`
-	Tool        string `json:"tool"`
-	RunID       string `json:"runId"`
-	Principal   string `json:"principal"`
-	RequestHash string `json:"requestHash"`
-	IssuedAt    int64  `json:"issuedAt"`
-	ExpiresAt   int64  `json:"expiresAt"`
-	MaxUses     int    `json:"maxUses"`
-	Uses        int    `json:"uses"`
+	ID          string          `json:"id"`
+	Scope       CapabilityScope `json:"scope"`
+	Tool        string          `json:"tool"`
+	RunID       string          `json:"runId"`
+	Principal   string          `json:"principal"`
+	RequestHash string          `json:"requestHash"`
+	IssuedAt    int64           `json:"issuedAt"`
+	ExpiresAt   int64           `json:"expiresAt"`
+	MaxUses     int             `json:"maxUses"`
+	Uses        int             `json:"uses"`
 }
 
 // CapabilityLeaseStore intentionally stays in memory. A Host restart revokes
@@ -55,16 +73,19 @@ func NewCapabilityLeaseStore(ttl time.Duration) *CapabilityLeaseStore {
 	}
 }
 
-func (s *CapabilityLeaseStore) Issue(scope, tool, runID, principal, requestHash string, maxUses int) (CapabilityLease, error) {
+func (s *CapabilityLeaseStore) Issue(scope CapabilityScope, tool, runID, principal, requestHash string, maxUses int) (CapabilityLease, error) {
 	if s == nil {
 		return CapabilityLease{}, errors.New("能力租约服务不可用")
 	}
-	scope = strings.TrimSpace(scope)
+	scope = CapabilityScope(strings.TrimSpace(string(scope)))
+	if !scope.Valid() {
+		return CapabilityLease{}, fmt.Errorf("不支持的能力租约 Scope：%s", scope)
+	}
 	tool = strings.TrimSpace(tool)
 	runID = strings.TrimSpace(runID)
 	principal = strings.TrimSpace(principal)
 	requestHash = strings.TrimSpace(requestHash)
-	if scope == "" || tool == "" || runID == "" || principal == "" || requestHash == "" {
+	if tool == "" || runID == "" || principal == "" || requestHash == "" {
 		return CapabilityLease{}, errors.New("能力租约缺少绑定字段")
 	}
 	if maxUses <= 0 || maxUses > 8 {
@@ -95,11 +116,15 @@ func (s *CapabilityLeaseStore) Issue(scope, tool, runID, principal, requestHash 
 
 // Consume validates every binding and atomically spends one use. A mismatch
 // never consumes the lease, allowing the exact approved action to continue.
-func (s *CapabilityLeaseStore) Consume(id, scope, tool, runID, principal, requestHash string) error {
+func (s *CapabilityLeaseStore) Consume(id string, scope CapabilityScope, tool, runID, principal, requestHash string) error {
 	if s == nil {
 		return errors.New("能力租约服务不可用")
 	}
 	id = strings.TrimSpace(id)
+	scope = CapabilityScope(strings.TrimSpace(string(scope)))
+	if !scope.Valid() {
+		return ErrLeaseMismatch
+	}
 	now := s.now()
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -111,7 +136,7 @@ func (s *CapabilityLeaseStore) Consume(id, scope, tool, runID, principal, reques
 		delete(s.leases, id)
 		return ErrLeaseExpired
 	}
-	if item.Scope != strings.TrimSpace(scope) ||
+	if item.Scope != scope ||
 		item.Tool != strings.TrimSpace(tool) ||
 		item.RunID != strings.TrimSpace(runID) ||
 		item.Principal != strings.TrimSpace(principal) ||

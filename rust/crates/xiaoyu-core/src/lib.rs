@@ -26,7 +26,7 @@ pub const RUNTIME_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// XiaoYu's Rust core is the AGMP Agent Runtime boundary. It owns provider-neutral
 /// agent semantics and is the Rust-first home for capability discovery, sessions,
 /// jobs, PTY, sandbox and generic native execution. Go remains the source of
-/// truth for game/product domain services. The 0.2.21 Host wiring adds a short-lived, single-use Capability Lease
+/// truth for game/product domain services. The 0.2.22 Host wiring requires a typed process.exec:workspace-cwd Capability Scope plus the short-lived, single-use Capability Lease
 /// before model-facing Native Terminal startup. Windows ConPTY remains frozen
 /// on the 0.2.19 runner-verified stdio isolation baseline. Other platforms keep
 /// an explicit stdio fallback. Existing Go execution paths stay compatible

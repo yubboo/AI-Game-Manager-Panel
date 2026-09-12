@@ -93,6 +93,16 @@ func TestStartTerminalRejectsMissingCapabilityLeaseBeforeRuntime(t *testing.T) {
 	}
 }
 
+func TestStartTerminalRejectsWrongCapabilityScopeBeforeRuntime(t *testing.T) {
+	service := New(Options{Root: t.TempDir(), BinaryOverride: filepath.Join(t.TempDir(), "missing-runtime")})
+	for _, scope := range []string{"", "network.any", "process.exec:anywhere"} {
+		_, err := service.StartTerminal(nil, TerminalStartRequest{Executable: "example", CapabilityLeaseID: "LEASE-test", CapabilityScope: scope, HostAuthorized: true})
+		if err == nil {
+			t.Fatalf("host-authorized Rust terminal with scope %q must be rejected before contacting the runtime", scope)
+		}
+	}
+}
+
 func TestWriteTerminalRejectsMissingHostAuthorizationBeforeRuntime(t *testing.T) {
 	service := New(Options{Root: t.TempDir(), BinaryOverride: filepath.Join(t.TempDir(), "missing-runtime")})
 	_, err := service.WriteTerminal(nil, TerminalWriteRequest{ID: "XYT-test", Data: "echo blocked", HostAuthorized: false})

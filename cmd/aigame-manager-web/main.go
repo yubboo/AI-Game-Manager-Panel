@@ -15,7 +15,7 @@ import (
 	"github.com/yubboo/AI-Game-Manager-Panel/internal/bridge/httpapi"
 )
 
-// web/ is populated from frontend/dist by scripts/sync-web-assets.mjs.
+// web/ is populated from frontend/dist by scripts/common/sync-web-assets.mjs.
 // A checked-in placeholder keeps ordinary Go tooling usable before the first
 // frontend build.
 //

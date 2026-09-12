@@ -73,6 +73,9 @@ try {
   for (const token of ['Assert-SourceNotIgnored', 'Test-RepositorySafety', "Path = 'rust/crates'; MinimumFiles = 8", 'pull --rebase', 'git push']) {
     if (!pushText.includes(token)) fail(`push-agmp.ps1 缺少 GitHub 工作台关键能力：${token}`)
   }
+  if (!pushText.includes("^cmd/aigame-manager-web/web/assets/") || !pushText.includes('isGeneratedWebAsset')) fail('push-agmp.ps1 必须只对 Headless Web 生成哈希资产放行删除保护，不能放宽整个 cmd/。')
+  const rootIgnore = fs.readFileSync(path.join(root, '.gitignore'), 'utf8')
+  if (!rootIgnore.includes('cmd/aigame-manager-web/web/assets/')) fail('.gitignore 必须忽略 Headless Web 生成哈希资产，防止本地构建产物再次进入 Git。')
 } catch (error) {
   fail(`无法验证 GitHub 推送工作台编码：${error instanceof Error ? error.message : String(error)}`)
 }

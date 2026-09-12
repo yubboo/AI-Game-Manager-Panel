@@ -213,7 +213,7 @@ func (a *Application) xiaoyuCallToolForRun(ctx context.Context, token, runID str
 		}
 		invocation.Lease = &lease
 		defer a.xiaoyuLeases.Revoke(lease.ID)
-		a.observeXiaoYuRun("tool/capability-lease-issued", runID, spec.Name, map[string]any{"leaseId": lease.ID, "expiresAt": lease.ExpiresAt, "maxUses": lease.MaxUses})
+		a.observeXiaoYuRun("tool/capability-lease-issued", runID, spec.Name, map[string]any{"leaseId": lease.ID, "scope": lease.Scope, "expiresAt": lease.ExpiresAt, "maxUses": lease.MaxUses})
 	}
 	ctx = withXiaoYuInvocationContext(ctx, invocation)
 	execution, err := a.xiaoyuTools.Execute(ctx, spec.Name, request.Arguments)

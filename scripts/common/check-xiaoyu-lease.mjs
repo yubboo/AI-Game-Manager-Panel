@@ -23,6 +23,10 @@ try {
   const lease = read('internal/xiaoyu/control/capability_lease.go')
   for (const token of [
     'DefaultCapabilityLeaseTTL = 30 * time.Second',
+    'type CapabilityScope string',
+    'ScopeProcessExecWorkspaceCWD',
+    'process.exec:workspace-cwd',
+    'func (scope CapabilityScope) Valid() bool',
     'type CapabilityLease struct',
     'type CapabilityLeaseStore struct',
     'leases map[string]CapabilityLease',
@@ -45,6 +49,7 @@ try {
     'TestCapabilityLeaseIsBoundSingleUseAndNotReplayable',
     'TestCapabilityLeaseExpiresAndDoesNotPersistAuthority',
     'TestCapabilityLeaseBindsRunAndPrincipal',
+    'TestCapabilityLeaseRejectsUnknownScope',
   ]) {
     if (!leaseTests.includes(test)) failures.push(`Capability Lease 缺少回归测试 ${test}`)
   }
@@ -55,6 +60,7 @@ try {
     'approvedAgentLeaseHash(runID, command, cwd)',
     'a.xiaoyuLeases.Issue(',
     'tool/capability-lease-issued',
+    '"scope": lease.Scope',
   ]) {
     if (!app.includes(token)) failures.push(`Host Tool 审批→租约签发缺少 ${token}`)
   }
@@ -66,6 +72,7 @@ try {
     'a.xiaoyuLeases.Consume(',
     'approvedAgentLeaseHash(invocation.RunID, command, cwd)',
     'CapabilityLeaseID: invocation.Lease.ID',
+    'CapabilityScope:   string(approvedAgentLeaseScope)',
     'HostAuthorized:    true',
   ]) {
     if (!terminal.includes(token)) failures.push(`Native Terminal Lease Gate 缺少 ${token}`)
@@ -82,13 +89,23 @@ try {
 
   const service = read('internal/xiaoyu/runtime/service.go')
   if (!service.includes('CapabilityLeaseID string')) failures.push('Go↔Rust Terminal Bridge 缺少 capabilityLeaseId')
+  if (!service.includes('CapabilityScope   string')) failures.push('Go↔Rust Terminal Bridge 缺少 capabilityScope')
+  if (!service.includes('TerminalCapabilityScopeProcessExecWorkspaceCWD = "process.exec:workspace-cwd"')) failures.push('Go↔Rust Terminal Bridge 必须冻结 process.exec:workspace-cwd Scope')
   if (!service.includes('必须携带短时 Capability Lease')) failures.push('Go↔Rust Terminal Bridge 必须 fail-closed 拒绝缺少租约的 HostAuthorized start')
+  if (!service.includes('Capability Scope 必须是 process.exec:workspace-cwd')) failures.push('Go↔Rust Terminal Bridge 必须 fail-closed 拒绝未知 Capability Scope')
+
+  const serviceTests = read('internal/xiaoyu/runtime/service_test.go')
+  if (!serviceTests.includes('TestStartTerminalRejectsWrongCapabilityScopeBeforeRuntime')) failures.push('Go↔Rust Terminal Bridge 缺少 Capability Scope fail-closed 测试')
 
   const protocol = read('rust/crates/xiaoyu-protocol/src/lib.rs')
   if (!protocol.includes('pub capability_lease_id: String')) failures.push('xiaoyu.v1 TerminalStartRequest 缺少 capabilityLeaseId')
+  if (!protocol.includes('pub capability_scope: String')) failures.push('xiaoyu.v1 TerminalStartRequest 缺少 capabilityScope')
   const rustTerminal = read('rust/crates/xiaoyu-core/src/terminal.rs')
   if (!rustTerminal.includes('request.capability_lease_id.trim().is_empty()')) failures.push('Rust Native Terminal 必须拒绝空 Capability Lease ID')
+  if (!rustTerminal.includes('PROCESS_EXEC_WORKSPACE_CWD_SCOPE')) failures.push('Rust Native Terminal 缺少 process.exec:workspace-cwd Scope 常量')
+  if (!rustTerminal.includes('request.capability_scope.trim() != PROCESS_EXEC_WORKSPACE_CWD_SCOPE')) failures.push('Rust Native Terminal 必须拒绝 Scope 漂移')
   if (!rustTerminal.includes('terminal_start_requires_capability_lease')) failures.push('Rust Native Terminal 缺少 Capability Lease fail-closed 测试')
+  if (!rustTerminal.includes('terminal_start_requires_process_exec_workspace_cwd_scope')) failures.push('Rust Native Terminal 缺少 Capability Scope fail-closed 测试')
 
   const workflow = read('.github/workflows/safety.yml')
   if (!workflow.includes('check-xiaoyu-lease.mjs')) failures.push('GitHub Actions 必须执行 XiaoYu Capability Lease Gate')
@@ -102,4 +119,4 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('AGMP XiaoYu Capability Lease Gate PASS (ephemeral · exact fingerprint · Run/principal bound · single-use · Rust handoff)')
+console.log('AGMP XiaoYu Capability Lease Gate PASS (ephemeral · exact fingerprint · typed process.exec:workspace-cwd scope · single-use · Rust handoff)')

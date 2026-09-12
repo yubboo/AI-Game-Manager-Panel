@@ -89,6 +89,9 @@ func TestApprovedAgentShellUsesSingleUseLeaseAndNativeTerminal(t *testing.T) {
 	if strings.TrimSpace(runtimeClient.startRequest.CapabilityLeaseID) == "" {
 		t.Fatal("native terminal handoff must carry a server-issued capability lease id")
 	}
+	if runtimeClient.startRequest.CapabilityScope != string(approvedAgentLeaseScope) {
+		t.Fatalf("native terminal handoff scope = %q, want %q", runtimeClient.startRequest.CapabilityScope, approvedAgentLeaseScope)
+	}
 	if runtimeClient.startRequest.Cwd != root {
 		t.Fatalf("native terminal cwd must stay inside resolved workspace: got %q want %q", runtimeClient.startRequest.Cwd, root)
 	}

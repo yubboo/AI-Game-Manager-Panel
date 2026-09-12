@@ -84,3 +84,7 @@ node scripts/common/check-github-safety.mjs
 根运行数据兼容规则必须使用 `/logs/`、`/instances/` 这类根目录锚点；禁止使用会误伤 `internal/ops/logs/` 或 `frontend/src/features/instances/` 的全局 `logs/` / `instances/` 规则。
 
 `AGMP-GitHub.bat` 必须保持 ASCII + CRLF + 无 BOM；中文菜单由 `push-agmp.ps1`（UTF-8 BOM + CRLF）输出。
+
+## Headless Web 生成资产边界
+
+`cmd/aigame-manager-web/web/assets/` 是 `frontend/dist` 经 `scripts/common/sync-web-assets.mjs` 生成的 content-hash 构建资产，不是源码。仓库通过 `.gitignore` 阻止它们重新进入 Git；已有旧 hash 允许在一键推送时被清理。删除白名单必须严格限制在这个 assets 目录，`web/index.html` 与其余 `cmd/` 文件仍属于关键源码保护范围。

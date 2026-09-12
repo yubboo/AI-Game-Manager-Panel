@@ -272,6 +272,8 @@ pub struct TerminalStartRequest {
     pub session_id: Option<String>,
     #[serde(default)]
     pub capability_lease_id: String,
+    #[serde(default)]
+    pub capability_scope: String,
     pub executable: String,
     #[serde(default)]
     pub arguments: Vec<String>,

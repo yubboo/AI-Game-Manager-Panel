@@ -1,5 +1,12 @@
-# AI Game Manager Panel Scripts 0.2.21
+# AI Game Manager Panel Scripts 0.2.22
 
+
+## 0.2.22 Capability Scope / Web Asset Safety
+
+- `check-xiaoyu-lease.mjs` / `check-xiaoyu-terminal.mjs` 现在要求 typed `process.exec:workspace-cwd` scope 从 Host 一直传到 Rust，并冻结未知 scope 的 fail-closed 回归。
+- `check-github-safety.mjs` 要求 `.gitignore` 忽略 `cmd/aigame-manager-web/web/assets/`。
+- `check-windows-helper.mjs` 检查 `push-agmp.ps1` 只允许该生成目录的旧 hash 被删除；其余 `cmd/` 源码保护不得放宽。
+- `push-agmp.ps1` 仍必须 UTF-8 BOM + CRLF，`AGMP-GitHub.bat` 仍保持 ASCII + CRLF。
 
 ## 0.2.21 Capability Lease Gate
 

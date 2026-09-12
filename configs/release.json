@@ -6,7 +6,7 @@
     "webBinary": "build/work/windows-wails/bin/AI-Game-Manager-Web.exe",
     "portableArchive": "AI-Game-Manager-Panel-Windows-x64-Portable.zip",
     "portableDir": "build/release/windows/wails/portable",
-    "setupFilename": "AI-Game-Manager-Panel-0.2.21-Windows-x64-Setup.exe",
+    "setupFilename": "AI-Game-Manager-Panel-0.2.22-Windows-x64-Setup.exe",
     "installerDir": "build/release/windows/wails/installer",
     "workDir": "build/work/windows-wails",
     "distribution": "official-wails-inno",
@@ -19,7 +19,7 @@
     "agentBinary": "build/work/windows-wails/bin/AI-Game-Manager-XiaoYu.exe",
     "agentRuntime": "rust/xiaoyu.v1",
     "userDistribution": {
-      "primaryArtifact": "AI-Game-Manager-Panel-0.2.21-Windows-x64-Setup.exe",
+      "primaryArtifact": "AI-Game-Manager-Panel-0.2.22-Windows-x64-Setup.exe",
       "precompiledAgentIncluded": true,
       "runtimeCompilation": false,
       "requiresRust": false,

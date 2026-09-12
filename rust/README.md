@@ -1,6 +1,13 @@
 # AGMP XiaoYu Rust Runtime
 
 
+## 0.2.22 Capability Scope
+
+- 0.2.21 的 Lease + Linux PTY + Windows ConPTY 全绿基线保持不变。
+- `terminal/start` 新增 `capabilityScope`；Rust 当前只接受 `process.exec:workspace-cwd`，未知 scope 在 spawn 前拒绝。
+- 该 scope 表示 process execution 与 workspace-resolved cwd，不代表 filesystem/network 隔离已经实现。
+- Rust 不签发权限；scope 仍由 Go Host 在身份/RBAC/审批之后决定并随 lease handoff。
+
 ## 0.2.21 Capability Lease
 
 - 0.2.20 的 Approved Agent → Native Terminal / Linux PTY / Windows ConPTY 稳定基线保持不变。
@@ -28,16 +35,16 @@ rust/crates/xiaoyu-protocol   # xiaoyu.v1 协议
 - Tool Search / Capability Discovery（0.2.9）；
 - Long-running Job Runtime（start/status/list/output/cancel，0.2.10）；
 - bounded output / cancellation / Runtime Root cwd boundary；
+- Linux PTY / Windows ConPTY Native Terminal；
+- single-use Capability Lease + typed `process.exec:workspace-cwd` scope；
 - JSON-RPC stdio Runtime。
 
 后续 Rust-first 能力：
 
 - Agent Loop / Goal State；
 - Context / Thread；
-- PTY；
-- Generic Shell / File / Process；
-- Apply Patch；
-- Sandbox / Capability Lease；
+- Generic File / Process capability refinement；
+- filesystem capability scope + Apply Patch；
 - Reflection / Experience；
 - Subagent。
 

@@ -201,6 +201,19 @@ function Test-StagedDeletionSafety {
         )
         if ($isLegacyHistory) { continue }
 
+        # cmd/aigame-manager-web/web/assets is generated from frontend/dist by
+        # scripts/common/sync-web-assets.mjs. Content-hashed JS/CSS files under
+        # this directory are build artifacts, not hand-maintained source. Allow
+        # tracked legacy hashes to be removed only while the real frontend source
+        # and the deterministic sync script are both present. web/index.html and
+        # every other cmd/ file remain protected as critical source.
+        $isGeneratedWebAsset = (
+            $file -match '^cmd/aigame-manager-web/web/assets/' -and
+            (Test-Path -LiteralPath (Join-Path $ProjectRoot 'frontend\src') -PathType Container) -and
+            (Test-Path -LiteralPath (Join-Path $ProjectRoot 'scripts\common\sync-web-assets.mjs') -PathType Leaf)
+        )
+        if ($isGeneratedWebAsset) { continue }
+
         $nonHistoryDeleted.Add($file)
         if ($file -match '^(?:scripts/|rust/|\.github/|internal/xiaoyu/|frontend/src/|cmd/)') {
             $criticalDeleted.Add($file)

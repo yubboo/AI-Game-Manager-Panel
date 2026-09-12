@@ -1,6 +1,13 @@
 # XiaoYu Agent Runtime
 
 
+## 0.2.22 Capability Scope
+
+- 0.2.21 Capability Lease / Native Terminal 已经 GitHub Actions 全绿，继续作为稳定执行基线。
+- Host Lease Scope 从 free-form string 收紧为 typed registry，首个 scope 为 `process.exec:workspace-cwd`。
+- Go→Rust `terminal/start` 同时发送 `capabilityLeaseId` 与 `capabilityScope`；Go bridge / Rust Runtime 双层拒绝未知 scope。
+- `workspace-cwd` 只证明 cwd containment，不声称限制 child 的 filesystem/network 访问；后续 filesystem scope 必须有真实路径操作 enforcement。
+
 ## 0.2.21 Sandbox / Capability Lease
 
 - 0.2.20 的 Approved Agent → Native Terminal / Linux PTY / Windows ConPTY 稳定基线保持不变。

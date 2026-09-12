@@ -25,6 +25,15 @@ AI Game Manager Panel（AI游戏管理器面板）定位为：**现代化、智�
 **语言归属先读规则：** 新增或迁移代码前必须阅读 `docs/architecture/LANGUAGE-OWNERSHIP.md`。Agent 通用能力默认 Rust-first；游戏/产品 Domain 默认 Go；UI 默认 Vue/TypeScript。
 
 
+### 0.2.22 Capability Scope / Web Asset 硬规则
+
+- Capability Lease `scope` 禁止继续使用任意自由字符串；当前模型执行只允许已注册的 `process.exec:workspace-cwd`。
+- `process.exec:workspace-cwd` 只授权一次已批准 process execution，并要求 cwd 经过 AGMP workspace resolver；不得把它解释为 filesystem/network/container 隔离。
+- Go Host、Go→Rust bridge、Rust Native Terminal 都必须对 `capabilityScope` fail-closed；`capabilityLeaseId`、`HostAuthorized=true` 任何一个都不能单独替代 scope。
+- `cmd/aigame-manager-web/web/assets/` 是 `frontend/dist` 经 `scripts/common/sync-web-assets.mjs` 生成的 hash 资产，必须被 `.gitignore` 忽略。
+- 一键推送删除白名单只能精确放行 `cmd/aigame-manager-web/web/assets/`；`web/index.html`、`cmd/aigame-manager-web/main.go` 与其他 `cmd/` 源码继续严格保护。
+- 禁止为了“通过推送”把旧 hash 构建资产复制回源码包，也禁止放宽整个 `cmd/` 的删除保护。
+
 ### 0.2.21 Capability Lease 硬规则
 
 - server-owned XiaoYu `shell.exec` 进入 Native Terminal 前必须持有 Host 签发的短时 Capability Lease。

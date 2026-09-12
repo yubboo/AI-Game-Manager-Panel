@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.21**  
+当前版本：**0.2.22**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 当前状态：[`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)  
 架构边界：[`docs/PROJECT-ARCHITECTURE.md`](docs/PROJECT-ARCHITECTURE.md) / [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)
@@ -47,6 +47,16 @@ build/
 
 
 
+
+## 0.2.22 Capability Scope / Web Asset Safety
+
+0.2.21 已在真实 GitHub Actions 上四条主 Job 全绿，Capability Lease、Linux PTY、Windows ConPTY、Go tests/vet、Rust tests 与 Headless Web 全部通过。0.2.22 在这条稳定基线上继续收紧执行权限表达，并正式修复 Headless Web content-hash 生成资产对一键推送删除保护的误报。
+
+Capability Lease 的 `scope` 不再接受任意自由字符串：当前唯一允许的模型执行 Scope 是 `process.exec:workspace-cwd`。它表示“一次已批准的进程执行，并且启动 cwd 必须由 AGMP workspace resolver 收口”，不表示 spawned shell 已被限制为只能读写 workspace，也不表示网络已经隔离。Go Host、Go→Rust bridge 与 Rust Native Terminal 都会对该 Scope 做 fail-closed 校验；缺失、未知或漂移的 Scope 都不能进入 process spawn。
+
+`cmd/aigame-manager-web/web/assets/` 被正式定义为 `frontend/dist` 经 `scripts/common/sync-web-assets.mjs` 生成的 content-hash 构建资产。Git 不再长期跟踪这些 hash 文件；一键推送只允许这个精确目录中的旧 hash 删除通过，`web/index.html`、`cmd/aigame-manager-web/main.go` 与其他 `cmd/` 源码仍继续受关键删除保护。
+
+本版仍不宣称完整 filesystem/network/container Sandbox。下一阶段将在不放宽现有 Approval/RBAC/Lease 的前提下继续做真正可验证的 filesystem capability scope，再进入 Apply Patch / generic filesystem mutation。
 
 ## 0.2.21 Sandbox / Capability Lease
 

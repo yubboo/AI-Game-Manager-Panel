@@ -5,6 +5,18 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.22：Capability Scope / Web Asset Safety
+
+- 以 0.2.21 GitHub Actions 四条主 Job 全绿作为 Capability Lease 冻结基线；
+- Capability Lease `scope` 从任意字符串收紧为已注册的 typed scope；当前仅允许 `process.exec:workspace-cwd`；
+- Go Host 租约 Store、Go→Rust bridge、Rust Native Terminal 三层都必须拒绝缺失/未知/漂移 Scope；
+- `process.exec:workspace-cwd` 只表示进程执行类别 + cwd 必须经过 workspace resolver，不得虚报为 child filesystem/network 隔离；
+- `cmd/aigame-manager-web/web/assets/` 正式定义为生成物并加入 `.gitignore`；已有旧 content-hash 资产允许被一键推送清理；
+- 删除白名单只允许精确 `web/assets/`，`web/index.html` 与其他 `cmd/` 源码继续严格保护；
+- 更新 GitHub Safety、Windows Helper、Capability Lease 与 Terminal Gates，并增加 Go/Rust scope fail-closed 回归。
+
+**冻结条件：** Go tests/vet、Capability Lease Gate、Terminal Gate、Linux PTY、Windows ConPTY integration/workspace tests、Windows Helper、Linux Headless 全绿；Web hash 生成资产不再进入 Git，且任何源码删除保护不得被整体放宽。
+
 ## 0.2.21：Sandbox / Capability Lease
 
 - 以 0.2.20 GitHub 四条 Job 全绿作为 Approved Agent → Native Terminal 冻结基线；

@@ -1,6 +1,18 @@
 # AI-Game-Manager-Panel 项目历史
 
 
+## AI-Game-Manager-Panel 0.2.22
+
+### Capability Scope / Web Asset Safety
+
+- 0.2.21 commit `9349d845338e45889998ee3ebd5031c71673f050` 在 GitHub Actions 四条主 Job 全绿，Capability Lease 与双平台 Native Terminal 正式冻结。
+- Capability Lease scope 改为 typed `CapabilityScope`，当前仅注册 `process.exec:workspace-cwd`；未知 scope 在 Host 签发阶段直接 fail-closed。
+- Go→Rust `terminal/start` 新增 `capabilityScope`，Go bridge 与 Rust Terminal 在 spawn 前都要求精确 `process.exec:workspace-cwd`。
+- Scope 名称明确只承诺“进程执行 + workspace-resolved cwd”，不虚报 filesystem/network/container 隔离。
+- 修复一键推送对 Headless Web content-hash 资产删除的误报：`web/assets/` 纳入 `.gitignore`，删除保护只对白名单目录放行。
+- `web/index.html` 与其余 `cmd/` 源码继续受关键删除保护；GitHub Safety 与 Windows Helper Gate 固化该边界。
+- **下一阶段**：真正的 filesystem capability scope，然后进入 Apply Patch / generic filesystem mutation。
+
 ## AI-Game-Manager-Panel 0.2.21
 
 ### Sandbox / Capability Lease
