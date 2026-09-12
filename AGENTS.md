@@ -377,6 +377,13 @@ All contributors and AI agents must follow `docs/NAMING-CONVENTIONS.md` before c
 - Windows 源码同步禁止直接显示 Robocopy OEM 报表；中文路径诊断必须使用 Unicode 日志或 PowerShell 自身输出。
 - 新增/修改 Worker 必须通过 `check-xiaoyu-worker.mjs`，并继续通过 Rust fmt/check/test、Go test/vet 与 Agent Bench。
 
+### 0.2.15 Native Terminal CI Convergence 硬规则
+
+- `cargo fmt`、`cargo check`、Linux PTY integration、Windows ConPTY integration、workspace tests 都是独立证据；不得用“前序失败所以后续没跑”当作功能已验证。
+- Rust check/integration/test 在 GitHub Actions 中必须使用未取消继续执行策略，使一次 CI 尽量暴露所有真实错误；任何一步失败仍应让 Job 最终失败。
+- 本机有 Cargo 时，一键推送必须执行 rustfmt preflight；本机无 Cargo 时必须明确提示由 CI 验证，禁止写成“Rust 已通过”。
+- 双平台 Native Terminal 没有实际 integration 全绿前，不进入 Sandbox/Capability Lease 或模型可见 Terminal wiring 的下一阶段。
+
 ### 0.2.14 Windows ConPTY / Cross-platform Native Terminal 硬规则
 
 - Windows Native Terminal 必须落在 Rust XiaoYu Runtime，不得回流成 Go Agent Runtime。

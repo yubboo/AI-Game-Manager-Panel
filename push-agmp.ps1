@@ -393,6 +393,19 @@ function Test-RepositorySafety([ValidateSet('tracked','staged','candidate')] [st
         }
     }
 
+    $cargoCommand = Get-Command cargo -ErrorAction SilentlyContinue
+    if ($cargoCommand) {
+        Write-Step 'Rust 格式预检（cargo fmt --check）'
+        & cargo fmt --manifest-path (Join-Path $ProjectRoot 'rust\Cargo.toml') --all -- --check
+        if ($LASTEXITCODE -ne 0) {
+            $failures.Add('Rust cargo fmt --check 未通过。请先运行 cargo fmt --manifest-path rust/Cargo.toml --all。')
+        } else {
+            Write-Ok 'Rust 格式预检通过。'
+        }
+    } else {
+        Write-Warn2 '本机未找到 Cargo，跳过 Rust rustfmt 预检；GitHub Actions 将执行权威 cargo fmt/check/test。'
+    }
+
     $uniqueFailures = @($failures | Select-Object -Unique)
     if ($uniqueFailures.Count -gt 0) {
         Write-Host ''

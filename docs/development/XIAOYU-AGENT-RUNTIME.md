@@ -146,6 +146,12 @@ The benchmark entry point is `go test ./internal/xiaoyu/host -run '^TestAgentBen
 
 这一步仍不等于把模型可见 `shell.exec` 直接切到 Rust。下一阶段只迁移**已经通过 Host Approval**的长任务，并保留 Domain Tool 优先和执行后验证。
 
+## 0.2.15 Native Terminal CI Convergence
+
+0.2.15 的目标是让 Native Terminal 的证据链完整跑完，而不是新增执行权限。0.2.14 已证明静态 Gate、Go Host 与 Headless 路径未回退，但两个 Rust Job 都在 rustfmt 前停止，因此 ConPTY/PTy integration 仍没有平台级通过证据。
+
+Actions 现在即使 rustfmt 失败，也会在未取消时继续 `cargo check`、Linux/Windows integration 和 workspace tests。这样下一次 CI 可以一次性确认“格式正确、能编译、真实 TTY/ConPTY 工作、Rust tests 通过”四层证据。
+
 ## 0.2.14 Windows ConPTY / Cross-platform Native Terminal
 
 Rust Terminal Runtime 在 Windows 增加 `windows-conpty-v1` backend：ConPTY 创建、进程绑定、输入输出、退出检测和 resize 都留在 Rust native execution 层。Linux 继续使用 `linux-pty-v1`。上层 Go Bridge 与 JSON-RPC 方法不分叉。

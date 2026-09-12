@@ -6,7 +6,7 @@
       "category": "智能核心",
       "route": "/",
       "status": "partial",
-      "phase": "0.2.14 · Windows ConPTY + Cross-Platform Native Terminal",
+      "phase": "0.2.15 · Native Terminal CI Convergence",
       "features": [
         "小鱼自然语言主入口",
         "XiaoYu Agent Runtime（Rust-first）",
@@ -14,7 +14,7 @@
         "Tool Registry / Capability Discovery",
         "Rust Session Registry / Long-running Jobs",
         "Job Status / Cancel / Bounded Output",
-        "Rust Terminal / Linux Native PTY / Bounded Output",
+        "Rust Terminal / Linux Native PTY / Windows ConPTY / Bounded Output",
         "Agent Loop：Plan / Act / Observe / Validate / Recover",
         "Step / Tool / Failure Budget 与 Doom-loop 防护",
         "请求批准 / 帮我批准 / 完全访问权限",
@@ -43,6 +43,7 @@
         "rpc:terminal/*",
         "rpc:terminal/resize",
         "rust:xiaoyu-core/pty_linux",
+        "rust:xiaoyu-core/pty_windows",
         "doc:LANGUAGE-OWNERSHIP"
       ]
     },
@@ -196,7 +197,7 @@
         "进程状态 / PID / 时间 / 退出码快照",
         "环境变量继承 + Overlay",
         "受限 Run / Shell / 超时取消 / 输出上限",
-        "Windows ConPTY 交互传输（下一阶段；Linux PTY 已落地）",
+        "Windows ConPTY 交互传输（已实现；待 Windows Runner integration 全绿）",
         "跨 AGMP 重启会话重连（后续扩展）"
       ],
       "sourceRefs": [

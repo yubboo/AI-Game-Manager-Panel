@@ -1,4 +1,4 @@
-# AI Game Manager Panel 0.2.14 总架构
+# AI Game Manager Panel 0.2.15 总架构
 
 > AGMP 是唯一产品。用户与 XiaoYu 是“两个大脑、同一副身体”：用户拥有最终授权与接管权；XiaoYu 负责理解、规划、执行编排、验证、恢复与总结。0.2.9 起语言职责正式冻结为 **Rust-first Agent Runtime / Go Domain Host / Vue UI**。
 
@@ -318,6 +318,12 @@ Go AGMP Host
 ```
 
 0.2.11 后 Go 不再为每个 XiaoYu RPC 启动一次 Rust 进程。长期 Worker 保持 stateful Runtime，同时在超时/断管时被回收。模型可见 `shell.exec` 仍未直接迁移；下一步只迁移已审批的长任务。
+
+## 0.2.15 Native Terminal CI Convergence
+
+0.2.15 不改变 `terminal/*` contract 或权限模型，只修复验证链。0.2.14 的两个 Rust Job 都被 rustfmt 前序失败截断，导致真正的 `cargo check` 与 Linux/Windows native terminal integration 没有执行；本版要求这些步骤只要 workflow 未被取消就继续运行。
+
+这是一条架构质量规则：**格式、编译、平台 integration 是彼此独立的证据**。任一失败都必须让 Job 最终失败，但不得让较早的非功能失败隐藏后面的功能失败。Native Terminal 能力只有在 Linux PTY 与 Windows ConPTY integration 都通过后才可作为稳定执行原语进入 Agent wiring。
 
 ## 0.2.14 Windows ConPTY / Cross-platform Native Terminal
 

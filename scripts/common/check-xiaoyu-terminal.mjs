@@ -140,6 +140,8 @@ try {
   if (!workflow.includes('cargo test --manifest-path rust/Cargo.toml -p xiaoyu-core --locked linux_terminal_')) failures.push('GitHub Actions 必须执行 Linux Native PTY integration tests')
   if (!workflow.includes('Windows Rust Runtime + ConPTY')) failures.push('GitHub Actions 必须提供独立 Windows Rust Runtime + ConPTY Job')
   if (!workflow.includes('cargo test --manifest-path rust/Cargo.toml -p xiaoyu-core --locked windows_terminal_')) failures.push('GitHub Actions 必须执行 Windows ConPTY integration tests')
+  const continueAfterFormat = (workflow.match(/if: \$\{\{ !cancelled\(\) \}\}/g) || []).length
+  if (continueAfterFormat < 6) failures.push('Rust fmt 失败后仍必须继续执行 Linux/Windows check、PTY integration 与 workspace tests，避免串行隐藏真实编译问题')
 } catch (error) {
   failures.push(`XiaoYu Terminal/PTY Gate 检查失败：${error instanceof Error ? error.message : String(error)}`)
 }

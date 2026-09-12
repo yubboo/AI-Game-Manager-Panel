@@ -1,4 +1,4 @@
-# AI Game Manager Panel Scripts 0.2.14
+# AI Game Manager Panel Scripts 0.2.15
 
 Windows 开发助手自 0.1.64 起固定为：**一个 ASCII-safe BAT 启动器 + PowerShell Task Runner**。
 
@@ -108,6 +108,12 @@ GitHub Safety Job 单独执行 `go test ./internal/xiaoyu/host -run '^TestAgentB
 ## 0.2.10 Session / Job Runtime Gate
 
 `check-xiaoyu-jobs.mjs` validates the Rust Session Registry and Long-running Job contracts: Host authorization, Runtime Root cwd containment, bounded output, cancellation and JSON-RPC methods. It is part of GitHub Actions, Windows project checks and the GitHub push helper.
+
+## 0.2.15 Rust CI convergence / local rustfmt preflight
+
+`AGMP-GitHub.bat` 的安全检查现在会检测本机 `cargo`：存在时直接执行 `cargo fmt --manifest-path rust/Cargo.toml --all -- --check`，尽量在 Push 前拦住 rustfmt 差异；不存在时只输出明确警告，完整 Rust fmt/check/test 仍由 GitHub Actions 权威执行。
+
+GitHub 的 Rust compile/integration/test 步骤使用 `if: !cancelled()`，因此即使 rustfmt 已经失败，仍会继续暴露 Linux PTY / Windows ConPTY 的真实编译和 integration 结果。
 
 ## 0.2.14 Cross-platform Native Terminal Gate
 

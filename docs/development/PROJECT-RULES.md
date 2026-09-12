@@ -147,6 +147,13 @@ AI 的主要职责始终围绕 AGMP：理解用户的开服/运维意图，自�
 - Host identity/RBAC/approval 仍是最终授权来源，Rust `hostAuthorized` 只是内部防线。
 - 应用关闭必须显式关闭 Worker；开发模式缺少 Rust binary 时允许降级并给出可诊断状态，不得导致整个 AGMP 无法启动。
 
+## 0.2.15 Native Terminal CI Convergence Rule
+
+- Rust `cargo fmt`、`cargo check`、platform PTY/ConPTY integration 与 workspace tests 都是独立发布证据；前一项失败不得默认隐藏后一项。
+- GitHub Actions 的 Rust check/integration/test 步骤必须在 workflow 未取消时继续执行，并让 Job 最终聚合为失败。
+- 本地一键推送若检测到 Cargo，必须先执行 `cargo fmt --check`；没有 Cargo 时不得伪装已验证，必须明确由 GitHub Runner 权威确认。
+- Linux PTY 与 Windows ConPTY integration 未全绿前，不允许把 `windows-conpty-v1` / cross-platform native terminal 标记为稳定完成，也不进入模型可见 Terminal wiring。
+
 ## 0.2.14 Cross-platform Native Terminal Rule
 
 - Windows Native Terminal 必须使用 Rust ConPTY backend，并复用同一 `terminal/*` contract；禁止为 Windows 复制 Agent Loop 或业务逻辑。

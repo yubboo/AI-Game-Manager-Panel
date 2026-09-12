@@ -1,5 +1,22 @@
 # AI-Game-Manager-Panel 项目历史
 
+## AI-Game-Manager-Panel 0.2.15
+
+### Native Terminal CI Convergence
+
+- 0.2.14 已成功推送；Windows Helper 与 Linux Headless 全绿，Go tests/vet、Agent Bench、Terminal/PTY structure gate 全绿。
+- Safety 与 `Windows Rust Runtime + ConPTY` 均在 `cargo fmt --check` 停止；GitHub Runner 精确指出 `pty_windows.rs` 两处 rustfmt 差异，后续 Rust check/PTy integration/tests 因前序失败被跳过，并非自身失败。
+- 0.2.15 按 Runner 输出修正 import 顺序和长 `assert_eq!` 布局。
+- CI 中 Rust check、Linux PTY integration、Windows ConPTY integration、workspace tests 改为在 `!cancelled()` 时继续执行，避免格式失败隐藏真正编译/平台问题。
+- `check-xiaoyu-terminal.mjs` 固定上述 CI 收敛规则；`AGMP-GitHub` 在检测到本机 Cargo 时执行 `cargo fmt --check`，无 Cargo 时明确交给 GitHub Runner。
+- 本版不新增 Agent 权限或模型可见执行能力；Native Terminal 仍必须在双平台 integration 全绿后才能进入下一阶段。
+
+### 冻结目标
+
+- Safety：rustfmt、cargo check、Linux PTY integration、workspace tests 全绿；
+- Windows Rust Runtime + ConPTY：rustfmt、cargo check、ConPTY integration、workspace tests 全绿；
+- Windows Helper 与 Linux Headless 不回退。
+
 ## AI-Game-Manager-Panel 0.2.14
 
 ### Windows ConPTY / Cross-platform Native Terminal

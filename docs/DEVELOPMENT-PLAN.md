@@ -5,6 +5,21 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.15：Native Terminal CI Convergence
+
+- 按 0.2.14 GitHub Runner 精确输出修复 `pty_windows.rs` 两处 rustfmt 差异；
+- 不继续叠加 Sandbox/Capability Lease，先让 Linux PTY 与 Windows ConPTY 真正跑到 integration test；
+- Rust format 即使失败，未取消的 `cargo check` / platform integration / workspace tests 仍继续执行，避免一次只暴露一个问题；
+- Terminal/PTY Gate 必须验证 Linux/Windows integration 命令和“格式失败后继续验证”策略都存在；
+- `AGMP-GitHub` 检测到 Cargo 时执行本机 `cargo fmt --check`，缺少 Cargo 时只警告并由 CI 权威验证；
+- 只有双平台 Native Terminal CI 全绿，下一阶段才允许把 Approved Agent Terminal wiring 接入模型执行链。
+
+**冻结条件：** Safety、Windows Rust Runtime + ConPTY、Windows Helper、Linux Headless 四个主要 Job 全绿；Rust fmt/check/test、Linux PTY integration、Windows ConPTY integration 全部实际执行并通过。
+
+### 下一步
+
+全绿后进入 Approved Agent Terminal wiring + Sandbox/Capability Lease 基础；仍保持 Go Host 决定授权、Rust Runtime 执行原语。
+
 ## 0.2.14：Windows ConPTY / Cross-platform Native Terminal
 
 - 修正 0.2.13 GitHub Runner 剩余的一处 Rust import-order `cargo fmt --check` 差异；

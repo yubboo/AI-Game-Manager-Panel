@@ -199,6 +199,13 @@ Rust 作为 XiaoYu 内部 Runtime 随完整 AGMP 一起发行。未来只有当 
 - Go：监督 Rust Worker 生命周期并继续提供 Product/Domain authority。
 - 下一步：只把已通过 Host Approval 的长任务切到 Rust Jobs，然后再引入 PTY。
 
+### 0.2.15 验证收敛
+
+- 语言归属不变：Native Terminal 仍属于 Rust XiaoYu Runtime，Go Host 仍负责授权和 Domain authority。
+- 本版不把新 Agent 通用能力塞回 Go，也不新增 Rust Domain 业务。
+- 双平台 Native Terminal 必须先通过真实 Linux PTY / Windows ConPTY integration，再继续 Agent wiring / Sandbox；静态结构 Gate 不能替代平台运行证据。
+- Rust CI 必须继续后续 check/integration/tests，即使 rustfmt 已经让 Job 标记失败，以减少验证迭代盲区。
+
 ### 0.2.14 增量迁移
 
 - Linux Native PTY 继续归 Rust XiaoYu Runtime。

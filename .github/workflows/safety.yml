@@ -157,12 +157,15 @@ jobs:
         run: cargo fmt --manifest-path rust/Cargo.toml --all -- --check
 
       - name: Rust Agent check
+        if: ${{ !cancelled() }}
         run: cargo check --manifest-path rust/Cargo.toml --workspace --locked
 
       - name: XiaoYu Linux native PTY integration
+        if: ${{ !cancelled() }}
         run: cargo test --manifest-path rust/Cargo.toml -p xiaoyu-core --locked linux_terminal_ -- --nocapture
 
       - name: Rust Agent tests
+        if: ${{ !cancelled() }}
         run: cargo test --manifest-path rust/Cargo.toml --workspace --locked
 
 
@@ -303,12 +306,15 @@ jobs:
         run: cargo fmt --manifest-path rust/Cargo.toml --all -- --check
 
       - name: Rust Agent check on Windows
+        if: ${{ !cancelled() }}
         run: cargo check --manifest-path rust/Cargo.toml --workspace --locked
 
       - name: XiaoYu Windows ConPTY integration
+        if: ${{ !cancelled() }}
         run: cargo test --manifest-path rust/Cargo.toml -p xiaoyu-core --locked windows_terminal_ -- --nocapture
 
       - name: Rust Agent tests on Windows
+        if: ${{ !cancelled() }}
         run: cargo test --manifest-path rust/Cargo.toml --workspace --locked
 
 

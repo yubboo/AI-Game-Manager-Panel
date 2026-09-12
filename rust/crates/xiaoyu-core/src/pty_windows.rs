@@ -15,7 +15,7 @@ use windows_sys::Win32::System::Pipes::CreatePipe;
 use windows_sys::Win32::System::Threading::{
     CREATE_UNICODE_ENVIRONMENT, CreateProcessW, DeleteProcThreadAttributeList,
     EXTENDED_STARTUPINFO_PRESENT, GetExitCodeProcess, InitializeProcThreadAttributeList,
-    LPPROC_THREAD_ATTRIBUTE_LIST, PROCESS_INFORMATION, PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
+    LPPROC_THREAD_ATTRIBUTE_LIST, PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, PROCESS_INFORMATION,
     STARTUPINFOEXW, TerminateProcess, UpdateProcThreadAttribute,
 };
 
@@ -303,6 +303,9 @@ mod tests {
         assert_eq!(quote_windows_argument("two words"), "\"two words\"");
         assert_eq!(quote_windows_argument(""), "\"\"");
         assert_eq!(quote_windows_argument("a\\\"b"), "\"a\\\\\\\"b\"");
-        assert_eq!(quote_windows_argument("C:\\path with space\\"), "\"C:\\path with space\\\\\"");
+        assert_eq!(
+            quote_windows_argument("C:\\path with space\\"),
+            "\"C:\\path with space\\\\\""
+        );
     }
 }
