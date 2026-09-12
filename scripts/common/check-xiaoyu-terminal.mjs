@@ -75,6 +75,8 @@ try {
   ]) {
     if (!windowsPty.includes(token)) failures.push(`Windows ConPTY backend 缺少 ${token}`)
   }
+  if (!windowsPty.includes('PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE as usize')) failures.push('Windows ConPTY ABI 必须把 PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE 转为 UpdateProcThreadAttribute 所需的 usize')
+  if (!windowsPty.includes('let mut pseudo_console: HPCON = 0;')) failures.push('Windows ConPTY ABI 必须按 windows-sys 0.61.2 的 isize HPCON 使用 0 初始化')
 
   const protocol = read('rust/crates/xiaoyu-protocol/src/lib.rs')
   for (const token of [
@@ -152,4 +154,4 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY · resize · per-input Host authorization)')
+console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY ABI · resize · per-input Host authorization)')

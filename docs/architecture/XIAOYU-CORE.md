@@ -174,6 +174,10 @@ XiaoYu Rust Runtime 是内部组件，不等于桌面壳。
 
 Go Host 现在长期监督一个 `xiaoyu rpc` 进程，Rust Session/Job 状态因此可以跨多次 RPC 保持。Worker 是 XiaoYu Runtime 的内部基础设施，不是新的用户产品或独立权限层。Host 仍负责身份、RBAC、审批、审计与 Domain Tool；Rust 负责 Agent Runtime state/native primitives。Worker 重启意味着易失 Session/Job state 丢失，Host 必须重新观察真实系统状态。
 
+## 14. 0.2.16 Windows ConPTY ABI 收敛边界
+
+0.2.15 已证明 Linux PTY 与 Rust workspace 在 Linux Runner 全绿；Windows Runner 的真实编译把剩余问题缩小到 `windows-sys 0.61.2` 的两个类型契约。0.2.16 固定 `PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE as usize` 与 `HPCON = 0`，并把它们加入 Terminal Gate。此阶段不改变 Terminal RPC、审批或能力范围。
+
 ## 13. 0.2.15 Native Terminal CI 收敛边界
 
 Native Terminal 的完成态必须同时具备：Rust 格式、平台编译、真实 PTY/ConPTY integration、workspace tests。CI 不允许因为 rustfmt 失败就跳过后续编译/集成测试，否则会形成串行盲区。

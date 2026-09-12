@@ -70,7 +70,7 @@ impl AttributeList {
             UpdateProcThreadAttribute(
                 ptr,
                 0,
-                PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
+                PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE as usize,
                 pseudo_console as *const c_void,
                 size_of::<HPCON>(),
                 null_mut(),
@@ -160,7 +160,7 @@ pub fn spawn(
     let (output_read, pty_output_write) =
         create_pipe().context("cannot create ConPTY output pipe")?;
 
-    let mut pseudo_console: HPCON = null_mut();
+    let mut pseudo_console: HPCON = 0;
     let result = unsafe {
         CreatePseudoConsole(
             size,

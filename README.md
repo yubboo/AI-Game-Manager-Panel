@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.15**  
+当前版本：**0.2.16**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 当前状态：[`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)  
 架构边界：[`docs/PROJECT-ARCHITECTURE.md`](docs/PROJECT-ARCHITECTURE.md) / [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)
@@ -47,6 +47,12 @@ build/
 
 
 
+
+## 0.2.16 Windows ConPTY ABI Convergence
+
+0.2.15 已经让 Safety、Linux Native PTY integration、Rust workspace tests、Windows Helper 与 Linux Headless 全绿；Windows Runner 也终于越过 rustfmt，真实编译到 `pty_windows.rs`，并暴露 `windows-sys 0.61.2` 的两个具体 ABI 类型差异。0.2.16 不扩展权限，只修正这些真实平台问题：`PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE` 显式转为 `usize`，`HPCON` 按 `isize` 以 `0` 初始化。
+
+Terminal/PTY Gate 同步冻结这两个 ABI 契约；`AGMP-GitHub` 在本机存在 Cargo 时从只做 rustfmt 升级为同时执行 `cargo check --workspace --locked`，尽量在 Push 前就抓住 Windows Rust 编译问题。是否宣布 Windows ConPTY 稳定完成，仍只以 Windows GitHub Runner 的 `cargo check + windows_terminal_ integration + workspace tests` 全绿为准。
 
 ## 0.2.15 Native Terminal CI Convergence
 

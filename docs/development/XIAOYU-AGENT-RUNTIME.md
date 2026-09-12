@@ -146,6 +146,10 @@ The benchmark entry point is `go test ./internal/xiaoyu/host -run '^TestAgentBen
 
 这一步仍不等于把模型可见 `shell.exec` 直接切到 Rust。下一阶段只迁移**已经通过 Host Approval**的长任务，并保留 Domain Tool 优先和执行后验证。
 
+## 0.2.16 Windows ConPTY ABI Convergence
+
+0.2.15 的完整 Safety 证明 Linux PTY、Rust check/tests 已站稳；Windows 独立 Runner 首次真实编译 ConPTY 后，剩余阻塞是 `windows-sys 0.61.2` ABI 类型不匹配。0.2.16 只修复 `PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE -> usize` 与 `HPCON -> isize/0` 两个边界，并把本地 Push preflight 升级为 Cargo workspace check。模型可见 `shell.exec` 与 Go Host 审批链不变。
+
 ## 0.2.15 Native Terminal CI Convergence
 
 0.2.15 的目标是让 Native Terminal 的证据链完整跑完，而不是新增执行权限。0.2.14 已证明静态 Gate、Go Host 与 Headless 路径未回退，但两个 Rust Job 都在 rustfmt 前停止，因此 ConPTY/PTy integration 仍没有平台级通过证据。

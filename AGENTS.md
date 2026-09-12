@@ -377,6 +377,14 @@ All contributors and AI agents must follow `docs/NAMING-CONVENTIONS.md` before c
 - Windows 源码同步禁止直接显示 Robocopy OEM 报表；中文路径诊断必须使用 Unicode 日志或 PowerShell 自身输出。
 - 新增/修改 Worker 必须通过 `check-xiaoyu-worker.mjs`，并继续通过 Rust fmt/check/test、Go test/vet 与 Agent Bench。
 
+### 0.2.16 Windows ConPTY ABI 硬规则
+
+- `windows-sys 0.61.2` 的生成签名是 Rust 侧唯一事实源；Windows FFI 类型不得按 C 头文件印象猜测。
+- `UpdateProcThreadAttribute` 的 pseudo-console attribute 必须传 `usize`。
+- `HPCON` 当前按 `isize` 处理，空值为 `0`。
+- Windows ConPTY 未通过 Windows Runner 的 check/integration/tests 前，不得宣称跨平台 Native Terminal 已完全冻结。
+- 本机有 Cargo 时，一键推送前必须运行 Rust fmt + workspace check；没有 Cargo 才交给 CI。
+
 ### 0.2.15 Native Terminal CI Convergence 硬规则
 
 - `cargo fmt`、`cargo check`、Linux PTY integration、Windows ConPTY integration、workspace tests 都是独立证据；不得用“前序失败所以后续没跑”当作功能已验证。

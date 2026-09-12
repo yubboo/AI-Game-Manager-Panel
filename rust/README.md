@@ -53,6 +53,10 @@ Rust Native Runtime 不等于无限权限。`jobs/start` 只是 Host 授权后�
 
 AGMP Go Host now keeps one supervised `xiaoyu rpc` process alive. Tool Search, Brain policy, Session Registry and Long-running Jobs share this process lifetime. The Worker remains an embedded AGMP component; Host RBAC/approval stays authoritative.
 
+## 0.2.16 Windows ConPTY ABI Convergence
+
+0.2.15 proved Linux PTY end-to-end and reached real Windows compilation. The Windows runner reported two `windows-sys 0.61.2` type mismatches: `UpdateProcThreadAttribute` requires a `usize` attribute while the generated pseudo-console constant is `u32`, and `HPCON` is an `isize` alias rather than a raw pointer. 0.2.16 fixes exactly those ABI contracts and adds static guards for them. No new Terminal privilege is introduced.
+
 ## 0.2.15 Native Terminal CI Convergence
 
 0.2.15 intentionally adds no new Terminal permissions. It applies the exact rustfmt fixes reported by the 0.2.14 runners and changes CI so `cargo check`, Linux/Windows native terminal integration, and workspace tests still run when formatting has already failed, unless the workflow is cancelled.

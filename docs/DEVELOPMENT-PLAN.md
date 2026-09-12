@@ -5,6 +5,21 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.16：Windows ConPTY ABI Convergence
+
+- 以 0.2.15 Windows Runner 的真实 `E0308` 编译错误为唯一修复目标，不继续叠加 Agent 权限；
+- `UpdateProcThreadAttribute` 的 attribute 参数固定使用 `PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE as usize`；
+- `HPCON` 按 `windows-sys 0.61.2` 的 `isize` ABI 使用 `0` 初始化；
+- Terminal/PTY Gate 必须检查上述两个 ABI 契约，防止未来依赖/重构恢复错误类型；
+- `AGMP-GitHub` 本机存在 Cargo 时必须在 Push 前执行 rustfmt + workspace cargo check；
+- Linux PTY 已由 0.2.15 CI 实机证明，禁止为修 Windows 而回退 Linux native terminal。
+
+**冻结条件：** Safety、Windows Rust Runtime + ConPTY、Windows Helper、Linux Headless 四个主要 Job 全绿；Windows `cargo check`、`windows_terminal_` integration、workspace tests 全部实际执行并通过。
+
+### 下一步
+
+ConPTY 全绿后才进入 Approved Agent → Native Terminal wiring 与 Sandbox / Capability Lease。
+
 ## 0.2.15：Native Terminal CI Convergence
 
 - 按 0.2.14 GitHub Runner 精确输出修复 `pty_windows.rs` 两处 rustfmt 差异；

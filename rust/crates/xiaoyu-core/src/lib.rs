@@ -26,8 +26,8 @@ pub const RUNTIME_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// XiaoYu's Rust core is the AGMP Agent Runtime boundary. It owns provider-neutral
 /// agent semantics and is the Rust-first home for capability discovery, sessions,
 /// jobs, PTY, sandbox and generic native execution. Go remains the source of
-/// truth for game/product domain services. The 0.2.15 convergence keeps the same
-/// Terminal protocol while providing native Linux PTY and Windows ConPTY backends
+/// truth for game/product domain services. The 0.2.16 convergence keeps the same
+/// Terminal protocol while fixing the Windows ConPTY ABI boundary for windows-sys 0.61.2
 /// with Host-authorized input/resize. Other platforms keep an explicit stdio
 /// fallback. Existing Go execution paths stay compatible
 /// until equivalent Rust paths are covered by protocol and Agent Bench tests.
@@ -162,8 +162,8 @@ impl Runtime {
     }
 
     /// Starts a long-lived interactive terminal process. Linux uses a native
-    /// PTY and Windows uses ConPTY; 0.2.15 requires both platform integrations to be
-    /// green before the capability is frozen. Other platforms keep an explicit stdio fallback. Every start and every input frame
+    /// PTY and Windows uses ConPTY; 0.2.16 requires the Windows Runner to compile
+    /// and execute the ConPTY integration before the capability is frozen. Other platforms keep an explicit stdio fallback. Every start and every input frame
     /// must already be authorized by the Go Host.
     pub fn start_terminal(&self, request: TerminalStartRequest) -> Result<TerminalSnapshot> {
         let session = request

@@ -147,6 +147,14 @@ AI 的主要职责始终围绕 AGMP：理解用户的开服/运维意图，自�
 - Host identity/RBAC/approval 仍是最终授权来源，Rust `hostAuthorized` 只是内部防线。
 - 应用关闭必须显式关闭 Worker；开发模式缺少 Rust binary 时允许降级并给出可诊断状态，不得导致整个 AGMP 无法启动。
 
+## 0.2.16 Windows ConPTY ABI Rule
+
+- Windows ConPTY 的 Rust FFI 必须以当前锁定 `windows-sys` 签名为准，不允许凭 C/C++ 旧 typedef 直觉猜 Rust 生成类型。
+- `UpdateProcThreadAttribute` attribute 参数必须是 `usize`；`PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE` 需要显式转换。
+- `HPCON` 当前为 `isize`，空值使用 `0`，不得使用 `null_mut()`。
+- 本机存在 Cargo 时，Push 前必须执行 `cargo fmt --check` 与 `cargo check --workspace --locked`。
+- Linux PTY 已通过真实 CI，修 Windows 不得回退 Linux backend 或授权边界。
+
 ## 0.2.15 Native Terminal CI Convergence Rule
 
 - Rust `cargo fmt`、`cargo check`、platform PTY/ConPTY integration 与 workspace tests 都是独立发布证据；前一项失败不得默认隐藏后一项。

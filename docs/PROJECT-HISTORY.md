@@ -1,5 +1,22 @@
 # AI-Game-Manager-Panel 项目历史
 
+## AI-Game-Manager-Panel 0.2.16
+
+### Windows ConPTY ABI Convergence
+
+- 0.2.15 Safety 首次完整通过 Rust fmt/check/tests 与 Linux Native PTY integration，Linux PTY 因此获得真实 Runner 证据。
+- 独立 Windows Rust Runner 也首次越过 rustfmt，真实编译 `pty_windows.rs`，暴露两个 `windows-sys 0.61.2` ABI 类型错误，而不是测试逻辑失败。
+- `PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE` 显式转换为 `usize`，匹配 `UpdateProcThreadAttribute` 第三个参数。
+- `HPCON` 使用 `0` 初始化，匹配当前 `windows-sys` 的 `isize` 类型别名。
+- Terminal/PTY Gate 增加上述 ABI 静态约束；Push helper 在本机有 Cargo 时执行 workspace `cargo check --locked`。
+- 本版不增加新的模型执行权限；Windows ConPTY 必须通过 Windows Runner 的编译、integration 与 workspace tests 后才可冻结为稳定能力。
+
+### 冻结目标
+
+- `Windows Rust Runtime + ConPTY` 全绿；
+- `windows_terminal_` 测试真实运行并通过；
+- 已全绿的 Safety、Linux Native PTY、Windows Helper、Linux Headless 不回退。
+
 ## AI-Game-Manager-Panel 0.2.15
 
 ### Native Terminal CI Convergence

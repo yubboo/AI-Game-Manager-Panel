@@ -115,6 +115,8 @@ function Assert-ProjectIntegrity {
         'rust/crates/xiaoyu-core/src/session.rs',
         'rust/crates/xiaoyu-core/src/jobs.rs',
         'rust/crates/xiaoyu-core/src/terminal.rs',
+        'rust/crates/xiaoyu-core/src/pty_linux.rs',
+        'rust/crates/xiaoyu-core/src/pty_windows.rs',
         'rust/crates/xiaoyu-protocol/Cargo.toml',
         'scripts/common/check-github-safety.mjs',
         'scripts/common/check-language-ownership.mjs',
@@ -402,8 +404,16 @@ function Test-RepositorySafety([ValidateSet('tracked','staged','candidate')] [st
         } else {
             Write-Ok 'Rust 格式预检通过。'
         }
+
+        Write-Step 'Rust 编译预检（cargo check --workspace --locked）'
+        & cargo check --manifest-path (Join-Path $ProjectRoot 'rust\Cargo.toml') --workspace --locked
+        if ($LASTEXITCODE -ne 0) {
+            $failures.Add('Rust cargo check --workspace --locked 未通过。请先修复 Rust 编译错误。')
+        } else {
+            Write-Ok 'Rust 编译预检通过。'
+        }
     } else {
-        Write-Warn2 '本机未找到 Cargo，跳过 Rust rustfmt 预检；GitHub Actions 将执行权威 cargo fmt/check/test。'
+        Write-Warn2 '本机未找到 Cargo，跳过 Rust fmt/check 预检；GitHub Actions 将执行权威 cargo fmt/check/test。'
     }
 
     $uniqueFailures = @($failures | Select-Object -Unique)

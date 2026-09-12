@@ -4,19 +4,20 @@
 
 ## Current version
 
-**0.2.15 — Native Terminal CI Convergence**
+**0.2.16 — Windows ConPTY ABI Convergence**
 
 ## Stable baseline
 
-0.2.11 remains the latest fully green cross-job baseline. 0.2.14 has already proved that Windows Helper, Linux Headless, Go test/vet, Agent Bench and all static Terminal/PTY gates still pass. Its Safety and Windows Rust jobs both stopped at `cargo fmt --check` in `pty_windows.rs`, so Linux PTY and Windows ConPTY integration were skipped rather than failed.
+0.2.15 proved the Linux side end-to-end: Safety is fully green, including `cargo fmt`, `cargo check`, Rust workspace tests and the real Linux native PTY integration test. Windows Helper and Linux Headless are also green. The only remaining red lane is `Windows Rust Runtime + ConPTY`, where the Windows Runner reached real Rust compilation and exposed two `windows-sys 0.61.2` ABI type mismatches in `pty_windows.rs`.
 
-## 0.2.15 changes
+## 0.2.16 changes
 
-- Apply the exact two `pty_windows.rs` rustfmt changes reported by the 0.2.14 GitHub Runner.
-- Keep Rust compile/integration/test steps running with `if: !cancelled()` even when format fails, so one CI run exposes all platform failures instead of hiding them behind rustfmt.
-- Require the Terminal/PTY gate to preserve this CI convergence behavior for both Linux and Windows.
-- Run local `cargo fmt --check` during `AGMP-GitHub` safety checks whenever Cargo exists; otherwise print an explicit CI-authoritative warning.
-- Do not add Sandbox/Capability Lease or model-visible Native Terminal wiring until Linux PTY and Windows ConPTY integration actually pass.
+- Cast `PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE` from its generated `u32` constant type to the `usize` required by `UpdateProcThreadAttribute`.
+- Initialize `HPCON` with integer zero because `windows-sys 0.61.2` defines the alias as `isize`, not a raw pointer.
+- Extend the Terminal/PTY source gate so these two Windows ABI contracts cannot silently regress.
+- Add `pty_linux.rs` / `pty_windows.rs` to the local push helper's required source set.
+- When Cargo exists locally, `AGMP-GitHub` now runs both `cargo fmt --check` and `cargo check --workspace --locked` before commit/push.
+- Do not add new Agent permissions in this release; first require the Windows Runner to compile and execute the ConPTY integration test.
 
 ## Current migration boundary
 
@@ -27,11 +28,11 @@ Still in Go for compatibility:
 - current model-visible `shell.exec`;
 - AGMP Domain Tool registry and game/product services.
 
-Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs, Persistent RPC Worker and Terminal Runtime. Linux PTY and Windows ConPTY are implemented behind one Terminal contract, but cross-platform Native Terminal is not frozen as stable until both platform integration lanes are green.
+Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs, Persistent RPC Worker and Terminal Runtime. Linux native PTY is now CI-proven. Windows ConPTY is implemented and statically gated, but is not frozen as stable until the Windows Rust lane passes `cargo check`, `windows_terminal_` integration and workspace tests.
 
 ## Next runtime milestones
 
-1. First obtain green Rust fmt/check/tests + Linux PTY integration + Windows ConPTY integration.
+1. Obtain a fully green `Windows Rust Runtime + ConPTY` lane.
 2. Wire approved interactive Agent actions to the native Terminal Runtime.
 3. Sandbox / capability leases / filesystem scope.
 4. Apply Patch / generic filesystem mutation.
@@ -40,7 +41,7 @@ Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running J
 
 ## Verification status
 
-Local packaging runs Node gates and Go compatibility checks where available. `AGMP-GitHub` additionally runs rustfmt when Cargo is installed. GitHub Actions remains authoritative for Rust `fmt/check/test`, Go 1.25/Wails, locked pnpm builds, Linux native PTY integration, Windows ConPTY integration and Linux headless integration.
+Local packaging runs project Node gates and Go compatibility checks where available. If Cargo is installed on the Windows development machine, `AGMP-GitHub` additionally runs Rust fmt + workspace check before push. GitHub Actions remains authoritative for Linux PTY and Windows ConPTY platform integration.
 
 ## AI reading order
 
