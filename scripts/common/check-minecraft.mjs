@@ -54,6 +54,9 @@ try {
   for (const source of ['mojang','papermc','fabric']) if (!mc?.factSources?.includes(source)) failures.push(`Minecraft Game Pack 缺少事实源：${source}`)
 } catch (error) { failures.push(error instanceof Error ? error.message : String(error)) }
 
+const mcWorkspace = read('frontend/src/games/minecraft/MinecraftWorkspace.vue')
+if (!mcWorkspace.includes("(request.version ?? '').trim()")) failures.push('Minecraft Web 部署表单必须安全收敛可选 version 后再 trim，避免 vue-tsc strict-null 构建失败')
+
 if (failures.length) {
   console.error('AGMP Minecraft Vertical Slice Gate FAIL')
   failures.forEach(item => console.error(` - ${item}`))

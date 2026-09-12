@@ -1,6 +1,15 @@
 # AI-Game-Manager-Panel 项目历史
 
 
+## AI-Game-Manager-Panel 0.3.1
+
+### Minecraft Web Build Hotfix
+
+- 修复 `MinecraftWorkspace.vue` 在 TypeScript strict 模式下对可选 `request.version` 直接调用 `trim()` 导致的 Web 构建失败。
+- 版本输入现在先收敛空值再 trim：`(request.version ?? '').trim()`；“留空 = Mojang 最新稳定版”的产品语义不变。
+- `check-minecraft.mjs` 增加对应静态回归，防止再次恢复不安全的可选值访问。
+- 不改变 0.3.0 Minecraft Vertical Slice 的部署/Runtime/Capability 边界；本版仅为 CI Web build hotfix。
+
 ## AI-Game-Manager-Panel 0.3.0
 
 ### Minecraft Vertical Slice

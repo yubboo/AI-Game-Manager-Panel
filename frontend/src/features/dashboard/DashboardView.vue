@@ -28,7 +28,7 @@ const app = useAppStore()
         <div class="agmp-orb"><span></span><AppIcon name="fire" /></div>
         <strong>{{ app.backendReady ? '核心已经点燃' : '正在等待核心' }}</strong>
         <p>{{ app.info?.platform ?? '本机节点' }}</p>
-        <div class="hero-status__line"><span>版本</span><b>v{{ app.info?.version ?? '0.3.0' }}</b></div>
+        <div class="hero-status__line"><span>版本</span><b>v{{ app.info?.version ?? '0.3.1' }}</b></div>
         <div class="hero-status__line"><span>入口</span><b>{{ app.backendMode === 'desktop' ? (app.backendAdapter === 'electron' ? 'Electron Desktop' : 'Wails Desktop') : 'Web Browser' }}</b></div>
       </div>
     </div>

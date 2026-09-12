@@ -4,7 +4,7 @@
 
 ## Current version
 
-**0.3.0 — Minecraft Vertical Slice**
+**0.3.1 — Minecraft Web Build Hotfix**
 
 ## Stable baseline
 

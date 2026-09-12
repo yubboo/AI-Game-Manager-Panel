@@ -17,7 +17,7 @@ const canDeploy = computed(() => !!plan.value && request.eulaAccepted && !deploy
 
 function normalize() {
   request.name = request.name.trim() || 'Minecraft Server'
-  request.version = request.version.trim()
+  request.version = (request.version ?? '').trim()
   request.memoryMb = Math.min(131072, Math.max(512, Number(request.memoryMb) || 4096))
   request.port = Math.min(65535, Math.max(1, Number(request.port) || 25565))
 }
