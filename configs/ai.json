@@ -1,59 +1,27 @@
 {
-  "enabled": false,
-  "primaryInteraction": "agent",
-  "stream": true,
-  "approvalMode": "risk",
-  "allowManualFallback": true,
-  "maxConcurrentRuns": 1,
-  "toolTimeoutSeconds": 120,
-  "conversationHistoryLimit": 50,
-  "storeConversationHistory": true,
-  "secretStorage": "system-credential-store",
-  "runtime": {
-    "enabled": true,
-    "engine": "rust",
-    "protocol": "xiaoyu.v1",
-    "transport": "json-rpc-stdio",
-    "binary": "AI-Game-Manager-XiaoYu",
-    "manualFallback": true,
-    "integration": "internal-xiaoyu-core",
-    "userFacingProduct": false,
-    "ownership": "rust-agent-runtime",
-    "domainHost": "go",
-    "ui": "vue-typescript",
-    "migration": "incremental",
-    "features": [
-      "tool-search-v1",
-      "session-registry-v1",
-      "long-running-jobs-v1",
-      "bounded-job-output"
-    ]
-  },
-  "agentLoop": {
-    "planner": "provider-plugin",
-    "streaming": false,
-    "maxSteps": 64,
-    "maxToolCalls": 48,
-    "maxFailures": 8,
-    "repeatLimit": 3,
-    "verifyAfterAction": true
-  },
-  "productModel": "embedded-xiaoyu-intelligence-core",
-  "manualControlRole": "human-primary-controller",
+  "enabled": true,
   "displayName": "小鱼",
   "codeName": "XiaoYu",
-  "role": "AGMP Intelligence Core / 项目智能伙伴",
-  "harness": {
-    "kernel": "xiaoyu.host.v1",
-    "everythingAsPlugin": true,
-    "traceMode": "append-only",
-    "deepseekHarness": {
-      "enabled": true,
-      "mode": "tool-bridge-v1",
-      "autoMount": false,
-      "nodeExecutable": "node"
-    }
+  "brain": "configured-vendor-model",
+  "modelPolicy": "preserve-provider-native-intelligence",
+  "agentPlatform": "typescript",
+  "nativeRuntime": "rust",
+  "agentLoop": "model -> tool -> approval/capability -> execution -> observation -> same model",
+  "skills": "decision-guides-not-workflows",
+  "memory": "context-augmentation-not-replacement-brain",
+  "approvalMode": "ask",
+  "stream": true,
+  "sessionPersistence": "jsonl",
+  "runtime": {
+    "protocol": "agmp.native.v1",
+    "transport": "json-rpc-stdio",
+    "workspaceIsolation": true,
+    "managedRuntimeIsolation": true,
+    "capabilityLease": "short-lived-single-use-exact-payload"
   },
-  "brainConfiguration": "settings-model-center",
-  "assistantRelationship": "two-brains-one-body-ai-assists-human"
+  "minecraft": {
+    "facts": "live-tools",
+    "readiness": "Done-marker + Minecraft-status-ping",
+    "gameInstance": "persistent-shared-state"
+  }
 }

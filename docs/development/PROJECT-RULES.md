@@ -8,3 +8,11 @@
 6. Side effects use Approval + Rust Capability. No direct Node filesystem/process bypass for Agent actions.
 7. GitHub Actions is the cross-platform source of truth when local Cargo/Windows is unavailable.
 8. Every handoff package includes sync helper, GitHub helper and SHA-256 and follows the fixed `H:\一键部署` workflow.
+
+## Version / handoff naming
+
+- An unpushed, unfrozen version keeps the same version number while fixes are made. Rebuild and replace `agmp-X.Y.Z.zip`; do not invent a suffix.
+- Once `X.Y.Z` is pushed/frozen, any corrective source change becomes the next patch version.
+- The only source handoff artifact names are `agmp-X.Y.Z.zip` and `agmp-X.Y.Z.sha256.txt`.
+- Forbidden handoff suffixes include `hotfix`, `final`, `fixed`, `new`, `v2`, timestamps, and date tags.
+- The SHA-256 companion must be regenerated every time the package bytes change.

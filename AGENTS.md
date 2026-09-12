@@ -26,3 +26,9 @@ Before calling a version complete, inspect the latest GitHub commit and Actions 
 
 ## Fixed handoff workflow
 Development package -> user extracts to `H:\一键部署\agmp-<version>` -> `AGMP-Sync.bat` -> destination `H:\一键部署\AI-Game-Manager-Panel` -> `AGMP-GitHub.bat` -> `1. 一键推送`. Packages must include SHA-256. Sync scripts must be Unicode-safe and must never corrupt the existing UI or user runtime data.
+
+### Version and package naming
+- Before a version is pushed and frozen, corrections stay on the same semantic version and **replace that handoff package**.
+- After a version is pushed/frozen, a source correction increments the patch version (for example `0.4.0` -> `0.4.1`).
+- Handoff artifacts are exactly `agmp-<version>.zip` and `agmp-<version>.sha256.txt`.
+- Never create handoff names containing `hotfix`, `final`, `fixed`, `new`, `v2`, date suffixes, or similar ad-hoc labels.

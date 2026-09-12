@@ -9,3 +9,11 @@ for(const m of ['remaining','fingerprint','capability run mismatch','capability 
 if(!skill.includes('vendor model selected by the user')||!skill.includes('remains the brain'))throw new Error('Skill must preserve vendor-model intelligence rule')
 if(mc.includes('deployMinecraft(')||agent.includes('deployMinecraft('))throw new Error('Hard-coded deployMinecraft pipeline is forbidden; decisions belong to configured model')
 console.log('AGMP Architecture Gate PASS (TS Agent Loop · vendor model brain · Rust Native · Agent-first Minecraft)')
+
+const releaseMeta=fs.readFileSync('configs/release.json','utf8'), aiMeta=fs.readFileSync('configs/ai.json','utf8'), moduleMeta=fs.readFileSync('configs/modules.json','utf8')
+for(const [name,text] of [['release',releaseMeta],['ai',aiMeta],['modules',moduleMeta]]){
+  for(const retired of ['sharedGoCore','windowsWails','rust/xiaoyu.v1','internal/xiaoyu','two-brains-one-body','0.2.17']){
+    if(text.includes(retired))throw new Error(`${name} config still contains retired architecture marker: ${retired}`)
+  }
+}
+if(!releaseMeta.includes('agmp-0.4.0.zip')||!releaseMeta.includes('forbiddenSuffixes'))throw new Error('release metadata must lock canonical handoff naming')
