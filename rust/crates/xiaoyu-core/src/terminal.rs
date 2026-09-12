@@ -282,6 +282,9 @@ impl TerminalManager {
         if !request.host_authorized {
             bail!("terminal start requires Host authorization");
         }
+        if request.capability_lease_id.trim().is_empty() {
+            bail!("terminal start requires a short-lived capability lease");
+        }
         let executable = request.executable.trim();
         if executable.is_empty() {
             bail!("terminal executable is required");
@@ -664,6 +667,7 @@ mod tests {
         let (executable, arguments) = ("sh".to_string(), Vec::new());
         TerminalStartRequest {
             session_id: None,
+            capability_lease_id: "LEASE-test".to_string(),
             executable,
             arguments,
             cwd: Some(root.to_string_lossy().into_owned()),
@@ -680,6 +684,15 @@ mod tests {
         let manager = TerminalManager::new(root.clone());
         let mut request = shell_request(&root);
         request.host_authorized = false;
+        assert!(manager.start(request, None).is_err());
+    }
+
+    #[test]
+    fn terminal_start_requires_capability_lease() {
+        let root = std::env::current_dir().unwrap();
+        let manager = TerminalManager::new(root.clone());
+        let mut request = shell_request(&root);
+        request.capability_lease_id.clear();
         assert!(manager.start(request, None).is_err());
     }
 
@@ -865,6 +878,7 @@ mod tests {
             .start(
                 TerminalStartRequest {
                     session_id: None,
+                    capability_lease_id: "LEASE-windows-integration".to_string(),
                     executable: "cmd.exe".to_string(),
                     arguments: vec!["/Q".to_string()],
                     cwd: None,

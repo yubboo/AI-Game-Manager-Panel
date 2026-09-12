@@ -1,5 +1,13 @@
 # XiaoYu Agent Runtime
 
+
+## 0.2.21 Sandbox / Capability Lease
+
+- 0.2.20 的 Approved Agent → Native Terminal / Linux PTY / Windows ConPTY 稳定基线保持不变。
+- 0.2.21 在 Go Host 审批边界之后签发内存态、短时、精确指纹、Run/principal 绑定的单次 Capability Lease。
+- Native Terminal 启动前必须消费租约；Go→Rust `terminal/start` 必须携带 `capabilityLeaseId`，Rust 继续 fail-closed。
+- Capability Lease 不持久化原始命令或秘密；本阶段不宣称已经实现完整 OS namespace/container Sandbox。
+
 ## 0.2.10 Session / Long-running Job foundation
 
 Rust now owns the first stateful native runtime primitives after Tool Search:
@@ -11,7 +19,7 @@ Rust now owns the first stateful native runtime primitives after Tool Search:
 - Runtime Root working-directory containment;
 - explicit `hostAuthorized` requirement before native process start.
 
-These APIs are intentionally **not model-visible authority**. XiaoYu `shell.exec` still passes through the Go Host RBAC/approval boundary; from 0.2.20, only the server-owned Run execution step crosses into the Rust Native Terminal after that authorization. Stateful Session/Job/Terminal data lives in the long-lived `xiaoyu rpc` worker; manual/compat shell execution remains separate during migration.
+These APIs are intentionally **not model-visible authority**. XiaoYu `shell.exec` still passes through the Go Host RBAC/approval boundary; from 0.2.21, only the server-owned Run execution step crosses into the Rust Native Terminal after that authorization. Stateful Session/Job/Terminal data lives in the long-lived `xiaoyu rpc` worker; manual/compat shell execution remains separate during migration.
 
 
 ## 0.2.9 Rust-first runtime ownership

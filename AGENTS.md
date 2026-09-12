@@ -24,6 +24,16 @@ AI Game Manager Panel（AI游戏管理器面板）定位为：**现代化、智�
 
 **语言归属先读规则：** 新增或迁移代码前必须阅读 `docs/architecture/LANGUAGE-OWNERSHIP.md`。Agent 通用能力默认 Rust-first；游戏/产品 Domain 默认 Go；UI 默认 Vue/TypeScript。
 
+
+### 0.2.21 Capability Lease 硬规则
+
+- server-owned XiaoYu `shell.exec` 进入 Native Terminal 前必须持有 Host 签发的短时 Capability Lease。
+- 租约必须在 identity / RBAC / sensitive step-up / Approval 之后签发，并绑定 scope、Tool、RunID、组织/用户 principal 与精确请求指纹。
+- Native Terminal 租约默认 30 秒、单次消费；过期、重放、参数变化、跨 Run、跨 principal 必须 fail-closed。
+- 租约只保存在内存，Host 重启自动撤销；禁止把原始命令、Token、密码、API Key 写入租约状态。
+- Go→Rust `terminal/start` 必须携带 `capabilityLeaseId`；`HostAuthorized=true` 不能替代租约。
+- 不得以“Sandbox”名义虚报尚未实现的 OS namespace/container 隔离。
+
 ## 1.0 GitHub 基线与固定开发版交付流程
 
 这是所有人工开发者与 AI 开发代理的强制工作流，不需要用户重复提醒。

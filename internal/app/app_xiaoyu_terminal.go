@@ -9,10 +9,14 @@ import (
 	"time"
 
 	platformruntime "github.com/yubboo/AI-Game-Manager-Panel/internal/platform/runtime"
+	xiaoyucontrol "github.com/yubboo/AI-Game-Manager-Panel/internal/xiaoyu/control"
 	xiaoyuruntime "github.com/yubboo/AI-Game-Manager-Panel/internal/xiaoyu/runtime"
 )
 
-const approvedAgentTerminalOutputLimit = 512 * 1024
+const (
+	approvedAgentTerminalOutputLimit = 512 * 1024
+	approvedAgentLeaseScope          = "native-terminal"
+)
 
 // runAuthorizedShellTool preserves the existing manual shell Tool contract,
 // while server-owned XiaoYu Runs use the Rust Native Terminal after the Host
@@ -42,6 +46,17 @@ func (a *Application) runApprovedAgentTerminal(parent context.Context, command, 
 	if !ok || strings.TrimSpace(invocation.RunID) == "" {
 		return platformruntime.RunResult{ExitCode: -1}, errors.New("Native Terminal 仅接受 server-owned XiaoYu Run 中已通过 Host 授权的动作")
 	}
+	if a.xiaoyuLeases == nil || invocation.Lease == nil {
+		return platformruntime.RunResult{ExitCode: -1}, errors.New("Native Terminal 缺少短时 Capability Lease")
+	}
+	leaseHash, err := approvedAgentLeaseHash(invocation.RunID, command, cwd)
+	if err != nil {
+		return platformruntime.RunResult{ExitCode: -1}, fmt.Errorf("生成 Native Terminal 能力租约指纹失败：%w", err)
+	}
+	principal := xiaoyuLeasePrincipal(invocation.User)
+	if err := a.xiaoyuLeases.Consume(invocation.Lease.ID, approvedAgentLeaseScope, "shell.exec", invocation.RunID, principal, leaseHash); err != nil {
+		return platformruntime.RunResult{ExitCode: -1}, fmt.Errorf("Native Terminal Capability Lease 无效：%w", err)
+	}
 	if a.workspaceFiles == nil {
 		return platformruntime.RunResult{ExitCode: -1}, errors.New("AGMP 工作区文件服务不可用")
 	}
@@ -58,13 +73,14 @@ func (a *Application) runApprovedAgentTerminal(parent context.Context, command, 
 
 	executable, arguments := approvedAgentShell(command)
 	terminal, err := a.xiaoyuRuntime.StartTerminal(ctx, xiaoyuruntime.TerminalStartRequest{
-		Executable:     executable,
-		Arguments:      arguments,
-		Cwd:            resolvedCWD,
-		MaxOutputBytes: approvedAgentTerminalOutputLimit,
-		Rows:           24,
-		Cols:           120,
-		HostAuthorized: true,
+		CapabilityLeaseID: invocation.Lease.ID,
+		Executable:        executable,
+		Arguments:         arguments,
+		Cwd:               resolvedCWD,
+		MaxOutputBytes:    approvedAgentTerminalOutputLimit,
+		Rows:              24,
+		Cols:              120,
+		HostAuthorized:    true,
 	})
 	if err != nil {
 		return platformruntime.RunResult{ExitCode: -1}, fmt.Errorf("启动 XiaoYu Native Terminal 失败：%w", err)
@@ -119,6 +135,14 @@ func (a *Application) runApprovedAgentTerminal(parent context.Context, command, 
 	result := platformruntime.RunResult{Stdout: output.String(), ExitCode: exitCode, Truncated: truncated}
 	a.observeXiaoYuRun("tool/native-terminal-completed", invocation.RunID, "shell.exec", map[string]any{"terminalId": terminal.ID, "backend": terminal.Backend, "exitCode": exitCode, "truncated": truncated})
 	return result, nil
+}
+
+func approvedAgentLeaseHash(runID, command, cwd string) (string, error) {
+	return xiaoyucontrol.Fingerprint(
+		xiaoyucontrol.KindTool,
+		"shell.exec#run:"+strings.TrimSpace(runID),
+		map[string]string{"command": strings.TrimSpace(command), "cwd": strings.TrimSpace(cwd)},
+	)
 }
 
 func approvedAgentShell(command string) (string, []string) {

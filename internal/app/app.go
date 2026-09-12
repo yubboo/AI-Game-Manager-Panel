@@ -40,7 +40,7 @@ const (
 	// Name 与 Slogan 仅作为 configs/app.json 无法读取时的安全回退。
 	// 正常运行时，产品名称与标语均从统一配置中心读取，避免散落硬编码。
 	Name    = "AI游戏管理器面板"
-	Version = "0.2.20"
+	Version = "0.2.21"
 	Slogan  = "现代化智能 AI 一键游戏服务器部署与管理平台"
 )
 
@@ -90,6 +90,7 @@ type Application struct {
 	updater            *updaterservice.Service
 	xiaoyuRuntime      xiaoyuRuntimeClient
 	xiaoyuApprovals    *xiaoyucontrol.Store
+	xiaoyuLeases       *xiaoyucontrol.CapabilityLeaseStore
 	xiaoyuTools        *xiaoyucontract.Registry
 	xiaoyuHost         *xiaoyuhost.Kernel
 	xiaoyuRuns         *xiaoyuhost.RunManager
@@ -181,6 +182,7 @@ func NewWithOptions(options Options) *Application {
 		filepath.Join(dataDir, "ai", "approval-state.json"),
 		xiaoyucontrol.Mode(strings.TrimSpace(platformConfig.AI.ApprovalMode)),
 	)
+	capabilityLeases := xiaoyucontrol.NewCapabilityLeaseStore(xiaoyucontrol.DefaultCapabilityLeaseTTL)
 	updateService := updaterservice.New(updaterservice.Options{
 		CurrentVersion: Version,
 		CacheDir:       cacheDir,
@@ -218,6 +220,7 @@ func NewWithOptions(options Options) *Application {
 		updater:            updateService,
 		xiaoyuRuntime:      xiaoyuRuntimeService,
 		xiaoyuApprovals:    agentApprovalStore,
+		xiaoyuLeases:       capabilityLeases,
 		xiaoyuTools:        xiaoyuTools,
 		xiaoyuHost:         xiaoyuHost,
 		xiaoyuRuns:         xiaoyuRuns,

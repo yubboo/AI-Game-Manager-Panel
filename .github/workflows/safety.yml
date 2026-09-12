@@ -31,6 +31,7 @@ jobs:
           test -f scripts/common/check-github-safety.mjs
           test -f scripts/common/check-project-layout.mjs
           test -f scripts/common/check-xiaoyu-harness.mjs
+          test -f scripts/common/check-xiaoyu-lease.mjs
           test -f rust/Cargo.toml
           test -f rust/Cargo.lock
           test -f rust/crates/xiaoyu-core/src/lib.rs
@@ -103,6 +104,9 @@ jobs:
 
       - name: XiaoYu Persistent Runtime Worker gate
         run: node scripts/common/check-xiaoyu-worker.mjs
+
+      - name: XiaoYu Capability Lease gate
+        run: node scripts/common/check-xiaoyu-lease.mjs
 
       - name: XiaoYu Terminal Session gate
         run: node scripts/common/check-xiaoyu-terminal.mjs
@@ -202,6 +206,7 @@ jobs:
           test -f scripts/common/check-github-safety.mjs
           test -f scripts/common/check-project-layout.mjs
           test -f scripts/common/check-xiaoyu-harness.mjs
+          test -f scripts/common/check-xiaoyu-lease.mjs
           test -f rust/Cargo.toml
           test -f rust/Cargo.lock
           test -f rust/crates/xiaoyu-core/src/lib.rs
@@ -236,6 +241,7 @@ jobs:
           node scripts/common/check-xiaoyu-agent-bench.mjs
           node scripts/common/check-xiaoyu-jobs.mjs
           node scripts/common/check-xiaoyu-worker.mjs
+          node scripts/common/check-xiaoyu-lease.mjs
           node scripts/common/check-xiaoyu-terminal.mjs
           node scripts/common/check-multi-client-ai.mjs
           node scripts/common/check-headless-xiaoyu.mjs

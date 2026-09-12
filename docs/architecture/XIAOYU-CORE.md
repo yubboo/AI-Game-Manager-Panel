@@ -1,5 +1,13 @@
 # 小鱼（XiaoYu）Agent Runtime
 
+
+## 0.2.21 Capability Lease Runtime Boundary
+
+- 0.2.20 的 Approved Agent → Native Terminal / Linux PTY / Windows ConPTY 稳定基线保持不变。
+- 0.2.21 在 Go Host 审批边界之后签发内存态、短时、精确指纹、Run/principal 绑定的单次 Capability Lease。
+- Native Terminal 启动前必须消费租约；Go→Rust `terminal/start` 必须携带 `capabilityLeaseId`，Rust 继续 fail-closed。
+- Capability Lease 不持久化原始命令或秘密；本阶段不宣称已经实现完整 OS namespace/container Sandbox。
+
 小鱼是 AI Game Manager Panel 的内置智能核心和主自动化入口。AGMP 是产品；XiaoYu 是产品的智能灵魂。二者不是两个用户产品。
 
 ## 1. 0.2.11 定位

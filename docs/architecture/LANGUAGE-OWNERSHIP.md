@@ -2,6 +2,14 @@
 
 > 本文定义 AI Game Manager Panel 的长期语言职责边界。它不是“哪门语言更高级”的比较，而是为了让人类与 AI 开发代理在新增代码时，第一时间知道代码应该放到哪里。
 
+
+## 0.2.21 Capability Lease Ownership
+
+- 0.2.20 的 Approved Agent → Native Terminal / Linux PTY / Windows ConPTY 稳定基线保持不变。
+- 0.2.21 在 Go Host 审批边界之后签发内存态、短时、精确指纹、Run/principal 绑定的单次 Capability Lease。
+- Native Terminal 启动前必须消费租约；Go→Rust `terminal/start` 必须携带 `capabilityLeaseId`，Rust 继续 fail-closed。
+- Capability Lease 不持久化原始命令或秘密；本阶段不宣称已经实现完整 OS namespace/container Sandbox。
+
 ## 1. 三层长期边界
 
 规范化职责声明（供人类、AI 与 CI 共同读取）：

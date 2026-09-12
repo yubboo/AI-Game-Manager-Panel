@@ -270,6 +270,8 @@ pub enum TerminalState {
 pub struct TerminalStartRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub session_id: Option<String>,
+    #[serde(default)]
+    pub capability_lease_id: String,
     pub executable: String,
     #[serde(default)]
     pub arguments: Vec<String>,

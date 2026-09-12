@@ -1,5 +1,18 @@
 # AI-Game-Manager-Panel 项目历史
 
+
+## AI-Game-Manager-Panel 0.2.21
+
+### Sandbox / Capability Lease
+
+- 0.2.20 GitHub Actions 四条主 Job 全绿，Approved Agent → Native Terminal 正式成为稳定基线。
+- 新增内存态 Capability Lease Store，租约不落盘，Host 重启即撤销。
+- `shell.exec` 在 Host 完成 identity/RBAC/step-up/Approval 后获得一次性短时租约。
+- 租约绑定 scope、Tool、RunID、组织/用户 principal 与不可逆参数指纹；默认 TTL 30 秒。
+- Native Terminal 启动前原子消费租约；过期、重放、跨 Run、跨 principal、参数变化均拒绝。
+- Go↔Rust `terminal/start` 新增 `capabilityLeaseId`，Rust Runtime 继续做第二层 fail-closed 检查。
+- Capability Lease 不保存原始命令和秘密；工作区 CWD、timeout、有界输出、Host authorization 继续保持。
+
 ## AI-Game-Manager-Panel 0.2.20
 
 - **新增**：server-owned XiaoYu `shell.exec` 在既有 Host 授权完成后接入 Rust Native Terminal。

@@ -195,7 +195,27 @@ func (a *Application) xiaoyuCallToolForRun(ctx context.Context, token, runID str
 			runContext = run.Context
 		}
 	}
-	ctx = withXiaoYuInvocationContext(ctx, xiaoyuInvocationContext{User: user, RunID: strings.TrimSpace(runID), RunContext: runContext})
+	invocation := xiaoyuInvocationContext{User: user, RunID: strings.TrimSpace(runID), RunContext: runContext}
+	if spec.Name == "shell.exec" && strings.TrimSpace(runID) != "" {
+		if a.xiaoyuLeases == nil {
+			return xiaoyuruntime.ToolCallResult{}, errors.New("XiaoYu Capability Lease 服务不可用")
+		}
+		principal := xiaoyuLeasePrincipal(user)
+		command, _ := request.Arguments["command"].(string)
+		cwd, _ := request.Arguments["cwd"].(string)
+		leaseHash, leaseHashErr := approvedAgentLeaseHash(runID, command, cwd)
+		if leaseHashErr != nil {
+			return xiaoyuruntime.ToolCallResult{}, fmt.Errorf("生成 Native Terminal 能力租约指纹失败：%w", leaseHashErr)
+		}
+		lease, leaseErr := a.xiaoyuLeases.Issue(approvedAgentLeaseScope, spec.Name, strings.TrimSpace(runID), principal, leaseHash, 1)
+		if leaseErr != nil {
+			return xiaoyuruntime.ToolCallResult{}, fmt.Errorf("签发 Native Terminal 能力租约失败：%w", leaseErr)
+		}
+		invocation.Lease = &lease
+		defer a.xiaoyuLeases.Revoke(lease.ID)
+		a.observeXiaoYuRun("tool/capability-lease-issued", runID, spec.Name, map[string]any{"leaseId": lease.ID, "expiresAt": lease.ExpiresAt, "maxUses": lease.MaxUses})
+	}
+	ctx = withXiaoYuInvocationContext(ctx, invocation)
 	execution, err := a.xiaoyuTools.Execute(ctx, spec.Name, request.Arguments)
 	if err != nil {
 		a.recordOperation("warn", "agent", "tool", spec.Name, "failed", err.Error(), "", "")

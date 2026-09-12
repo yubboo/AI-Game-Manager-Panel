@@ -85,6 +85,14 @@ func TestStartTerminalRejectsMissingHostAuthorizationBeforeRuntime(t *testing.T)
 	}
 }
 
+func TestStartTerminalRejectsMissingCapabilityLeaseBeforeRuntime(t *testing.T) {
+	service := New(Options{Root: t.TempDir(), BinaryOverride: filepath.Join(t.TempDir(), "missing-runtime")})
+	_, err := service.StartTerminal(nil, TerminalStartRequest{Executable: "example", HostAuthorized: true})
+	if err == nil {
+		t.Fatal("host-authorized Rust terminal without a capability lease must be rejected before contacting the runtime")
+	}
+}
+
 func TestWriteTerminalRejectsMissingHostAuthorizationBeforeRuntime(t *testing.T) {
 	service := New(Options{Root: t.TempDir(), BinaryOverride: filepath.Join(t.TempDir(), "missing-runtime")})
 	_, err := service.WriteTerminal(nil, TerminalWriteRequest{ID: "XYT-test", Data: "echo blocked", HostAuthorized: false})

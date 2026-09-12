@@ -5,6 +5,19 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.21：Sandbox / Capability Lease
+
+- 以 0.2.20 GitHub 四条 Job 全绿作为 Approved Agent → Native Terminal 冻结基线；
+- 新增 Host-owned、内存态 Capability Lease，Host 重启必须自动撤销未使用权限；
+- `shell.exec` 租约只能在 identity / RBAC / step-up / Approval 全部通过后签发；
+- 租约绑定 scope + Tool + RunID + principal + request fingerprint，默认 30 秒、单次消费；
+- 参数变化、跨 Run、跨账号、过期、重放全部 fail-closed；
+- Native Terminal 启动前必须原子消费租约，Go→Rust `terminal/start` 必须携带 `capabilityLeaseId`，Rust 侧再次检查；
+- 不把本版描述为完整 OS Sandbox；继续保留 workspace CWD、Tool timeout、512 KiB 输出上限、Terminal cleanup 等既有边界；
+- 新增 Capability Lease Gate，并把 Go/Rust 回归测试纳入 GitHub Safety。
+
+**冻结条件：** Go tests/vet、Capability Lease Gate、Terminal Gate、Linux Native PTY、Windows ConPTY integration/workspace tests、Windows Helper、Linux Headless 全绿；无权限扩大或旧 runtime 双执行回退。
+
 ## 0.2.20：Approved Agent Native Terminal Wiring
 
 - 以 0.2.19 GitHub 四条 Job 全绿作为 Native Terminal 冻结基线，不再改动 ConPTY/PTTY 协议语义；

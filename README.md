@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.20**  
+当前版本：**0.2.21**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 当前状态：[`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)  
 架构边界：[`docs/PROJECT-ARCHITECTURE.md`](docs/PROJECT-ARCHITECTURE.md) / [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)
@@ -47,6 +47,14 @@ build/
 
 
 
+
+## 0.2.21 Sandbox / Capability Lease
+
+0.2.20 已在 GitHub Actions 四条主 Job 全绿，Approved Agent → Native Terminal 接线正式冻结。0.2.21 在这条稳定链路上增加 **Host-owned Capability Lease**：server-owned XiaoYu Run 的 `shell.exec` 只有在身份、RBAC、敏感操作 step-up、审批策略与精确审批指纹全部完成后，才会获得一张短时执行租约。
+
+租约默认仅存内存、30 秒过期、一次性使用，并绑定 `scope + tool + RunID + principal + request fingerprint`；Host 重启会自动撤销全部未使用租约，参数变化、跨 Run、跨账号、过期或重放都会 fail-closed。Native Terminal 在启动前必须原子消费租约，Go→Rust `terminal/start` 还必须携带 `capabilityLeaseId`，Rust 侧再次拒绝空租约 ID。租约不保存原始命令、Token、密码或凭据。
+
+本版不把“Sandbox”虚报成完整 OS namespace/container 隔离；当前 Sandbox 边界是工作区 CWD + Tool timeout + 有界输出 + Host Approval + 一次性 Capability Lease。下一阶段再基于这条租约能力逐步增加更细的文件/网络/进程 Capability Scope。
 
 ## 0.2.20 Approved Agent Native Terminal Wiring
 

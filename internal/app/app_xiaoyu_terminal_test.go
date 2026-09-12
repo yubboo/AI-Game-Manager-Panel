@@ -8,6 +8,8 @@ import (
 	"unicode/utf8"
 
 	opsfiles "github.com/yubboo/AI-Game-Manager-Panel/internal/ops/files"
+	authservice "github.com/yubboo/AI-Game-Manager-Panel/internal/system/auth"
+	xiaoyucontrol "github.com/yubboo/AI-Game-Manager-Panel/internal/xiaoyu/control"
 	xiaoyuruntime "github.com/yubboo/AI-Game-Manager-Panel/internal/xiaoyu/runtime"
 )
 
@@ -46,15 +48,33 @@ func (f *fakeNativeTerminalRuntime) CloseTerminal(context.Context, string) (xiao
 	return xiaoyuruntime.TerminalSnapshot{ID: "XYT-test", State: "closed", Backend: "native-test"}, nil
 }
 
-func TestApprovedAgentShellUsesHostAuthorizedNativeTerminal(t *testing.T) {
+func leasedAgentContext(t *testing.T, app *Application, runID, command, cwd string) context.Context {
+	t.Helper()
+	user := authservice.User{ID: "USR-1", OrganizationID: "ORG-1", Username: "owner"}
+	hash, err := approvedAgentLeaseHash(runID, command, cwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lease, err := app.xiaoyuLeases.Issue(approvedAgentLeaseScope, "shell.exec", runID, xiaoyuLeasePrincipal(user), hash, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return withXiaoYuInvocationContext(context.Background(), xiaoyuInvocationContext{User: user, RunID: runID, Lease: &lease})
+}
+
+func TestApprovedAgentShellUsesSingleUseLeaseAndNativeTerminal(t *testing.T) {
 	root := t.TempDir()
 	files, err := opsfiles.New(root)
 	if err != nil {
 		t.Fatal(err)
 	}
 	runtimeClient := &fakeNativeTerminalRuntime{}
-	app := &Application{workspaceFiles: files, xiaoyuRuntime: runtimeClient}
-	ctx := withXiaoYuInvocationContext(context.Background(), xiaoyuInvocationContext{RunID: "RUN-1"})
+	app := &Application{
+		workspaceFiles: files,
+		xiaoyuRuntime:  runtimeClient,
+		xiaoyuLeases:   xiaoyucontrol.NewCapabilityLeaseStore(xiaoyucontrol.DefaultCapabilityLeaseTTL),
+	}
+	ctx := leasedAgentContext(t, app, "RUN-1", "echo native", "")
 
 	result, err := app.runApprovedAgentTerminal(ctx, "echo native", "")
 	if err != nil {
@@ -65,6 +85,9 @@ func TestApprovedAgentShellUsesHostAuthorizedNativeTerminal(t *testing.T) {
 	}
 	if !runtimeClient.startRequest.HostAuthorized {
 		t.Fatal("approved Agent terminal start must carry HostAuthorized=true")
+	}
+	if strings.TrimSpace(runtimeClient.startRequest.CapabilityLeaseID) == "" {
+		t.Fatal("native terminal handoff must carry a server-issued capability lease id")
 	}
 	if runtimeClient.startRequest.Cwd != root {
 		t.Fatalf("native terminal cwd must stay inside resolved workspace: got %q want %q", runtimeClient.startRequest.Cwd, root)
@@ -82,6 +105,36 @@ func TestApprovedAgentShellUsesHostAuthorizedNativeTerminal(t *testing.T) {
 	if runtime.GOOS != "windows" && runtimeClient.startRequest.Executable != "sh" {
 		t.Fatalf("Unix Agent terminal must use sh one-shot shell, got %q", runtimeClient.startRequest.Executable)
 	}
+	if _, err := app.runApprovedAgentTerminal(ctx, "echo native", ""); err == nil {
+		t.Fatal("single-use capability lease must not replay")
+	}
+}
+
+func TestApprovedAgentShellRejectsMissingOrMismatchedLease(t *testing.T) {
+	root := t.TempDir()
+	files, err := opsfiles.New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runtimeClient := &fakeNativeTerminalRuntime{}
+	app := &Application{
+		workspaceFiles: files,
+		xiaoyuRuntime:  runtimeClient,
+		xiaoyuLeases:   xiaoyucontrol.NewCapabilityLeaseStore(xiaoyucontrol.DefaultCapabilityLeaseTTL),
+	}
+	user := authservice.User{ID: "USR-1", OrganizationID: "ORG-1", Username: "owner"}
+	noLease := withXiaoYuInvocationContext(context.Background(), xiaoyuInvocationContext{User: user, RunID: "RUN-2"})
+	if _, err := app.runApprovedAgentTerminal(noLease, "echo blocked", ""); err == nil {
+		t.Fatal("server-owned Run without a lease must not enter Native Terminal")
+	}
+
+	mismatch := leasedAgentContext(t, app, "RUN-2", "echo allowed", "")
+	if _, err := app.runApprovedAgentTerminal(mismatch, "echo changed", ""); err == nil {
+		t.Fatal("lease must be bound to the exact command/cwd fingerprint")
+	}
+	if runtimeClient.started {
+		t.Fatal("native terminal must not start for a missing or mismatched lease")
+	}
 }
 
 func TestApprovedAgentShellRejectsNonRunCallerBeforeNativeRuntime(t *testing.T) {
@@ -91,7 +144,11 @@ func TestApprovedAgentShellRejectsNonRunCallerBeforeNativeRuntime(t *testing.T) 
 		t.Fatal(err)
 	}
 	runtimeClient := &fakeNativeTerminalRuntime{}
-	app := &Application{workspaceFiles: files, xiaoyuRuntime: runtimeClient}
+	app := &Application{
+		workspaceFiles: files,
+		xiaoyuRuntime:  runtimeClient,
+		xiaoyuLeases:   xiaoyucontrol.NewCapabilityLeaseStore(xiaoyucontrol.DefaultCapabilityLeaseTTL),
+	}
 
 	if _, err := app.runApprovedAgentTerminal(context.Background(), "echo blocked", ""); err == nil {
 		t.Fatal("manual/non-Run caller must not enter the Agent Native Terminal path")

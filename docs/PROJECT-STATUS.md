@@ -4,19 +4,21 @@
 
 ## Current version
 
-**0.2.20 — Approved Agent Native Terminal Wiring**
+**0.2.21 — Sandbox / Capability Lease**
 
 ## Stable baseline
 
-0.2.19 is now a fully green GitHub baseline: `safety`, `Linux Headless + Web + XiaoYu`, `Windows Helper + Encoding`, and `Windows Rust Runtime + ConPTY` all completed successfully. Windows ConPTY integration and Windows Rust workspace tests are CI-proven, so cross-platform Native Terminal is frozen as a stable internal primitive.
+0.2.20 is now a fully green GitHub baseline: `safety`, `Linux Headless + Web + XiaoYu`, `Windows Helper + Encoding`, and `Windows Rust Runtime + ConPTY` all completed successfully. Naming Gate runtime exclusions, Approved Agent → Native Terminal wiring, Linux PTY and Windows ConPTY are CI-proven.
 
-## 0.2.20 changes
+## 0.2.21 changes
 
-- Route server-owned XiaoYu `shell.exec` calls to Rust Native Terminal only after the existing Go Host identity/RBAC/step-up/approval pipeline has authorized the exact Tool call.
-- Keep workspace CWD resolution in Go, set `HostAuthorized=true` only inside the Host bridge, bound captured PTY output to 512 KiB, inherit Tool timeout, and close the terminal on every path.
-- Keep manual shell calls and the compatibility `process.run` path on the existing `platform/runtime` implementation for this migration step.
-- Fail closed when the Native Terminal path is unavailable; do not silently re-execute an approved Agent action through the legacy runtime.
-- Add Go wiring tests and extend the Terminal/PTY Gate so future changes cannot bypass the server-owned Run / Host authorization boundary.
+- Add an in-memory Host-owned Capability Lease store; outstanding leases never persist across Host restart.
+- Lease `shell.exec` only after identity, RBAC, sensitive-action step-up and approval-policy checks have authorized the concrete server-owned Run action.
+- Bind each lease to scope, Tool, RunID, organization/user principal and irreversible request fingerprint; default TTL is 30 seconds and Native Terminal leases are single-use.
+- Require exact lease consumption before `HostAuthorized=true` can reach Native Terminal. Missing, expired, mismatched, cross-Run, cross-principal or replayed leases fail closed.
+- Carry `capabilityLeaseId` over Go↔Rust `terminal/start`; Rust rejects Host-authorized starts that omit the lease marker.
+- Keep command payloads, credentials and secrets out of lease state; existing workspace CWD, timeout, bounded output and terminal cleanup remain unchanged.
+- Add Capability Lease static Gate and Go/Rust regression tests.
 
 ## Mandatory GitHub baseline workflow
 

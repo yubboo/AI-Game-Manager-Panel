@@ -18,6 +18,7 @@ try {
     'internal/app/app_xiaoyu_tools.go',
     'internal/app/app_xiaoyu_terminal.go',
     'internal/app/app_xiaoyu_terminal_test.go',
+    'internal/xiaoyu/control/capability_lease.go',
   ]) {
     if (!fs.existsSync(path.join(root, rel))) failures.push(`缺少 Rust Terminal/PTY 源码：${rel}`)
   }
@@ -43,6 +44,7 @@ try {
     'linux_terminal_is_backed_by_a_real_tty',
     'linux_terminal_resize_updates_kernel_winsize',
     'windows_terminal_conpty_accepts_io_and_resize',
+    'terminal_start_requires_capability_lease',
   ]) {
     if (!terminal.includes(token)) failures.push(`Rust Terminal/PTY 缺少 ${token}`)
   }
@@ -112,6 +114,7 @@ try {
     'TerminalResizeRequest',
     'pub rows: u16',
     'pub cols: u16',
+    'pub capability_lease_id: String',
   ]) {
     if (!protocol.includes(token)) failures.push(`xiaoyu.v1 Terminal 协议缺少 ${token}`)
   }
@@ -149,6 +152,7 @@ try {
     'func (s *Service) ResizeTerminal(',
     'func (s *Service) CloseTerminal(',
     'XiaoYu Rust Terminal 必须先经过 Host 授权',
+    'XiaoYu Rust Terminal 必须携带短时 Capability Lease',
     'XiaoYu Rust Terminal 输入必须先经过 Host 授权',
     'XiaoYu Rust Terminal 调整尺寸必须先经过 Host 授权',
   ]) {
@@ -157,6 +161,7 @@ try {
 
   const tests = read('internal/xiaoyu/runtime/service_test.go')
   if (!tests.includes('TestStartTerminalRejectsMissingHostAuthorizationBeforeRuntime')) failures.push('Go Terminal Bridge 缺少启动授权前置拒绝测试')
+  if (!tests.includes('TestStartTerminalRejectsMissingCapabilityLeaseBeforeRuntime')) failures.push('Go Terminal Bridge 缺少 Capability Lease 前置拒绝测试')
   if (!tests.includes('TestWriteTerminalRejectsMissingHostAuthorizationBeforeRuntime')) failures.push('Go Terminal Bridge 缺少输入授权前置拒绝测试')
   if (!tests.includes('TestResizeTerminalRejectsMissingHostAuthorizationBeforeRuntime')) failures.push('Go Terminal Bridge 缺少 resize 授权前置拒绝测试')
 
@@ -169,7 +174,8 @@ try {
     'runApprovedAgentTerminal(parent, command, cwd)',
     'Native Terminal 仅接受 server-owned XiaoYu Run 中已通过 Host 授权的动作',
     'StartTerminal(ctx, xiaoyuruntime.TerminalStartRequest{',
-    'HostAuthorized: true',
+    'CapabilityLeaseID: invocation.Lease.ID',
+    'HostAuthorized:    true',
     'TerminalOutput(ctx, terminal.ID',
     'GetTerminal(ctx, terminal.ID)',
     'CloseTerminal(cleanupCtx, terminal.ID)',
@@ -178,7 +184,8 @@ try {
   ]) {
     if (!appTerminal.includes(token)) failures.push(`Approved Agent → Native Terminal wiring 缺少 ${token}`)
   }
-  if (!appTerminalTests.includes('TestApprovedAgentShellUsesHostAuthorizedNativeTerminal')) failures.push('Approved Agent Native Terminal 缺少 Host-authorized wiring 测试')
+  if (!appTerminalTests.includes('TestApprovedAgentShellUsesSingleUseLeaseAndNativeTerminal')) failures.push('Approved Agent Native Terminal 缺少 Capability Lease + Host-authorized wiring 测试')
+  if (!appTerminalTests.includes('TestApprovedAgentShellRejectsMissingOrMismatchedLease')) failures.push('Approved Agent Native Terminal 缺少租约缺失/指纹不匹配 fail-closed 测试')
   if (!appTerminalTests.includes('TestApprovedAgentShellRejectsNonRunCallerBeforeNativeRuntime')) failures.push('Approved Agent Native Terminal 缺少 non-Run fail-closed 测试')
 
   const workflow = read('.github/workflows/safety.yml')
@@ -198,4 +205,4 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY · Approved Agent native wiring · Host authorization)')
+console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY · Approved Agent native wiring · Capability Lease · Host authorization)')

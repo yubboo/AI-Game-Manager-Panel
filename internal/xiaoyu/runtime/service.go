@@ -1,9 +1,9 @@
 // Package xiaoyuruntime connects AGMP to XiaoYu's Rust Agent Runtime.
 //
-// 0.2.20 keeps the Host-authorized cross-platform Terminal RPC frozen after the
-// fully green 0.2.19 Windows/Linux CI baseline. Go remains the source of truth
-// for identity/RBAC/approval and AGMP domain services; approved server-owned
-// Agent shell actions may now use this Rust Native Terminal primitive.
+// 0.2.21 keeps the runner-verified cross-platform Terminal RPC frozen and adds
+// a short-lived Capability Lease marker to model-facing terminal/start handoff.
+// Go remains the source of truth for identity/RBAC/approval and AGMP domain
+// services; Rust continues to fail closed on missing Host authorization/lease.
 package xiaoyuruntime
 
 import (
@@ -243,8 +243,8 @@ func (s *Service) Close() {
 }
 
 // SessionInfo, Job* and Terminal* structures mirror xiaoyu.v1. They are Host-internal
-// primitives in 0.2.20, including Linux PTY and Windows ConPTY/resize. Model-visible execution still enters through AGMP Tool
-// contracts and the existing RBAC/approval boundary before Native Terminal use.
+// primitives in 0.2.21, including Linux PTY and Windows ConPTY/resize. Model-visible execution enters through AGMP Tool
+// contracts, RBAC/approval and a short-lived Capability Lease before Native Terminal use.
 type SessionInfo struct {
 	ID           string `json:"id"`
 	Cwd          string `json:"cwd"`
@@ -289,14 +289,15 @@ type JobOutputResponse struct {
 }
 
 type TerminalStartRequest struct {
-	SessionID      string   `json:"sessionId,omitempty"`
-	Executable     string   `json:"executable"`
-	Arguments      []string `json:"arguments,omitempty"`
-	Cwd            string   `json:"cwd,omitempty"`
-	MaxOutputBytes int      `json:"maxOutputBytes,omitempty"`
-	Rows           uint16   `json:"rows,omitempty"`
-	Cols           uint16   `json:"cols,omitempty"`
-	HostAuthorized bool     `json:"hostAuthorized"`
+	SessionID         string   `json:"sessionId,omitempty"`
+	CapabilityLeaseID string   `json:"capabilityLeaseId"`
+	Executable        string   `json:"executable"`
+	Arguments         []string `json:"arguments,omitempty"`
+	Cwd               string   `json:"cwd,omitempty"`
+	MaxOutputBytes    int      `json:"maxOutputBytes,omitempty"`
+	Rows              uint16   `json:"rows,omitempty"`
+	Cols              uint16   `json:"cols,omitempty"`
+	HostAuthorized    bool     `json:"hostAuthorized"`
 }
 
 type TerminalWriteRequest struct {
@@ -400,6 +401,9 @@ func (s *Service) StartTerminal(ctx context.Context, request TerminalStartReques
 	var value TerminalSnapshot
 	if !request.HostAuthorized {
 		return value, errors.New("XiaoYu Rust Terminal 必须先经过 Host 授权")
+	}
+	if strings.TrimSpace(request.CapabilityLeaseID) == "" {
+		return value, errors.New("XiaoYu Rust Terminal 必须携带短时 Capability Lease")
 	}
 	err := s.runRPC(ctx, "terminal/start", request, &value)
 	return value, err
