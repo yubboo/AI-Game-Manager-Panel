@@ -38,7 +38,9 @@ $required = @(
     'frontend\package.json',
     'internal\xiaoyu\host\loop.go',
     'rust\Cargo.toml',
+    'rust\crates\xiaoyu-core\src\terminal.rs',
     'scripts\common\check-source-tree.mjs',
+    'scripts\common\check-xiaoyu-terminal.mjs',
     'scripts\common\check-duplicates.mjs',
     'scripts\windows\AIGameManagerPanel.ps1'
 )

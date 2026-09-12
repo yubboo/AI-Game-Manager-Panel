@@ -30,6 +30,7 @@ const requiredFiles = [
   'rust/crates/xiaoyu-core/src/tool_search.rs',
   'rust/crates/xiaoyu-core/src/session.rs',
   'rust/crates/xiaoyu-core/src/jobs.rs',
+  'rust/crates/xiaoyu-core/src/terminal.rs',
   'rust/crates/xiaoyu-protocol/Cargo.toml',
   'scripts/common/check-github-safety.mjs',
   'scripts/common/check-language-ownership.mjs',
@@ -41,6 +42,7 @@ const requiredFiles = [
   'scripts/common/check-xiaoyu-agent-bench.mjs',
   'scripts/common/check-xiaoyu-jobs.mjs',
   'scripts/common/check-xiaoyu-worker.mjs',
+  'scripts/common/check-xiaoyu-terminal.mjs',
   'scripts/windows/AIGameManagerPanel.ps1',
   'scripts/windows/tasks/Tasks.ps1',
   'docs/NAMING-CONVENTIONS.md',
@@ -60,7 +62,7 @@ for (const rel of requiredFiles) {
 const requiredTrees = [
   ['scripts/common', 20],
   ['scripts/windows', 8],
-  ['rust/crates', 8],
+  ['rust/crates', 9],
   ['internal/xiaoyu', 21],
   ['frontend/src', 25],
 ]

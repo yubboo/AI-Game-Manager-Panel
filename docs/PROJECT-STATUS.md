@@ -4,22 +4,21 @@
 
 ## Current version
 
-**0.2.11 — Persistent Rust Runtime Worker**
+**0.2.12 — Rust Interactive Terminal Session**
 
 ## Stable baseline
 
-0.2.8 was the first all-green GitHub Actions baseline. 0.2.9 froze language ownership and dependency locks. 0.2.10 added Rust Session/Long-running Job primitives; its Linux Headless and Windows Helper jobs pass, while Safety reaches Rust formatting and reports only rustfmt-normalization differences in the newly added Rust files. 0.2.11 contains those exact formatting corrections.
+0.2.11 is the current all-green GitHub Actions baseline: Windows Helper, Safety, Linux Headless, Go test/vet, Rust fmt/check/test, Agent Bench and Persistent Worker all pass. 0.2.12 builds only on that stable worker and does not rewrite Go Domain Services.
 
-## 0.2.11 changes
+## 0.2.12 changes
 
-- Go now supervises one long-lived `xiaoyu rpc` child instead of spawning a new Rust process for every RPC.
-- Tool Search, Brain policy, Session Registry and Job Runtime now share the same Rust process lifetime.
-- Application startup prewarms the Rust worker; shutdown closes it.
-- RPC timeout or broken stdio kills the bad worker; the next call can establish a clean worker.
-- Worker stderr is bounded to 64 KiB to avoid unbounded diagnostic memory growth.
-- Go exposes Host-internal Session/Job bridge methods while preserving Host authorization as mandatory.
-- `sync-agmp.ps1` suppresses Robocopy OEM console output and uses a Unicode diagnostic log, eliminating mojibake for Chinese paths.
-- New `check-xiaoyu-worker.mjs` protects the persistent-worker lifecycle and safety boundary.
+- Rust adds a stateful `TerminalManager` for long-lived interactive stdin/stdout sessions.
+- JSON-RPC adds `terminal/start|get|list|write|output|close`.
+- Terminal output is bounded and incrementally readable with cursors.
+- Both terminal start and every terminal input require Host authorization in Go and Rust.
+- Runtime Root/cwd restrictions reuse the existing Session boundary.
+- Terminal Snapshot reports `backend=stdio-pipe-v1`; 0.2.12 deliberately does **not** claim native PTY/ConPTY.
+- New `check-xiaoyu-terminal.mjs` protects protocol, Host authorization, bounded output and the no-fake-PTY rule.
 
 ## Current migration boundary
 
@@ -30,12 +29,12 @@ Still in Go for compatibility:
 - current model-visible `shell.exec`;
 - AGMP Domain Tool registry and game/product services.
 
-Rust now owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs and their persistent worker lifetime. The next migration step is to route **approved** long-running Agent operations through Rust Jobs, then add PTY.
+Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs, Persistent RPC Worker and Interactive Terminal Session v1. Terminal RPC remains Host-internal until Agent Bench and native PTY semantics are ready.
 
 ## Next runtime milestones
 
-1. Wire approved long-running operations to Rust Jobs.
-2. PTY / interactive terminal runtime.
+1. Native PTY backend: Windows ConPTY + Unix PTY, keeping the same Terminal protocol.
+2. Wire approved interactive Agent actions to the Terminal Runtime.
 3. Sandbox / capability leases / filesystem scope.
 4. Apply Patch / generic filesystem mutation.
 5. Reflection / experience pipeline.
@@ -43,7 +42,7 @@ Rust now owns Tool Search, Brain policy primitives, Session Registry, Long-runni
 
 ## Verification status
 
-Local packaging can run Node gates and Go compatibility checks where the toolchain permits. Full Rust `fmt/check/test`, locked pnpm builds, Go 1.25/Wails and Linux headless integration remain GitHub Actions authority.
+Local packaging runs Node gates and Go compatibility checks where available. GitHub Actions remains authoritative for Rust `fmt/check/test`, Go 1.25/Wails, locked pnpm builds and Linux headless integration.
 
 ## AI reading order
 

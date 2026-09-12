@@ -5,6 +5,22 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.12：Rust Interactive Terminal Session
+
+- 在 Persistent Rust Worker 上新增长期交互 Terminal Session；
+- 新增 `terminal/start|get|list|write|output|close` JSON-RPC；
+- stdout/stderr 使用固定上限缓冲与 cursor 增量读取；
+- Terminal start 与每次 stdin 输入都要求 Host authorization；
+- cwd 继续限制在 Runtime Root / Session scope；
+- Snapshot 必须明确 backend；本版只实现 `stdio-pipe-v1`，禁止冒充已完成 Native PTY/ConPTY；
+- 新增 Terminal Session Gate，并接入 GitHub / Windows Helper / 一键推送。
+
+**冻结条件：** 0.2.11 三 Job 全绿不回退；Rust fmt/check/test 通过；交互输入/输出/关闭测试通过；Go Host 双层授权测试通过。
+
+### 下一步
+
+0.2.13 在保持同一 Terminal protocol 的前提下实现 Windows ConPTY + Unix PTY 后端，再把已经通过 Host Approval 的交互任务逐步切入 Rust Terminal Runtime。
+
 ## 0.2.11：Persistent Rust Runtime Worker
 
 - 修正 0.2.10 GitHub Runner 报出的 Rust rustfmt 差异；

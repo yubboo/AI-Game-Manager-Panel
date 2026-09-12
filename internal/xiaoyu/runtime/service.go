@@ -1,6 +1,6 @@
 // Package xiaoyuruntime connects AGMP to XiaoYu's Rust Agent Runtime.
 //
-// 0.2.11 adds a supervised persistent Go↔Rust RPC worker on top of the stateful Session/Job primitives. Go remains the source
+// 0.2.12 adds Host-authorized interactive Terminal Session primitives on top of the supervised persistent Rust worker. Go remains the source
 // of truth for AGMP domain services, while generic Agent capabilities move to
 // Rust incrementally. Existing Go execution paths remain compatible until the
 // Rust equivalents have protocol tests and Agent Bench coverage.
@@ -242,8 +242,8 @@ func (s *Service) Close() {
 	s.stopWorkerLocked()
 }
 
-// SessionInfo and Job* structures mirror xiaoyu.v1. They are Host-internal
-// primitives in 0.2.11; model-visible execution still goes through AGMP Tool
+// SessionInfo, Job* and Terminal* structures mirror xiaoyu.v1. They are Host-internal
+// primitives in 0.2.12; model-visible execution still goes through AGMP Tool
 // contracts and the existing RBAC/approval boundary.
 type SessionInfo struct {
 	ID           string `json:"id"`
@@ -282,6 +282,44 @@ type JobOutputChunk struct {
 }
 
 type JobOutputResponse struct {
+	ID         string           `json:"id"`
+	Chunks     []JobOutputChunk `json:"chunks"`
+	NextCursor uint64           `json:"nextCursor"`
+	Truncated  bool             `json:"truncated"`
+}
+
+type TerminalStartRequest struct {
+	SessionID      string   `json:"sessionId,omitempty"`
+	Executable     string   `json:"executable"`
+	Arguments      []string `json:"arguments,omitempty"`
+	Cwd            string   `json:"cwd,omitempty"`
+	MaxOutputBytes int      `json:"maxOutputBytes,omitempty"`
+	HostAuthorized bool     `json:"hostAuthorized"`
+}
+
+type TerminalWriteRequest struct {
+	ID             string `json:"id"`
+	Data           string `json:"data"`
+	AppendNewline  bool   `json:"appendNewline"`
+	HostAuthorized bool   `json:"hostAuthorized"`
+}
+
+type TerminalSnapshot struct {
+	ID              string   `json:"id"`
+	SessionID       string   `json:"sessionId,omitempty"`
+	Executable      string   `json:"executable"`
+	Arguments       []string `json:"arguments"`
+	Cwd             string   `json:"cwd"`
+	State           string   `json:"state"`
+	PID             *int     `json:"pid,omitempty"`
+	ExitCode        *int     `json:"exitCode,omitempty"`
+	CreatedAt       uint64   `json:"createdAt"`
+	FinishedAt      *uint64  `json:"finishedAt,omitempty"`
+	OutputTruncated bool     `json:"outputTruncated"`
+	Backend         string   `json:"backend"`
+}
+
+type TerminalOutputResponse struct {
 	ID         string           `json:"id"`
 	Chunks     []JobOutputChunk `json:"chunks"`
 	NextCursor uint64           `json:"nextCursor"`
@@ -344,6 +382,48 @@ func (s *Service) JobOutput(ctx context.Context, id string, after uint64, limit 
 func (s *Service) CancelJob(ctx context.Context, id string) (JobSnapshot, error) {
 	var value JobSnapshot
 	err := s.runRPC(ctx, "jobs/cancel", map[string]any{"id": id}, &value)
+	return value, err
+}
+
+func (s *Service) StartTerminal(ctx context.Context, request TerminalStartRequest) (TerminalSnapshot, error) {
+	var value TerminalSnapshot
+	if !request.HostAuthorized {
+		return value, errors.New("XiaoYu Rust Terminal 必须先经过 Host 授权")
+	}
+	err := s.runRPC(ctx, "terminal/start", request, &value)
+	return value, err
+}
+
+func (s *Service) GetTerminal(ctx context.Context, id string) (TerminalSnapshot, error) {
+	var value TerminalSnapshot
+	err := s.runRPC(ctx, "terminal/get", map[string]any{"id": id}, &value)
+	return value, err
+}
+
+func (s *Service) ListTerminals(ctx context.Context) ([]TerminalSnapshot, error) {
+	var value []TerminalSnapshot
+	err := s.runRPC(ctx, "terminal/list", map[string]any{}, &value)
+	return value, err
+}
+
+func (s *Service) WriteTerminal(ctx context.Context, request TerminalWriteRequest) (TerminalSnapshot, error) {
+	var value TerminalSnapshot
+	if !request.HostAuthorized {
+		return value, errors.New("XiaoYu Rust Terminal 输入必须先经过 Host 授权")
+	}
+	err := s.runRPC(ctx, "terminal/write", request, &value)
+	return value, err
+}
+
+func (s *Service) TerminalOutput(ctx context.Context, id string, after uint64, limit int) (TerminalOutputResponse, error) {
+	var value TerminalOutputResponse
+	err := s.runRPC(ctx, "terminal/output", map[string]any{"id": id, "after": after, "limit": limit}, &value)
+	return value, err
+}
+
+func (s *Service) CloseTerminal(ctx context.Context, id string) (TerminalSnapshot, error) {
+	var value TerminalSnapshot
+	err := s.runRPC(ctx, "terminal/close", map[string]any{"id": id}, &value)
 	return value, err
 }
 

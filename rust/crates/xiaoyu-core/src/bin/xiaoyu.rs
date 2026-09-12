@@ -142,6 +142,38 @@ fn dispatch(runtime: &Runtime, request: JsonRpcRequest) -> JsonRpcResponse {
                 .unwrap_or_default();
             Ok(serde_json::to_value(runtime.cancel_job(id)?)?)
         }
+        "terminal/start" => {
+            let terminal: xiaoyu_protocol::TerminalStartRequest =
+                serde_json::from_value(request.params.clone())?;
+            Ok(serde_json::to_value(runtime.start_terminal(terminal)?)?)
+        }
+        "terminal/get" => {
+            let id = request
+                .params
+                .get("id")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            Ok(serde_json::to_value(runtime.get_terminal(id)?)?)
+        }
+        "terminal/list" => Ok(serde_json::to_value(runtime.list_terminals()?)?),
+        "terminal/write" => {
+            let write: xiaoyu_protocol::TerminalWriteRequest =
+                serde_json::from_value(request.params.clone())?;
+            Ok(serde_json::to_value(runtime.write_terminal(write)?)?)
+        }
+        "terminal/output" => {
+            let output: xiaoyu_protocol::TerminalOutputRequest =
+                serde_json::from_value(request.params.clone())?;
+            Ok(serde_json::to_value(runtime.terminal_output(output)?)?)
+        }
+        "terminal/close" => {
+            let id = request
+                .params
+                .get("id")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            Ok(serde_json::to_value(runtime.close_terminal(id)?)?)
+        }
         "brain/prepare" => Ok(serde_json::to_value(
             runtime.prepare_brain(request.params.clone())?,
         )?),

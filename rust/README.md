@@ -52,3 +52,8 @@ Rust Native Runtime 不等于无限权限。`jobs/start` 只是 Host 授权后�
 ## 0.2.11 Persistent Worker
 
 AGMP Go Host now keeps one supervised `xiaoyu rpc` process alive. Tool Search, Brain policy, Session Registry and Long-running Jobs share this process lifetime. The Worker remains an embedded AGMP component; Host RBAC/approval stays authoritative.
+
+## 0.2.12 Interactive Terminal Session
+
+`xiaoyu-core::terminal` adds a stateful interactive process session over the persistent RPC worker. The initial backend is deliberately named `stdio-pipe-v1`: it supports repeated Host-authorized input, bounded incremental output, status and close semantics, but does not claim native PTY/ConPTY behavior yet. The next backend upgrade will keep the same RPC contract.
+

@@ -1,5 +1,6 @@
 mod jobs;
 mod session;
+mod terminal;
 mod tool_search;
 
 pub use tool_search::search_tools;
@@ -10,7 +11,9 @@ use std::path::PathBuf;
 use xiaoyu_protocol::{
     ApprovalDecision, ApprovalMode, BrainDecision, BrainDecisionKind, BrainPrompt,
     JobOutputRequest, JobOutputResponse, JobSnapshot, JobStartRequest, ModelTurn, PROTOCOL_VERSION,
-    RiskLevel, RuntimeStatus, SessionInfo, ToolSearchRequest, ToolSearchResponse, ToolSpec,
+    RiskLevel, RuntimeStatus, SessionInfo, TerminalOutputRequest, TerminalOutputResponse,
+    TerminalSnapshot, TerminalStartRequest, TerminalWriteRequest, ToolSearchRequest,
+    ToolSearchResponse, ToolSpec,
 };
 
 pub const RUNTIME_NAME: &str = "小鱼 · XiaoYu Intelligence Core";
@@ -19,14 +22,15 @@ pub const RUNTIME_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// XiaoYu's Rust core is the AGMP Agent Runtime boundary. It owns provider-neutral
 /// agent semantics and is the Rust-first home for capability discovery, sessions,
 /// jobs, PTY, sandbox and generic native execution. Go remains the source of
-/// truth for game/product domain services. The 0.2.11 migration adds the
-/// supervised persistent Go↔Rust RPC worker while remaining incremental:
+/// truth for game/product domain services. The 0.2.12 migration adds the
+/// Host-authorized interactive Terminal Session on the persistent Go↔Rust worker while remaining incremental:
 /// existing Go execution paths stay compatible until equivalent Rust paths are
 /// covered by protocol tests and Agent Bench scenarios.
 #[derive(Clone)]
 pub struct Runtime {
     sessions: session::SessionManager,
     jobs: jobs::JobManager,
+    terminals: terminal::TerminalManager,
 }
 
 impl Runtime {
@@ -34,7 +38,8 @@ impl Runtime {
         let root = root.into();
         Self {
             sessions: session::SessionManager::new(root.clone()),
-            jobs: jobs::JobManager::new(root),
+            jobs: jobs::JobManager::new(root.clone()),
+            terminals: terminal::TerminalManager::new(root),
         }
     }
 
@@ -58,6 +63,9 @@ impl Runtime {
                 "long-running-jobs-v1".to_string(),
                 "cancellable-jobs".to_string(),
                 "bounded-job-output".to_string(),
+                "interactive-terminal-v1".to_string(),
+                "authorized-terminal-input".to_string(),
+                "bounded-terminal-output".to_string(),
                 "native-runtime-migration".to_string(),
                 "model-brain-policy".to_string(),
                 "memory-skill-expert-context".to_string(),
@@ -72,7 +80,7 @@ impl Runtime {
                 "domain-tools-preferred-not-required".to_string(),
             ],
             // Domain Tool count is supplied by the AGMP Go host. Rust now owns
-            // Tool Search plus Session/Job primitives, while model-visible
+            // Tool Search plus Session/Job/Terminal primitives, while model-visible
             // execution remains behind Host Tool approval/RBAC.
             tool_count: 0,
         }
@@ -130,6 +138,41 @@ impl Runtime {
 
     pub fn cancel_job(&self, id: &str) -> Result<JobSnapshot> {
         self.jobs.cancel(id)
+    }
+
+    /// Starts a long-lived interactive terminal process. 0.2.12 deliberately
+    /// exposes this as a stdio-backed terminal session, not a native PTY claim.
+    /// Every start and every input frame must already be authorized by the Go Host.
+    pub fn start_terminal(&self, request: TerminalStartRequest) -> Result<TerminalSnapshot> {
+        let session = request
+            .session_id
+            .as_deref()
+            .map(|id| self.sessions.get(id))
+            .transpose()?;
+        self.terminals.start(request, session.as_ref())
+    }
+
+    pub fn get_terminal(&self, id: &str) -> Result<TerminalSnapshot> {
+        self.terminals.get(id)
+    }
+
+    pub fn list_terminals(&self) -> Result<Vec<TerminalSnapshot>> {
+        self.terminals.list()
+    }
+
+    pub fn write_terminal(&self, request: TerminalWriteRequest) -> Result<TerminalSnapshot> {
+        self.terminals.write(request)
+    }
+
+    pub fn terminal_output(
+        &self,
+        request: TerminalOutputRequest,
+    ) -> Result<TerminalOutputResponse> {
+        self.terminals.output(request)
+    }
+
+    pub fn close_terminal(&self, id: &str) -> Result<TerminalSnapshot> {
+        self.terminals.close(id)
     }
 
     /// Builds the provider-neutral prompt for one autonomous Agent frame. Model

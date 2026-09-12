@@ -146,3 +146,12 @@ AI 的主要职责始终围绕 AGMP：理解用户的开服/运维意图，自�
 - Worker stderr 必须有界；stdout 只允许 JSON-RPC frame，禁止把日志混入协议通道。
 - Host identity/RBAC/approval 仍是最终授权来源，Rust `hostAuthorized` 只是内部防线。
 - 应用关闭必须显式关闭 Worker；开发模式缺少 Rust binary 时允许降级并给出可诊断状态，不得导致整个 AGMP 无法启动。
+
+## 0.2.12 Interactive Terminal Rule
+
+- XiaoYu Interactive Terminal 属于 Rust Agent Runtime；Go Host 只负责授权与 RPC Bridge。
+- Terminal start 和每次 write 都必须独立验证 Host authorization；长期 shell 不能变成一次批准后永久自由输入。
+- stdin 单次 payload、stdout/stderr 历史必须有界；关闭会话必须能够终止仍在运行的 child。
+- `stdio-pipe-v1` 不得标记成 Native PTY/ConPTY；只有跨平台 PTY backend 和 resize/TTY tests 完成后才能升级 capability。
+- 模型执行路径迁移到 Terminal 前必须增加 Agent Bench，证明 approval/observation/verification 不回退。
+

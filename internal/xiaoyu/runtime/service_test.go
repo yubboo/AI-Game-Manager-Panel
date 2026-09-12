@@ -76,3 +76,19 @@ func TestClosePersistentWorkerIsIdempotent(t *testing.T) {
 	service.Close()
 	service.Close()
 }
+
+func TestStartTerminalRejectsMissingHostAuthorizationBeforeRuntime(t *testing.T) {
+	service := New(Options{Root: t.TempDir(), BinaryOverride: filepath.Join(t.TempDir(), "missing-runtime")})
+	_, err := service.StartTerminal(nil, TerminalStartRequest{Executable: "example", HostAuthorized: false})
+	if err == nil {
+		t.Fatal("unauthorized Rust terminal must be rejected before contacting the runtime")
+	}
+}
+
+func TestWriteTerminalRejectsMissingHostAuthorizationBeforeRuntime(t *testing.T) {
+	service := New(Options{Root: t.TempDir(), BinaryOverride: filepath.Join(t.TempDir(), "missing-runtime")})
+	_, err := service.WriteTerminal(nil, TerminalWriteRequest{ID: "XYT-test", Data: "echo blocked", HostAuthorized: false})
+	if err == nil {
+		t.Fatal("unauthorized Rust terminal input must be rejected before contacting the runtime")
+	}
+}

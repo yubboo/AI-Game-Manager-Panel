@@ -114,6 +114,7 @@ function Assert-ProjectIntegrity {
         'rust/crates/xiaoyu-core/src/tool_search.rs',
         'rust/crates/xiaoyu-core/src/session.rs',
         'rust/crates/xiaoyu-core/src/jobs.rs',
+        'rust/crates/xiaoyu-core/src/terminal.rs',
         'rust/crates/xiaoyu-protocol/Cargo.toml',
         'scripts/common/check-github-safety.mjs',
         'scripts/common/check-language-ownership.mjs',
@@ -127,6 +128,7 @@ function Assert-ProjectIntegrity {
         'scripts/common/check-xiaoyu-agent-bench.mjs',
         'scripts/common/check-xiaoyu-jobs.mjs',
         'scripts/common/check-xiaoyu-worker.mjs',
+        'scripts/common/check-xiaoyu-terminal.mjs',
         'scripts/windows/AIGameManagerPanel.ps1',
         'scripts/windows/tasks/Tasks.ps1',
         'docs/NAMING-CONVENTIONS.md',
@@ -379,7 +381,8 @@ function Test-RepositorySafety([ValidateSet('tracked','staged','candidate')] [st
             @{ Path = 'scripts\common\check-duplicates.mjs'; Name = 'Duplicate Source Gate' },
             @{ Path = 'scripts\common\check-github-safety.mjs'; Name = 'GitHub Safety Gate' },
             @{ Path = 'scripts\common\check-xiaoyu-jobs.mjs'; Name = 'XiaoYu Session/Job Gate' },
-            @{ Path = 'scripts\common\check-xiaoyu-worker.mjs'; Name = 'XiaoYu Persistent Worker Gate' }
+            @{ Path = 'scripts\common\check-xiaoyu-worker.mjs'; Name = 'XiaoYu Persistent Worker Gate' },
+            @{ Path = 'scripts\common\check-xiaoyu-terminal.mjs'; Name = 'XiaoYu Terminal Session Gate' }
         )
         foreach ($item in $nodeGates) {
             $gate = Join-Path $ProjectRoot $item.Path

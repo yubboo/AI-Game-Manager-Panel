@@ -101,6 +101,9 @@ jobs:
       - name: XiaoYu Persistent Runtime Worker gate
         run: node scripts/common/check-xiaoyu-worker.mjs
 
+      - name: XiaoYu Terminal Session gate
+        run: node scripts/common/check-xiaoyu-terminal.mjs
+
       - name: Multi-client AI parity gate
         run: node scripts/common/check-multi-client-ai.mjs
 
@@ -221,6 +224,7 @@ jobs:
           node scripts/common/check-xiaoyu-agent-bench.mjs
           node scripts/common/check-xiaoyu-jobs.mjs
           node scripts/common/check-xiaoyu-worker.mjs
+          node scripts/common/check-xiaoyu-terminal.mjs
           node scripts/common/check-multi-client-ai.mjs
           node scripts/common/check-headless-xiaoyu.mjs
           node scripts/common/check-organization-security.mjs

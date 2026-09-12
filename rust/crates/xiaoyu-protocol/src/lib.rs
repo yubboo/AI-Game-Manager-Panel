@@ -257,6 +257,81 @@ pub struct SessionInfo {
     pub approval_mode: ApprovalMode,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TerminalState {
+    Running,
+    Exited,
+    Closed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TerminalStartRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_id: Option<String>,
+    pub executable: String,
+    #[serde(default)]
+    pub arguments: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cwd: Option<String>,
+    #[serde(default)]
+    pub max_output_bytes: usize,
+    #[serde(default)]
+    pub host_authorized: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct TerminalSnapshot {
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_id: Option<String>,
+    pub executable: String,
+    pub arguments: Vec<String>,
+    pub cwd: String,
+    pub state: TerminalState,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pid: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exit_code: Option<i32>,
+    pub created_at: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub finished_at: Option<u64>,
+    pub output_truncated: bool,
+    pub backend: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TerminalWriteRequest {
+    pub id: String,
+    pub data: String,
+    #[serde(default)]
+    pub append_newline: bool,
+    #[serde(default)]
+    pub host_authorized: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TerminalOutputRequest {
+    pub id: String,
+    #[serde(default)]
+    pub after: u64,
+    #[serde(default)]
+    pub limit: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct TerminalOutputResponse {
+    pub id: String,
+    pub chunks: Vec<JobOutputChunk>,
+    pub next_cursor: u64,
+    pub truncated: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonRpcRequest {
     pub jsonrpc: String,

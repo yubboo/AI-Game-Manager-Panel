@@ -392,7 +392,7 @@ dependencies = [
 
 [[package]]
 name = "xiaoyu-core"
-version = "0.2.11"
+version = "0.2.12"
 dependencies = [
  "anyhow",
  "clap",
@@ -404,7 +404,7 @@ dependencies = [
 
 [[package]]
 name = "xiaoyu-protocol"
-version = "0.2.11"
+version = "0.2.12"
 dependencies = [
  "serde",
  "serde_json",

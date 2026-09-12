@@ -1,6 +1,29 @@
 # AI-Game-Manager-Panel 项目历史
 
 
+## AI-Game-Manager-Panel 0.2.12
+
+### 主题
+Rust Interactive Terminal Session / PTY-ready protocol foundation。
+
+### 主要变化
+- 基于 0.2.11 全绿 Persistent Worker 新增 Rust `TerminalManager`；
+- 新增 `terminal/start|get|list|write|output|close` RPC；
+- Terminal 输出有界、可 cursor 增量读取；
+- 启动与每次输入都要求 Host authorization，Go/Rust 双层拒绝未授权请求；
+- Terminal 工作目录复用 Runtime Root / Session scope；
+- Snapshot 明确 `backend=stdio-pipe-v1`，本版不虚报 Native PTY/ConPTY；
+- 新增 `check-xiaoyu-terminal.mjs` 并接入 CI / Windows Helper / Push Gate。
+
+### 验证目标
+- 保持 0.2.11 三 Job 全绿；
+- Rust fmt/check/test；
+- Go test/vet；
+- Terminal interactive input/output lifecycle；
+- Agent Bench 与 Persistent Worker 不回退。
+
+---
+
 ## AI-Game-Manager-Panel 0.2.11
 
 ### 主题

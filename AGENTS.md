@@ -376,3 +376,14 @@ All contributors and AI agents must follow `docs/NAMING-CONVENTIONS.md` before c
 - Persistent Worker RPC 当前串行化，先保证状态一致与可审计；后续若引入并发 multiplexer，必须先增加 request-id correlation、取消语义和并发测试。
 - Windows 源码同步禁止直接显示 Robocopy OEM 报表；中文路径诊断必须使用 Unicode 日志或 PowerShell 自身输出。
 - 新增/修改 Worker 必须通过 `check-xiaoyu-worker.mjs`，并继续通过 Rust fmt/check/test、Go test/vet 与 Agent Bench。
+
+### 0.2.12 Rust Interactive Terminal Session 硬规则
+
+- `rust/crates/xiaoyu-core/src/terminal.rs` 是 XiaoYu 交互终端会话归属；不得在 Go Host 新建第二套 Agent Terminal Core。
+- Terminal start 与**每次输入**都必须通过 Host identity/RBAC/approval 后再携带 `hostAuthorized=true`；“会话之前已经批准”不能自动授权后续任意命令。
+- Terminal stdout/stderr 和单次输入必须有界；禁止无限日志和无限 stdin payload。
+- 0.2.12 只允许称为 `interactive-terminal-v1 / stdio-pipe-v1`，不得在代码、UI 或文档中把它描述成已完成 Native PTY/ConPTY。
+- Native PTY/ConPTY 后端必须复用同一 Terminal protocol，并通过独立跨平台测试后才能声明 `pty=true` 或等价 capability。
+- 模型可见 `shell.exec` 暂不直接切换到 Terminal RPC；迁移前必须有 Agent Bench 覆盖 approval、输入、输出、取消与恢复。
+- 新增/修改 Terminal Runtime 必须通过 `check-xiaoyu-terminal.mjs`、Rust fmt/check/test、Go test/vet 和现有 Agent Bench。
+
