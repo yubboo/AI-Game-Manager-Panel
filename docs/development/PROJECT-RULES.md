@@ -129,3 +129,12 @@ Web、Wails、Electron、未来 Rust Native 只是同一个 AGMP 的不同构建
 “完全访问权限”不是“关闭安全”。无论哪种模式，以下保护都不能被权限模式绕过：身份/RBAC、模块 API 边界、参数校验、路径作用域、目标存在性检查、并发/幂等保护、必要备份与回滚条件、秘密保护、操作审计、执行后验证。Full 权限表示用户已授权已注册能力在当前策略范围内自动执行，不等于绕过 Host。AI 仍应优先使用模块 Service / Domain Tool；领域能力不足时可以使用通用 Agent Runtime。迁移期间 `shell.exec` 仍由 Go Host 提供，后续迁入 Rust 也必须保持同等审批、Sandbox 与审计，不允许前端或未授权旁路直接执行 OS 操作。
 
 AI 的主要职责始终围绕 AGMP：理解用户的开服/运维意图，自动调用系统内置能力完成任务。通用聊天可以提供，但优先级低于“安全、准确地操控 AGMP 完成用户目标”。
+
+
+## 0.2.10 Session / Job Runtime Rule
+
+- Session / Job / PTY 是 XiaoYu 通用 Agent Runtime，默认归 Rust。
+- Rust Job 启动不得成为绕过 Go Host 身份、RBAC、审批或 Sandbox 的新入口。
+- Job 输出必须有界并支持增量读取，禁止无限积累 stdout/stderr。
+- 长任务必须可查询状态、可取消、可审计；模型可见执行路径切换前必须先有协议测试和 Agent Bench。
+- 当前 Go `shell.exec` 保持兼容，直到 persistent RPC worker 与 Rust Job 路径完成验证。

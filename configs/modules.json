@@ -6,12 +6,14 @@
       "category": "智能核心",
       "route": "/",
       "status": "partial",
-      "phase": "0.2.9 · Rust-first XiaoYu Agent Runtime",
+      "phase": "0.2.10 · Rust Session / Long-running Job Runtime",
       "features": [
         "小鱼自然语言主入口",
         "XiaoYu Agent Runtime（Rust-first）",
         "XiaoYu Plugin Kernel / Everything-as-Plugin",
         "Tool Registry / Capability Discovery",
+        "Rust Session Registry / Long-running Jobs",
+        "Job Status / Cancel / Bounded Output",
         "Agent Loop：Plan / Act / Observe / Validate / Recover",
         "Step / Tool / Failure Budget 与 Doom-loop 防护",
         "请求批准 / 帮我批准 / 完全访问权限",
@@ -33,6 +35,9 @@
       "sourceRefs": [
         "rust:xiaoyu-core/tool_search",
         "rpc:tools/search",
+        "rust:xiaoyu-core/session",
+        "rust:xiaoyu-core/jobs",
+        "rpc:jobs/*",
         "doc:LANGUAGE-OWNERSHIP"
       ]
     },

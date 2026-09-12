@@ -34,6 +34,7 @@ function Invoke-RustAgentGate {
     Invoke-AGMPNative -FilePath $tools.Node -Arguments @('scripts/common/check-xiaoyu-intelligence.mjs')
     Invoke-AGMPNative -FilePath $tools.Node -Arguments @('scripts/common/check-xiaoyu-agent-runtime.mjs')
     Invoke-AGMPNative -FilePath $tools.Node -Arguments @('scripts/common/check-xiaoyu-agent-bench.mjs')
+    Invoke-AGMPNative -FilePath $tools.Node -Arguments @('scripts/common/check-xiaoyu-jobs.mjs')
 }
 function Invoke-WindowsInstallerGate {
     $tools = Get-AGMPTools

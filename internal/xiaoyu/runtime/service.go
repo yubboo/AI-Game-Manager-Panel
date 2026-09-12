@@ -1,6 +1,6 @@
 // Package xiaoyuruntime connects AGMP to XiaoYu's Rust Agent Runtime.
 //
-// 0.2.9 starts the Rust-first Agent Runtime migration. Go remains the source
+// 0.2.10 continues the Rust-first Agent Runtime migration with stateful Session/Job primitives. Go remains the source
 // of truth for AGMP domain services, while generic Agent capabilities move to
 // Rust incrementally. Existing Go execution paths remain compatible until the
 // Rust equivalents have protocol tests and Agent Bench coverage.

@@ -12,7 +12,11 @@ pub fn search_tools(request: ToolSearchRequest) -> ToolSearchResponse {
     let query = normalize(&request.query);
     let terms = search_terms(&query);
     let limit = request.limit.clamp(1, MAX_LIMIT);
-    let limit = if request.limit == 0 { DEFAULT_LIMIT } else { limit };
+    let limit = if request.limit == 0 {
+        DEFAULT_LIMIT
+    } else {
+        limit
+    };
 
     let mut hits = request
         .tools
@@ -125,9 +129,19 @@ mod tests {
         let response = search_tools(ToolSearchRequest {
             query: "java runtime".to_string(),
             tools: vec![
-                tool("environment.catalog", "读取 Java Runtime", "environment", true),
+                tool(
+                    "environment.catalog",
+                    "读取 Java Runtime",
+                    "environment",
+                    true,
+                ),
                 tool("logs.read", "读取日志", "logs", true),
-                tool("environment.remove_runtime", "移除 Java Runtime", "environment", true),
+                tool(
+                    "environment.remove_runtime",
+                    "移除 Java Runtime",
+                    "environment",
+                    true,
+                ),
             ],
             limit: 8,
         });

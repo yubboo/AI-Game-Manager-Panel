@@ -1,4 +1,4 @@
-# AI Game Manager Panel 0.2.9 总架构
+# AI Game Manager Panel 0.2.10 总架构
 
 > AGMP 是唯一产品。用户与 XiaoYu 是“两个大脑、同一副身体”：用户拥有最终授权与接管权；XiaoYu 负责理解、规划、执行编排、验证、恢复与总结。0.2.9 起语言职责正式冻结为 **Rust-first Agent Runtime / Go Domain Host / Vue UI**。
 
@@ -162,7 +162,9 @@ rust/
    ├─ xiaoyu-core/
    │  └─ src/
    │     ├─ lib.rs
-   │     ├─ tool_search.rs      # 0.2.9 起的首批 Rust Runtime 能力
+   │     ├─ tool_search.rs      # Tool Search
+   │     ├─ session.rs          # 0.2.10 Session Registry
+   │     └─ jobs.rs             # 0.2.10 Long-running Jobs
    │     └─ bin/xiaoyu.rs
    └─ xiaoyu-protocol/
       └─ src/lib.rs
@@ -293,3 +295,8 @@ CI 必须使用 `cargo --locked` 与 `pnpm --frozen-lockfile`；Go module graph 
 6. `docs/DEVELOPMENT-PLAN.md`
 7. `docs/PROJECT-HISTORY.md`（只用于历史）
 
+
+
+## 0.2.10 Rust Session / Job Runtime
+
+0.2.10 adds the first stateful Rust Native Runtime layer. A persistent `xiaoyu rpc` process can own Session and Job state, start Host-authorized native jobs, expose bounded output and cancel them. This is deliberately staged before model-visible migration: Go remains the authority for user identity, RBAC and the three approval modes, and `shell.exec` is not switched to Rust until the Host has a supervised persistent RPC worker.

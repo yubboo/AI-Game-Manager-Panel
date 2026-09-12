@@ -1,5 +1,22 @@
 # AI-Game-Manager-Panel 项目历史
 
+
+## AI-Game-Manager-Panel 0.2.10
+
+### 主题
+Rust Session / Long-running Job Runtime foundation。
+
+### 主要变化
+- 修复 0.2.9 GitHub Actions 的 rustfmt 唯一红灯；
+- Rust 新增 Session Registry：create/get/list/close；
+- Rust 新增 Long-running Job：start/get/list/output/cancel；
+- Job 输出有界、支持游标读取、PID/退出状态与取消；
+- Job 启动要求 Host authorization，cwd 限制在 Runtime Root；
+- 新增 `check-xiaoyu-jobs.mjs` 并接入 CI/Windows Helper/一键推送；
+- 当前仅建立 Rust 原语，Go `shell.exec` 尚未切换，下一阶段先做 persistent RPC worker。
+- 源码同步助手新增 dirty bundle 防护：明确排除 runtime 用户数据、依赖缓存和构建产物，源码 ZIP 仅交付 Git 应跟踪内容。
+
+---
 本文件是 AGMP 唯一版本历史入口。自 0.2.3 起，不再为每个版本新增独立 Release Notes / Validation / Completion / Prompt 历史文件；长期有效的规范继续维护在 `AGENTS.md` 与当前架构/开发文档中。
 
 > 版本顺序采用 `0.2.1 ... 0.2.100 -> 0.3.0`。新版本记录追加到本文件顶部。

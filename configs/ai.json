@@ -21,7 +21,13 @@
     "ownership": "rust-agent-runtime",
     "domainHost": "go",
     "ui": "vue-typescript",
-    "migration": "incremental"
+    "migration": "incremental",
+    "features": [
+      "tool-search-v1",
+      "session-registry-v1",
+      "long-running-jobs-v1",
+      "bounded-job-output"
+    ]
   },
   "agentLoop": {
     "planner": "provider-plugin",

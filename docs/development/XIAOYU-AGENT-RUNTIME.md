@@ -1,5 +1,19 @@
 # XiaoYu Agent Runtime
 
+## 0.2.10 Session / Long-running Job foundation
+
+Rust now owns the first stateful native runtime primitives after Tool Search:
+
+- Session Registry: `session/create|get|list|close`;
+- Long-running Jobs: `jobs/start|get|list|output|cancel`;
+- bounded output with cursor-based reads;
+- cancellation and terminal state tracking;
+- Runtime Root working-directory containment;
+- explicit `hostAuthorized` requirement before native process start.
+
+These APIs are intentionally **not model-visible authority**. Existing XiaoYu `shell.exec` still passes through the Go Host RBAC/approval boundary. Session/Job state persists only inside a long-lived `xiaoyu rpc` process; the current one-shot Go RPC bridge remains for stateless operations. 0.2.11 will add persistent Host ↔ Rust process supervision before wiring approved long-running actions to this runtime.
+
+
 ## 0.2.9 Rust-first runtime ownership
 
 0.2.9 freezes the long-term language boundary for XiaoYu:

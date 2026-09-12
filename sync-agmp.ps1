@@ -59,9 +59,39 @@ if (-not (Get-Command robocopy.exe -ErrorAction SilentlyContinue)) {
 
 Write-Step '同步源码文件（保留目标 .git 与本机运行数据）'
 $excludeDirs = @(
+    # Git / dependency / build outputs. Keep these out even if a source bundle was
+    # accidentally created from a dirty developer workspace.
     (Join-Path $Source '.git'),
     (Join-Path $Source 'build'),
-    (Join-Path $Source 'node_modules')
+    (Join-Path $Source 'node_modules'),
+    (Join-Path $Source '.pnpm-store'),
+    (Join-Path $Source 'frontend\node_modules'),
+    (Join-Path $Source 'frontend\dist'),
+    (Join-Path $Source 'desktop\electron\node_modules'),
+    (Join-Path $Source 'desktop\electron\dist'),
+    (Join-Path $Source 'rust\target'),
+
+    # Root-local user/server state. Directory names are root-anchored here so
+    # source folders such as internal/ops/logs are never hidden.
+    (Join-Path $Source 'data'),
+    (Join-Path $Source 'log'),
+    (Join-Path $Source 'logs'),
+    (Join-Path $Source 'backups'),
+    (Join-Path $Source 'instances'),
+    (Join-Path $Source 'temp'),
+    (Join-Path $Source 'exports'),
+    (Join-Path $Source 'plugins'),
+    (Join-Path $Source 'cache'),
+
+    # runtime/README.md is source documentation; runtime children are local state.
+    (Join-Path $Source 'runtime\log'),
+    (Join-Path $Source 'runtime\logs'),
+    (Join-Path $Source 'runtime\data'),
+    (Join-Path $Source 'runtime\instances'),
+    (Join-Path $Source 'runtime\backups'),
+    (Join-Path $Source 'runtime\cache'),
+    (Join-Path $Source 'runtime\temp'),
+    (Join-Path $Source 'runtime\environments')
 )
 $args = @(
     $Source,

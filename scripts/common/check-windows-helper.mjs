@@ -34,6 +34,7 @@ const required = [
   'scripts/windows/lib/Electron.ps1',
   'scripts/windows/tasks/Tasks.ps1',
   'scripts/common/check-distribution-boundary.mjs',
+  'scripts/common/check-xiaoyu-jobs.mjs',
 ]
 for (const rel of required) if (!fs.existsSync(path.join(root, rel))) fail(`缺少 Windows Helper 文件：${rel}`)
 
@@ -68,7 +69,7 @@ try {
   if (pushText.includes('\uFFFD')) fail('push-agmp.ps1 包含乱码 replacement char。')
   const pushWithoutCrlf = pushText.replace(/\r\n/g, '')
   if (pushWithoutCrlf.includes('\n') || pushWithoutCrlf.includes('\r')) fail('push-agmp.ps1 必须使用 CRLF。')
-  for (const token of ['Assert-SourceNotIgnored', 'Test-RepositorySafety', "Path = 'rust/crates'; MinimumFiles = 6", 'pull --rebase', 'git push']) {
+  for (const token of ['Assert-SourceNotIgnored', 'Test-RepositorySafety', "Path = 'rust/crates'; MinimumFiles = 8", 'pull --rebase', 'git push']) {
     if (!pushText.includes(token)) fail(`push-agmp.ps1 缺少 GitHub 工作台关键能力：${token}`)
   }
 } catch (error) {
@@ -91,6 +92,7 @@ try {
   const syncWithoutCrlf = syncText.replace(/\r\n/g, '')
   if (syncWithoutCrlf.includes('\n') || syncWithoutCrlf.includes('\r')) fail('sync-agmp.ps1 必须使用 CRLF。')
   if (!syncText.includes('robocopy.exe') || !syncText.includes("git.exe -C $Destination ls-files")) fail('sync-agmp.ps1 缺少稳定源码同步/旧跟踪文件清理能力。')
+  if (!syncText.includes("Join-Path $Source 'runtime\\environments'") || !syncText.includes("Join-Path $Source 'frontend\\node_modules'")) fail('sync-agmp.ps1 必须阻止本机 Runtime/依赖缓存从脏源码包复制进 Git 工作副本。')
 } catch (error) {
   fail(`无法验证源码同步助手编码：${error instanceof Error ? error.message : String(error)}`)
 }

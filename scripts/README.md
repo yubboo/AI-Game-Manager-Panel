@@ -1,4 +1,4 @@
-# AI Game Manager Panel Scripts 0.2.9
+# AI Game Manager Panel Scripts 0.2.10
 
 Windows 开发助手自 0.1.64 起固定为：**一个 ASCII-safe BAT 启动器 + PowerShell Task Runner**。
 
@@ -103,3 +103,8 @@ GitHub Safety Job 单独执行 `go test ./internal/xiaoyu/host -run '^TestAgentB
 
 0.2.8 GitHub Runner 生成的依赖图现已正式提交：`go.mod/go.sum`、`rust/Cargo.lock`、`frontend/pnpm-lock.yaml`、`desktop/electron/pnpm-lock.yaml`。CI 和开发助手使用 Cargo `--locked`、pnpm `--frozen-lockfile` 与 Go module verify/tidy-diff，禁止在未显式更新锁文件时静默改变依赖图。0.2.8 的 dependency snapshot Artifact 只保留为历史过渡机制。
 
+
+
+## 0.2.10 Session / Job Runtime Gate
+
+`check-xiaoyu-jobs.mjs` validates the Rust Session Registry and Long-running Job contracts: Host authorization, Runtime Root cwd containment, bounded output, cancellation and JSON-RPC methods. It is part of GitHub Actions, Windows project checks and the GitHub push helper.

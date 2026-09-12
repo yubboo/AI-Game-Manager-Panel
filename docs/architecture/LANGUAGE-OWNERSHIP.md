@@ -161,6 +161,8 @@ internal/ops/files
 
 1. 不再把新的通用 Agent Runtime 能力默认堆进 Go；
 2. 新的 Tool Search / Session / Job / PTY / Sandbox / Reflection / Subagent 优先进入 Rust；
+   - 0.2.9：Tool Search；
+   - 0.2.10：Session Registry + Long-running Job primitives；
 3. 旧 Go Agent 机制按测试覆盖逐步迁移，不允许“大爆炸式重写”；
 4. 每迁移一块，必须先建立协议和 Agent Bench，再删除旧实现；
 5. Wails 桌面 Shell 暂时保留，不因为 Rust 路线立刻切换 Tauri。
@@ -189,4 +191,5 @@ Rust 作为 XiaoYu 内部 Runtime 随完整 AGMP 一起发行。未来只有当 
 6. 不因迁移目标复制两套长期实现；
 7. 不为了 Rust 占比迁移稳定 Go 业务；
 8. 不把 Rust 当成绕过 Approval/RBAC 的“更高权限层”。
+9. Session / Job / PTY 属于 Rust Runtime；Domain Service 不得复制一套 Agent Job Core。
 

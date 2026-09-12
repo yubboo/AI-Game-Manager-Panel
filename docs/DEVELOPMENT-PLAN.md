@@ -5,6 +5,23 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.10：Rust Session / Long-running Job Runtime
+
+- 修正 0.2.9 `cargo fmt --check` 唯一红灯；
+- Rust `xiaoyu-core` 建立真实 Session Registry：create/get/list/close；
+- 建立 Long-running Job：start/get/list/output/cancel；
+- Job 输出必须有界，防止模型/Runtime 被无限日志撑爆；
+- `jobs/start` 必须显式携带 Host authorization，Rust 不得成为绕过三种审批模式的新入口；
+- cwd 必须限制在 Runtime Root；
+- 新增 XiaoYu Session/Job Gate，并接入 GitHub / Windows Helper / 一键推送；
+- 本阶段不直接替换现有 Go `shell.exec`，先把 Rust 原语、协议、测试和安全边界站稳。
+
+**冻结条件：** Rust fmt/check/test 通过；Session lifecycle 与 Job execution/output/cancel 测试通过；三 Job CI 重新全绿。
+
+### 下一步
+
+0.2.11 建立 Go ↔ Rust persistent RPC worker，让 stateful Session/Job Runtime 真正成为 Host 可长期复用的执行进程；随后再迁移批准后的长任务与 PTY。
+
 ## 0.2.9：Rust-first Agent Runtime 与依赖冻结
 
 - 冻结语言职责：Rust = XiaoYu Agent Runtime / Native Execution / Security Boundary；Go = AGMP Domain Host；Vue/TypeScript = UI；

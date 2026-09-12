@@ -1,3 +1,5 @@
+mod jobs;
+mod session;
 mod tool_search;
 
 pub use tool_search::search_tools;
@@ -5,11 +7,10 @@ pub use tool_search::search_tools;
 use anyhow::{Result, bail};
 use serde_json::Value;
 use std::path::PathBuf;
-use uuid::Uuid;
 use xiaoyu_protocol::{
     ApprovalDecision, ApprovalMode, BrainDecision, BrainDecisionKind, BrainPrompt, ModelTurn,
-    PROTOCOL_VERSION, RiskLevel, RuntimeStatus, SessionInfo, ToolSearchRequest, ToolSearchResponse,
-    ToolSpec,
+    JobOutputRequest, JobOutputResponse, JobSnapshot, JobStartRequest, PROTOCOL_VERSION, RiskLevel,
+    RuntimeStatus, SessionInfo, ToolSearchRequest, ToolSearchResponse, ToolSpec,
 };
 
 pub const RUNTIME_NAME: &str = "小鱼 · XiaoYu Intelligence Core";
@@ -18,17 +19,22 @@ pub const RUNTIME_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// XiaoYu's Rust core is the AGMP Agent Runtime boundary. It owns provider-neutral
 /// agent semantics and is the Rust-first home for capability discovery, sessions,
 /// jobs, PTY, sandbox and generic native execution. Go remains the source of
-/// truth for game/product domain services. The 0.2.9 migration is incremental:
+/// truth for game/product domain services. The 0.2.10 migration is incremental:
 /// existing Go execution paths stay compatible until equivalent Rust paths are
 /// covered by protocol tests and Agent Bench scenarios.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Runtime {
-    root: PathBuf,
+    sessions: session::SessionManager,
+    jobs: jobs::JobManager,
 }
 
 impl Runtime {
     pub fn new(root: impl Into<PathBuf>) -> Self {
-        Self { root: root.into() }
+        let root = root.into();
+        Self {
+            sessions: session::SessionManager::new(root.clone()),
+            jobs: jobs::JobManager::new(root),
+        }
     }
 
     pub fn status(&self) -> RuntimeStatus {
@@ -46,6 +52,10 @@ impl Runtime {
                 "rust-agent-runtime-boundary".to_string(),
                 "domain-provider-separation".to_string(),
                 "tool-search-v1".to_string(),
+                "session-registry-v1".to_string(),
+                "long-running-jobs-v1".to_string(),
+                "cancellable-jobs".to_string(),
+                "bounded-job-output".to_string(),
                 "native-runtime-migration".to_string(),
                 "model-brain-policy".to_string(),
                 "memory-skill-expert-context".to_string(),
@@ -59,9 +69,9 @@ impl Runtime {
                 "general-capability-fallback".to_string(),
                 "domain-tools-preferred-not-required".to_string(),
             ],
-            // Domain Tool count is supplied by the AGMP Go host. 0.2.9 adds
-            // Rust-owned Tool Search but does not yet migrate executable native
-            // tools into this local catalog.
+            // Domain Tool count is supplied by the AGMP Go host. Rust now owns
+            // Tool Search plus Session/Job primitives, while model-visible
+            // execution remains behind Host Tool approval/RBAC.
             tool_count: 0,
         }
     }
@@ -77,22 +87,47 @@ impl Runtime {
     }
 
     pub fn create_session(&self, cwd: Option<&str>, mode: ApprovalMode) -> Result<SessionInfo> {
-        let cwd = match cwd.map(str::trim).filter(|value| !value.is_empty()) {
-            Some(value) => {
-                let requested = PathBuf::from(value);
-                if requested.is_absolute() {
-                    requested
-                } else {
-                    self.root.join(requested)
-                }
-            }
-            None => self.root.clone(),
-        };
-        Ok(SessionInfo {
-            id: format!("XY-{}", Uuid::new_v4()),
-            cwd: cwd.to_string_lossy().into_owned(),
-            approval_mode: mode,
-        })
+        self.sessions.create(cwd, mode)
+    }
+
+    pub fn get_session(&self, id: &str) -> Result<SessionInfo> {
+        self.sessions.get(id)
+    }
+
+    pub fn list_sessions(&self) -> Result<Vec<SessionInfo>> {
+        self.sessions.list()
+    }
+
+    pub fn close_session(&self, id: &str) -> Result<bool> {
+        self.sessions.close(id)
+    }
+
+    /// Starts a Rust-owned long-running native job. This primitive is not a
+    /// model-visible permission bypass: callers must first pass the AGMP Host
+    /// RBAC/approval boundary and set hostAuthorized=true.
+    pub fn start_job(&self, request: JobStartRequest) -> Result<JobSnapshot> {
+        let session = request
+            .session_id
+            .as_deref()
+            .map(|id| self.sessions.get(id))
+            .transpose()?;
+        self.jobs.start(request, session.as_ref())
+    }
+
+    pub fn get_job(&self, id: &str) -> Result<JobSnapshot> {
+        self.jobs.get(id)
+    }
+
+    pub fn list_jobs(&self) -> Result<Vec<JobSnapshot>> {
+        self.jobs.list()
+    }
+
+    pub fn job_output(&self, request: JobOutputRequest) -> Result<JobOutputResponse> {
+        self.jobs.output(request)
+    }
+
+    pub fn cancel_job(&self, id: &str) -> Result<JobSnapshot> {
+        self.jobs.cancel(id)
     }
 
     /// Builds the provider-neutral prompt for one autonomous Agent frame. Model
@@ -326,8 +361,24 @@ mod tests {
         let runtime = Runtime::new(std::env::current_dir().unwrap());
         assert!(runtime.tools().is_empty());
         let status = runtime.status();
-        assert!(status.capabilities.iter().any(|item| item == "rust-agent-runtime-boundary"));
-        assert!(status.capabilities.iter().any(|item| item == "tool-search-v1"));
+        assert!(
+            status
+                .capabilities
+                .iter()
+                .any(|item| item == "rust-agent-runtime-boundary")
+        );
+        assert!(
+            status
+                .capabilities
+                .iter()
+                .any(|item| item == "tool-search-v1")
+        );
+        assert!(
+            status
+                .capabilities
+                .iter()
+                .any(|item| item == "long-running-jobs-v1")
+        );
     }
 
     #[test]

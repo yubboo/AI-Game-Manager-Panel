@@ -15,16 +15,17 @@ rust/crates/xiaoyu-protocol   # xiaoyu.v1 协议
 
 - provider-neutral Brain Policy / Decision Grammar；
 - Guided Autonomy；
-- Session foundation；
+- Session Registry（create/get/list/close，0.2.10）；
 - Approval hint；
 - Tool Search / Capability Discovery（0.2.9）；
+- Long-running Job Runtime（start/status/list/output/cancel，0.2.10）；
+- bounded output / cancellation / Runtime Root cwd boundary；
 - JSON-RPC stdio Runtime。
 
 后续 Rust-first 能力：
 
 - Agent Loop / Goal State；
-- Context / Session / Thread；
-- Long-running Jobs；
+- Context / Thread；
 - PTY；
 - Generic Shell / File / Process；
 - Apply Patch；
@@ -44,6 +45,6 @@ Rust 不复制：
 
 ## 安全
 
-Rust Native Runtime 不等于无限权限。任何真实执行都必须保持：身份/RBAC、三种审批模式、Capability Scope、Sandbox、路径/参数限制、秘密保护、审计和执行后验证。
+Rust Native Runtime 不等于无限权限。`jobs/start` 只是 Host 授权后的内部原语，不能直接等同于模型执行权。任何真实执行都必须保持：身份/RBAC、三种审批模式、Capability Scope、Sandbox、路径/参数限制、秘密保护、审计和执行后验证。
 
 普通用户不需要安装 Rust/Cargo/MSVC。发行构建机/CI 预编译 XiaoYu Runtime，并把它作为 AGMP 内部组件随完整产品发布。

@@ -35,6 +35,8 @@ jobs:
           test -f rust/Cargo.lock
           test -f rust/crates/xiaoyu-core/src/lib.rs
           test -f rust/crates/xiaoyu-core/src/tool_search.rs
+          test -f rust/crates/xiaoyu-core/src/session.rs
+          test -f rust/crates/xiaoyu-core/src/jobs.rs
           test -f frontend/pnpm-lock.yaml
           test -f desktop/electron/pnpm-lock.yaml
           test -f docs/architecture/LANGUAGE-OWNERSHIP.md
@@ -92,6 +94,9 @@ jobs:
 
       - name: XiaoYu Agent Bench gate
         run: node scripts/common/check-xiaoyu-agent-bench.mjs
+
+      - name: XiaoYu Session and Job Runtime gate
+        run: node scripts/common/check-xiaoyu-jobs.mjs
 
       - name: Multi-client AI parity gate
         run: node scripts/common/check-multi-client-ai.mjs
@@ -186,6 +191,8 @@ jobs:
           test -f rust/Cargo.lock
           test -f rust/crates/xiaoyu-core/src/lib.rs
           test -f rust/crates/xiaoyu-core/src/tool_search.rs
+          test -f rust/crates/xiaoyu-core/src/session.rs
+          test -f rust/crates/xiaoyu-core/src/jobs.rs
           test -f frontend/pnpm-lock.yaml
           test -f desktop/electron/pnpm-lock.yaml
           test -f docs/architecture/LANGUAGE-OWNERSHIP.md
@@ -209,6 +216,7 @@ jobs:
           node scripts/common/check-xiaoyu-intelligence.mjs
           node scripts/common/check-xiaoyu-agent-runtime.mjs
           node scripts/common/check-xiaoyu-agent-bench.mjs
+          node scripts/common/check-xiaoyu-jobs.mjs
           node scripts/common/check-multi-client-ai.mjs
           node scripts/common/check-headless-xiaoyu.mjs
           node scripts/common/check-organization-security.mjs

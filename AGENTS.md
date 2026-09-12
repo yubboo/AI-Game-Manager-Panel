@@ -356,3 +356,13 @@ AI 权限名称固定为 **请求批准 / 帮我批准 / 完全访问权限**。
 ## Naming and path convention
 
 All contributors and AI agents must follow `docs/NAMING-CONVENTIONS.md` before creating or renaming files. Directory context is part of the namespace: do not repeat parent-directory meaning in filenames. Prefer short, conventional names; repository-relative paths over 180 characters require review, and paths over 220 characters are forbidden by CI. Version source bundles use `agmp-<version>.zip`.
+
+
+### 0.2.10 Rust Session / Job Runtime 硬规则
+
+- `rust/crates/xiaoyu-core/src/session.rs` 是 XiaoYu Session Registry；`jobs.rs` 是长任务 Runtime。
+- Session / Job / PTY 属于 Rust Agent Runtime，不得为了方便再在 Go Host 新建第二套 XiaoYu Job Core。
+- `jobs/start` 必须要求 Host 授权上下文；Rust 不得被当成绕过三种审批模式、RBAC 或 Sandbox 的高权限后门。
+- Job stdout/stderr 必须有界，必须支持 status/output/cancel，禁止无限内存日志。
+- 0.2.10 的 Job RPC 先作为内部 Runtime primitive；在 persistent Go↔Rust RPC worker 完成前，不得宣称模型 `shell.exec` 已迁入 Rust。
+- 新增/修改 Rust Runtime 代码必须通过 `cargo fmt --check`、`cargo check --locked`、`cargo test --locked` 和 `check-xiaoyu-jobs.mjs`。

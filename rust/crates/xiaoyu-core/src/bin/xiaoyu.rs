@@ -98,6 +98,50 @@ fn dispatch(runtime: &Runtime, request: JsonRpcRequest) -> JsonRpcResponse {
             )?;
             Ok(serde_json::to_value(runtime.create_session(cwd, mode)?)?)
         }
+        "session/get" => {
+            let id = request
+                .params
+                .get("id")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            Ok(serde_json::to_value(runtime.get_session(id)?)?)
+        }
+        "session/list" => Ok(serde_json::to_value(runtime.list_sessions()?)?),
+        "session/close" => {
+            let id = request
+                .params
+                .get("id")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            Ok(json!({"closed": runtime.close_session(id)?}))
+        }
+        "jobs/start" => {
+            let job: xiaoyu_protocol::JobStartRequest =
+                serde_json::from_value(request.params.clone())?;
+            Ok(serde_json::to_value(runtime.start_job(job)?)?)
+        }
+        "jobs/get" => {
+            let id = request
+                .params
+                .get("id")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            Ok(serde_json::to_value(runtime.get_job(id)?)?)
+        }
+        "jobs/list" => Ok(serde_json::to_value(runtime.list_jobs()?)?),
+        "jobs/output" => {
+            let output: xiaoyu_protocol::JobOutputRequest =
+                serde_json::from_value(request.params.clone())?;
+            Ok(serde_json::to_value(runtime.job_output(output)?)?)
+        }
+        "jobs/cancel" => {
+            let id = request
+                .params
+                .get("id")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            Ok(serde_json::to_value(runtime.cancel_job(id)?)?)
+        }
         "brain/prepare" => Ok(serde_json::to_value(
             runtime.prepare_brain(request.params.clone())?,
         )?),

@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.9**  
+当前版本：**0.2.10**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 当前状态：[`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)  
 架构边界：[`docs/PROJECT-ARCHITECTURE.md`](docs/PROJECT-ARCHITECTURE.md) / [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)
@@ -46,6 +46,15 @@ build/
 `build/bin/` **不再是正式产物目录**。Wails CLI 可能在构建瞬间创建它，脚本会把有效文件转移到 `build/work/` / `build/release/` 后自动清掉，因此 Electron-only 发布时看到 `build/bin` 为空是正常的。
 
 
+
+
+## 0.2.10 Rust Session / Long-running Job Runtime
+
+0.2.9 已经冻结 Rust/Go/Vue 的长期职责边界并提交真实依赖锁。0.2.10 开始继续把 XiaoYu 的通用“手脚”迁入 Rust：新增真实 Session Registry 与 Long-running Job Runtime，提供持久 RPC 进程内的 `session/get|list|close`、`jobs/start|get|list|output|cancel`。Job 输出采用有界缓冲，支持状态、PID、退出码、输出游标和取消。
+
+Rust Job 不是新的高权限后门：`jobs/start` 默认拒绝未携带 `hostAuthorized=true` 的请求，工作目录必须限制在 Runtime Root 内。当前这些 RPC 是 Native Runtime 基础设施，**尚未直接暴露给模型**；现有 `shell.exec` 仍经过 Go Host 的 RBAC / 三种审批模式。下一步会建立 Go ↔ Rust 的持久 RPC Worker，再把批准后的长任务逐步切换到 Rust Job Runtime。
+
+本版同时修复 0.2.9 GitHub Actions 唯一红灯：新增 Rust Tool Search 代码按 `cargo fmt` 标准整理。
 
 ## 0.2.9 Rust-first XiaoYu Runtime / 可复现依赖基线
 

@@ -111,6 +111,8 @@ function Assert-ProjectIntegrity {
         'rust/crates/xiaoyu-core/Cargo.toml',
         'rust/crates/xiaoyu-core/src/lib.rs',
         'rust/crates/xiaoyu-core/src/tool_search.rs',
+        'rust/crates/xiaoyu-core/src/session.rs',
+        'rust/crates/xiaoyu-core/src/jobs.rs',
         'rust/crates/xiaoyu-protocol/Cargo.toml',
         'scripts/common/check-github-safety.mjs',
         'scripts/common/check-language-ownership.mjs',
@@ -122,6 +124,7 @@ function Assert-ProjectIntegrity {
         'scripts/common/check-xiaoyu-harness.mjs',
         'scripts/common/check-xiaoyu-agent-runtime.mjs',
         'scripts/common/check-xiaoyu-agent-bench.mjs',
+        'scripts/common/check-xiaoyu-jobs.mjs',
         'scripts/windows/AIGameManagerPanel.ps1',
         'scripts/windows/tasks/Tasks.ps1',
         'docs/NAMING-CONVENTIONS.md',
@@ -140,9 +143,9 @@ function Assert-ProjectIntegrity {
     }
 
     $requiredTrees = @(
-        @{ Path = 'scripts/common'; MinimumFiles = 19 },
+        @{ Path = 'scripts/common'; MinimumFiles = 20 },
         @{ Path = 'scripts/windows'; MinimumFiles = 8 },
-        @{ Path = 'rust/crates'; MinimumFiles = 6 },
+        @{ Path = 'rust/crates'; MinimumFiles = 8 },
         @{ Path = 'internal/xiaoyu'; MinimumFiles = 21 },
         @{ Path = 'frontend/src'; MinimumFiles = 25 }
     )
@@ -372,7 +375,8 @@ function Test-RepositorySafety([ValidateSet('tracked','staged','candidate')] [st
             @{ Path = 'scripts\common\check-language-ownership.mjs'; Name = 'Language Ownership Gate' },
             @{ Path = 'scripts\common\check-dependency-locks.mjs'; Name = 'Dependency Lock Gate' },
             @{ Path = 'scripts\common\check-duplicates.mjs'; Name = 'Duplicate Source Gate' },
-            @{ Path = 'scripts\common\check-github-safety.mjs'; Name = 'GitHub Safety Gate' }
+            @{ Path = 'scripts\common\check-github-safety.mjs'; Name = 'GitHub Safety Gate' },
+            @{ Path = 'scripts\common\check-xiaoyu-jobs.mjs'; Name = 'XiaoYu Session/Job Gate' }
         )
         foreach ($item in $nodeGates) {
             $gate = Join-Path $ProjectRoot $item.Path

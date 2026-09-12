@@ -2,7 +2,7 @@
 
 小鱼是 AI Game Manager Panel 的内置智能核心和主自动化入口。AGMP 是产品；XiaoYu 是产品的智能灵魂。二者不是两个用户产品。
 
-## 1. 0.2.9 定位
+## 1. 0.2.10 定位
 
 0.2.9 起 Rust `xiaoyu-core` 的长期定位从“Brain-only”升级为：
 
@@ -52,7 +52,7 @@ internal/platform/runtime
 internal/ops/files
 ```
 
-它们在 0.2.9 继续工作。迁移规则：
+它们在 0.2.10 继续工作。迁移规则：
 
 1. 新 Agent 通用能力不再默认加到 Go；
 2. Rust 先建立等价协议、测试与 Agent Bench；
@@ -130,8 +130,9 @@ Rust Runtime 与 Go Host 通过协议交换：
 - Runtime Status；
 - Brain Prompt / Decision；
 - Tool/Capability metadata；
-- Session；
-- 后续 Job / PTY / Sandbox / Native Tool requests。
+- Session Registry；
+- Job start/status/list/output/cancel；
+- 后续 PTY / Sandbox / Native Tool requests。
 
 协议字段修改必须同步 Go/Rust 测试与 Gate。
 
@@ -161,3 +162,10 @@ XiaoYu Rust Runtime 是内部组件，不等于桌面壳。
 
 当前 Windows 主桌面仍是 Wails；未来是否迁移 Tauri 单独评估。无论桌面壳是什么，XiaoYu Runtime 都不应与某个 UI 框架强绑定。
 
+
+
+## 9. 0.2.10 Session / Job 边界
+
+`xiaoyu rpc` 现在在单个 Runtime 进程生命周期内维护 Session 与 Job 状态。Job 可以后台运行、查询状态、读取有界输出并取消。当前 Go Host 仍以短 RPC 调用为主，因此这些 stateful primitives 尚未直接替换 `shell.exec`；0.2.11 会先建立持久 RPC Worker，再迁移模型可用的长任务路径。
+
+任何 `jobs/start` 都必须来自已经通过 Host 身份、RBAC 和审批链的调用方；Rust 的 `hostAuthorized` 是内部契约防线，不是独立身份认证系统。
