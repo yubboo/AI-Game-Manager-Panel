@@ -5,6 +5,28 @@
 
 本文件只定义不能被后续开发随意改变的产品与工程原则。0.1.83 完成第二轮核心架构收拢；本版通过 Gate 后冻结主要业务边界，后续功能开发不得随意增加一级域或恢复空占位包。
 
+## 0. GitHub 基线检查与固定源码交付（强制）
+
+AI 与人工开发者必须主动把 GitHub 当成版本/CI 的事实来源。默认仓库为 `yubboo/AI-Game-Manager-Panel`、默认分支 `main`。开始新版本、用户 Push 完成后、修 CI 前、准备下一版源码包前，都必须检查最新 commit 与对应 GitHub Actions Job/Step/日志，不得等用户再次提醒“去 GitHub 看”。
+
+正式开发版默认只交付完整源码包，不交付 patch-only 替代品：
+
+```text
+agmp-<version>.zip + SHA-256
+        ↓
+H:\一键部署\agmp-<version>
+        ↓
+AGMP-Sync.bat
+        ↓
+H:\一键部署\AI-Game-Manager-Panel
+        ↓
+AGMP-GitHub.bat
+        ↓
+1. 一键推送
+```
+
+ZIP 必须保留完整仓库源码树与既有同步/推送入口。除非用户明确提出，否则 AI 不得另造新的同步器、推送入口或只含少量文件的“完整源码包”。
+
 ## 1. 唯一产品主体
 
 **AI Game Manager Panel（AGMP）是唯一产品本体。**
@@ -147,10 +169,18 @@ AI 的主要职责始终围绕 AGMP：理解用户的开服/运维意图，自�
 - Host identity/RBAC/approval 仍是最终授权来源，Rust `hostAuthorized` 只是内部防线。
 - 应用关闭必须显式关闭 Worker；开发模式缺少 Rust binary 时允许降级并给出可诊断状态，不得导致整个 AGMP 无法启动。
 
+## 0.2.18 Windows ConPTY Input Rule
+
+- Windows ConPTY Enter / `appendNewline` 必须发送单个 CR（`\r` / `0x0D`），不得发送 CRLF。
+- Linux PTY 与 fallback backend 保持 LF。
+- CR/LF 平台差异只存在于 Rust Terminal Runtime；Go Host 不复制该判断。
+- Windows newline 单元测试与 Terminal/PTY Gate 必须拒绝 CRLF 回归。
+- Host identity/RBAC/approval 与模型可见执行范围保持不变。
+
 ## 0.2.17 Windows ConPTY Runtime Rule
 
 - Windows Rust canonical cwd 可以内部保留 verbatim path 用于安全比较，但传给 `CreateProcessW` 的本地盘符 current directory 必须去掉 `\\?\` 前缀，避免 `cmd.exe` 按 UNC 语义回退目录。
-- `appendNewline` 是 Terminal backend 语义：Windows ConPTY 必须发送 CRLF，Linux PTY/其他 backend 保持 LF；不得在 Go Host 复制平台判断。
+- 0.2.17 曾尝试 Windows ConPTY CRLF；真实 Runner 已证伪，该项由 0.2.18 单 CR 规则取代。Linux PTY/其他 backend 保持 LF；不得在 Go Host 复制平台判断。
 - Terminal process mutex 必须用作用域释放；禁止对 shadow 后的 `&mut TerminalProcess` 调用 `drop()` 假装释放锁。
 - Native Windows/Linux 构建不得保留只属于 fallback backend 的 dead-code variant。
 - 本版仍不把 Terminal 直接暴露成新的模型自由 shell；Host identity/RBAC/approval 规则不变。

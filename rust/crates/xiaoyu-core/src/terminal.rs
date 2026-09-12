@@ -510,7 +510,7 @@ impl TerminalManager {
 fn terminal_newline(backend: &str) -> &'static [u8] {
     #[cfg(windows)]
     if backend == WINDOWS_CONPTY_BACKEND {
-        return b"\r\n";
+        return b"\r";
     }
     let _ = backend;
     b"\n"
@@ -847,8 +847,8 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
-    fn windows_conpty_append_newline_uses_crlf() {
-        assert_eq!(terminal_newline(WINDOWS_CONPTY_BACKEND), b"\r\n");
+    fn windows_conpty_append_newline_uses_cr() {
+        assert_eq!(terminal_newline(WINDOWS_CONPTY_BACKEND), b"\r");
     }
 
     #[cfg(windows)]

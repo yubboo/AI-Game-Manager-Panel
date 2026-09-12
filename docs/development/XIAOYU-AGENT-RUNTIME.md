@@ -146,6 +146,10 @@ The benchmark entry point is `go test ./internal/xiaoyu/host -run '^TestAgentBen
 
 这一步仍不等于把模型可见 `shell.exec` 直接切到 Rust。下一阶段只迁移**已经通过 Host Approval**的长任务，并保留 Domain Tool 优先和执行后验证。
 
+## 0.2.18 Windows ConPTY Input Convergence
+
+0.2.17 Windows Runner 已把剩余失败收缩到交互输入。0.2.18 把 Windows ConPTY `appendNewline` 从 CRLF 修正为单个 CR（`\r`），并同步单元测试与静态 Gate；Linux PTY / fallback 保持 LF。模型可见 `shell.exec`、Go Host 审批链与 Domain Service 均保持不变。
+
 ## 0.2.17 Windows ConPTY Runtime Convergence
 
 0.2.16 已让 Windows Rust workspace 编译成功并真实进入 ConPTY integration。0.2.17 根据 Runner 日志修复 `\\?\X:\...` cwd 被 CMD 当成 UNC 风格路径、ConPTY 输入换行语义、resize mutex guard 与 fallback dead-code。模型可见 `shell.exec`、Go Host 审批链与 Domain Service 均保持不变。

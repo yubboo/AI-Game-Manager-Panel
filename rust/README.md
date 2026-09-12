@@ -53,6 +53,10 @@ Rust Native Runtime 不等于无限权限。`jobs/start` 只是 Host 授权后�
 
 AGMP Go Host now keeps one supervised `xiaoyu rpc` process alive. Tool Search, Brain policy, Session Registry and Long-running Jobs share this process lifetime. The Worker remains an embedded AGMP component; Host RBAC/approval stays authoritative.
 
+## 0.2.18 Windows ConPTY Input Convergence
+
+The real 0.2.17 Windows Runner narrowed the remaining failure to interactive input: ConPTY starts `cmd.exe` in the correct cwd, but CRLF does not execute the probe as an Enter key. 0.2.18 represents Enter with a single CR (`\r`, `0x0D`) while Linux PTY and fallback backends keep LF. The Windows unit test and Terminal source gate freeze this behavior. No new Agent privilege is introduced.
+
 ## 0.2.17 Windows ConPTY Runtime Convergence
 
 0.2.16 passed Windows `cargo check` and moved the remaining failure into the real ConPTY integration test. The runner showed two Windows-only semantics: canonical Rust paths such as `\\?\D:\...` are not suitable as `cmd.exe` current directories, and ConPTY interactive Enter should be represented as CRLF rather than the LF used by Unix PTYs. 0.2.17 normalizes the cwd only at the Win32 process-spawn boundary, makes newline handling backend-aware, removes a stale mutex-drop pattern, and cfg-gates the pipe-only process variant. No new Agent privilege is introduced.

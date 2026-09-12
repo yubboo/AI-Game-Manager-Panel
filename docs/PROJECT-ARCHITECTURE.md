@@ -1,4 +1,4 @@
-# AI Game Manager Panel 0.2.17 总架构
+# AI Game Manager Panel 0.2.18 总架构
 
 > AGMP 是唯一产品。用户与 XiaoYu 是“两个大脑、同一副身体”：用户拥有最终授权与接管权；XiaoYu 负责理解、规划、执行编排、验证、恢复与总结。0.2.9 起语言职责正式冻结为 **Rust-first Agent Runtime / Go Domain Host / Vue UI**。
 
@@ -318,6 +318,25 @@ Go AGMP Host
 ```
 
 0.2.11 后 Go 不再为每个 XiaoYu RPC 启动一次 Rust 进程。长期 Worker 保持 stateful Runtime，同时在超时/断管时被回收。模型可见 `shell.exec` 仍未直接迁移；下一步只迁移已审批的长任务。
+
+## 0.2.18 Windows ConPTY Input Convergence
+
+0.2.17 已证明 Windows ConPTY 的 ABI、`CreateProcessW` cwd、进程启动与 resize 路径可以进入真实 Windows Runner；剩余失败是输入层。0.2.18 把 Windows Enter 语义固定为单个 CR（`\r`），Linux PTY / fallback 仍为 LF。
+
+```text
+Go Host Approval / RBAC
+        │
+        ▼
+Persistent XiaoYu Rust Worker
+        │
+        ├─ Linux → native PTY      ✅ CI-proven / LF
+        └─ Windows → ConPTY
+             ├─ Win32 cwd normalize ✅
+             ├─ Enter = CR           → 0.2.18
+             └─ resize/output         ✅ startup path proven
+```
+
+该差异只存在 Rust Terminal backend；`terminal/*` contract、Go Host identity/RBAC/approval 与模型可见权限均不改变。
 
 ## 0.2.17 Windows ConPTY Runtime Convergence
 

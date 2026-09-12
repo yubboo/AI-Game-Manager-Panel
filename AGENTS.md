@@ -24,6 +24,41 @@ AI Game Manager Panel（AI游戏管理器面板）定位为：**现代化、智�
 
 **语言归属先读规则：** 新增或迁移代码前必须阅读 `docs/architecture/LANGUAGE-OWNERSHIP.md`。Agent 通用能力默认 Rust-first；游戏/产品 Domain 默认 Go；UI 默认 Vue/TypeScript。
 
+## 1.0 GitHub 基线与固定开发版交付流程
+
+这是所有人工开发者与 AI 开发代理的强制工作流，不需要用户重复提醒。
+
+### 主动查看 GitHub
+
+默认仓库固定为 `https://github.com/yubboo/AI-Game-Manager-Panel.git`，默认分支为 `main`。以下时点必须主动查看 GitHub，而不是等待用户要求：
+
+1. 开始新的版本开发前；
+2. 用户说“推好了 / 已推送 / 看看 GitHub”后；
+3. 修复 CI 失败前；
+4. 准备下一版源码包前。
+
+每次至少确认：`main` 最新 commit SHA/消息、该 commit 对应 GitHub Actions、失败 Job/Step 与日志。下一版修复必须以真实 Runner 结果为依据；本地推测不能覆盖 GitHub 实际证据。
+
+### 固定开发版交付
+
+除非用户明确要求 patch-only，正式开发版一律交付**完整源码包**：
+
+```text
+下载 agmp-<version>.zip + SHA-256
+        ↓
+解压到 H:\一键部署\agmp-<version>
+        ↓
+AGMP-Sync.bat
+        ↓
+H:\一键部署\AI-Game-Manager-Panel
+        ↓
+AGMP-GitHub.bat
+        ↓
+1. 一键推送
+```
+
+源码 ZIP 必须包含完整项目目录（`.github/cmd/configs/desktop/distribution/docs/frontend/internal/runtime/rust/scripts` 等）以及根目录开发入口。禁止把只有几个脚本的同步包伪装成完整版本源码包。交付回复必须同时给出 ZIP 的 SHA-256。
+
 ## 1.1 开发环境与生产环境硬边界
 
 必须严格区分“源码开发/发行构建环境”和“普通用户生产运行环境”：
@@ -377,10 +412,18 @@ All contributors and AI agents must follow `docs/NAMING-CONVENTIONS.md` before c
 - Windows 源码同步禁止直接显示 Robocopy OEM 报表；中文路径诊断必须使用 Unicode 日志或 PowerShell 自身输出。
 - 新增/修改 Worker 必须通过 `check-xiaoyu-worker.mjs`，并继续通过 Rust fmt/check/test、Go test/vet 与 Agent Bench。
 
+### 0.2.18 Windows ConPTY Input 硬规则
+
+- 0.2.17 的 CRLF 输入尝试已被真实 Windows Runner 证伪；Windows ConPTY 的 Enter / `appendNewline` 必须发送单个 CR（`\r` / `0x0D`）。
+- Linux PTY 与 fallback backend 继续使用 LF（`\n`）；平台输入差异只留在 Rust Terminal Runtime，不复制到 Go Host。
+- `check-xiaoyu-terminal.mjs` 与 Windows 单元测试必须冻结 CR 语义并拒绝 CRLF 回归。
+- 0.2.17 的 cwd normalize、resize lexical MutexGuard 与 fallback `Pipe` cfg 修复继续有效。
+- 本版仍不扩大模型可见 Terminal 权限；Windows integration/workspace tests 全绿前不进入下一阶段。
+
 ### 0.2.17 Windows ConPTY Runtime 硬规则
 
 - Runtime Root / Session scope 内部仍使用 canonical path 做边界比较；只有在 Windows `CreateProcessW` current-directory 边界才规范化本地 `\\?\X:\...` verbatim 前缀。
-- Windows ConPTY 的 `appendNewline` 必须发送 CRLF；Linux PTY 与 fallback backend 使用 LF。平台换行判断留在 Rust Terminal Runtime，不复制到 Go Host。
+- 0.2.17 曾尝试让 Windows ConPTY `appendNewline` 发送 CRLF；真实 Runner 已证明该输入语义不成立，现由 0.2.18 的单 CR 规则取代。Linux PTY 与 fallback backend 始终使用 LF。
 - Terminal process mutex 必须依赖 lexical scope 释放；禁止 `drop(&mut TerminalProcess)` 这种无效解锁写法。
 - `TerminalProcess::Pipe` 只属于无 native PTY/ConPTY 的 fallback 平台；Windows/Linux native build 不应保留该 dead-code variant。
 - 0.2.17 仍不扩大模型可见 shell 权限。Windows ConPTY integration/workspace tests 全绿前，不进入 Agent Terminal wiring 或 Sandbox/Capability Lease。

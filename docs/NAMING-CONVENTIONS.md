@@ -235,6 +235,24 @@ agmp-0.2.8.zip
 AI-Game-Manager-Panel-0.2.4-XiaoYu-Agent-Runtime-Full-Source-Candidate.zip
 ```
 
+源码交付不仅固定文件名，也固定用户流程：
+
+```text
+agmp-<version>.zip + SHA-256
+        ↓
+H:\一键部署\agmp-<version>
+        ↓
+AGMP-Sync.bat
+        ↓
+H:\一键部署\AI-Game-Manager-Panel
+        ↓
+AGMP-GitHub.bat
+        ↓
+1. 一键推送
+```
+
+版本 ZIP 必须是完整源码树；禁止把 `patch`、少量脚本或长描述归档作为默认正式开发版交付。
+
 ## 10. AI 开发代理规则
 
 所有 AI 在新增文件前必须先检查：
@@ -244,7 +262,8 @@ AI-Game-Manager-Panel-0.2.4-XiaoYu-Agent-Runtime-Full-Source-Candidate.zip
 3. 文件名是否超过推荐长度；
 4. 完整相对路径是否过长；
 5. 是否为了“描述更完整”而重复命名；
-6. 是否应通过拆目录/拆职责解决，而不是继续加长名字。
+6. 是否应通过拆目录/拆职责解决，而不是继续加长名字；
+7. 开始新版本或准备交付前，是否已主动查看 GitHub `main` 最新 commit 与对应 Actions 结果。
 
 AI 不得仅为了“看起来详细”创建超长文件名。
 

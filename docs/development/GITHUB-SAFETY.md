@@ -41,6 +41,12 @@ AI Game Manager Panel 客户端只需要**公钥**验证许可证。真正能生
 
 公开公钥环允许同时保留 `active / retired / legacy` 公钥；旧公钥继续用于验证已经签发的历史 BFLC2。正式 Release 使用 `node scripts/common/check-release-key.mjs` 强制要求存在一个合法 active 公钥。
 
+## AI 主动查看 GitHub 基线
+
+GitHub 不只是最终 Push 目标，也是版本与 CI 的事实来源。AI/开发者在以下场景必须主动检查仓库 `yubboo/AI-Game-Manager-Panel` 的 `main`，不等待用户提醒：开始新版本、用户报告 Push 完成、修复 CI、准备下一版源码包。
+
+检查顺序固定为：最新 commit SHA/消息 → 对应 Actions run → Job/Step 状态 → 失败日志。只有真实 Runner 输出能证明平台行为；本地源码推断不能替代 Windows/Linux CI 证据。
+
 ## 每次 Push 前
 
 优先运行：

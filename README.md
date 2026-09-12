@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.17**  
+当前版本：**0.2.18**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 当前状态：[`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)  
 架构边界：[`docs/PROJECT-ARCHITECTURE.md`](docs/PROJECT-ARCHITECTURE.md) / [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)
@@ -47,6 +47,12 @@ build/
 
 
 
+
+## 0.2.18 Windows ConPTY Input Convergence
+
+0.2.17 已经证明 Windows ConPTY 可以在真实 Windows Runner 上通过 `cargo fmt` 与 `cargo check --workspace --locked`，`cmd.exe` 也能在正确仓库 cwd 启动。剩余失败只集中在输入：0.2.17 把 `appendNewline` 设为 CRLF，但真实终端 Enter 在 ConPTY 输入流中应为单个 CR（`\r` / `0x0D`）。
+
+0.2.18 只修正这一输入语义：Windows ConPTY 使用 CR，Linux PTY / fallback 继续使用 LF；对应单元测试和 Terminal/PTY Gate 同步冻结 CR 规则。本版同时把 GitHub 主动检查与完整源码交付流程写入开发规范，后续 AI 必须先查看 `main` 最新提交和对应 Actions，再决定下一版改动。
 
 ## 0.2.17 Windows ConPTY Runtime Convergence
 

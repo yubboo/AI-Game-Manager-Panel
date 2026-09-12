@@ -4,22 +4,26 @@
 
 ## Current version
 
-**0.2.17 — Windows ConPTY Runtime Convergence**
+**0.2.18 — Windows ConPTY Input Convergence**
 
 ## Stable baseline
 
-0.2.16 confirmed that Windows ConPTY now compiles on the real Windows GitHub Runner: `cargo fmt` and `cargo check --workspace --locked` both pass. Safety, Linux native PTY, Linux Headless and Windows Helper remain green. The remaining red lane is the Windows ConPTY runtime integration itself.
+0.2.17 proved that the Windows ConPTY ABI, `CreateProcessW` cwd normalization, resize lock scope and native/fallback compile boundaries reach the real Windows GitHub Runner. Windows `cargo fmt` and `cargo check --workspace --locked` pass. Safety, Linux native PTY, Linux Headless and Windows Helper remain green.
 
-The 0.2.16 Runner exposed two concrete Windows runtime semantics: Rust canonical paths such as `\\?\D:\...` were handed to `cmd.exe` as the current directory and treated as UNC-style paths, causing CMD to fall back to `C:\Windows`; and `terminal/write` used LF for `appendNewline`, so the ConPTY shell did not reliably receive an Enter command.
+The remaining failure is narrower: the ConPTY process starts and shows the correct repository cwd, but commands written with CRLF are not executed as Enter. The official ConPTY/terminal input behavior uses a single CR (`\r`, `0x0D`) for the Enter key.
 
-## 0.2.17 changes
+## 0.2.18 changes
 
-- Normalize Windows verbatim local-drive cwd only at the `CreateProcessW` boundary while keeping canonical paths for internal scope/security checks.
-- Use backend-aware terminal newline semantics: Windows ConPTY uses CRLF; Linux PTY and fallback terminals use LF.
-- Fix Terminal resize lock lifetime with lexical `MutexGuard` scope instead of dropping a shadowed `&mut TerminalProcess` reference.
-- Compile the stdio `Pipe` process variant only on fallback platforms so Linux/Windows native builds do not carry dead code.
-- Extend the Terminal/PTY source gate with Windows cwd normalization, CRLF and regression checks.
+- Windows ConPTY `appendNewline` sends a single CR (`\r`) instead of CRLF.
+- Linux PTY and fallback backends continue to use LF (`\n`).
+- Rename the Windows newline unit test to freeze CR semantics and update the Terminal/PTY source Gate accordingly.
+- Preserve the 0.2.17 cwd normalization, resize lock lifetime and fallback cfg fixes.
+- Freeze the development handoff: inspect GitHub first, deliver a complete `agmp-<version>.zip` + SHA-256, run `AGMP-Sync.bat`, then `AGMP-GitHub.bat -> 1. 一键推送`.
 - Do not add new model-visible execution privileges in this release.
+
+## Mandatory GitHub baseline workflow
+
+Before starting a new version, after the user reports a push, and before preparing the next source bundle, AI/developers must proactively inspect `yubboo/AI-Game-Manager-Panel` on GitHub: confirm `main` latest commit, inspect the matching GitHub Actions run/jobs/logs, and use those results as the next change baseline. Do not wait for the user to remind the AI to check GitHub.
 
 ## Current migration boundary
 
@@ -30,7 +34,7 @@ Still in Go for compatibility:
 - current model-visible `shell.exec`;
 - AGMP Domain Tool registry and game/product services.
 
-Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs, Persistent RPC Worker and Terminal Runtime. Linux native PTY is CI-proven. Windows ConPTY is compile-proven and is waiting for runtime integration/workspace tests to turn green.
+Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs, Persistent RPC Worker and Terminal Runtime. Linux native PTY is CI-proven. Windows ConPTY is compile/start/cwd-proven and is waiting for input integration/workspace tests to turn green.
 
 ## Next runtime milestones
 

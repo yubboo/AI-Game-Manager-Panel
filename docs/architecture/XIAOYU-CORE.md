@@ -174,6 +174,10 @@ XiaoYu Rust Runtime 是内部组件，不等于桌面壳。
 
 Go Host 现在长期监督一个 `xiaoyu rpc` 进程，Rust Session/Job 状态因此可以跨多次 RPC 保持。Worker 是 XiaoYu Runtime 的内部基础设施，不是新的用户产品或独立权限层。Host 仍负责身份、RBAC、审批、审计与 Domain Tool；Rust 负责 Agent Runtime state/native primitives。Worker 重启意味着易失 Session/Job state 丢失，Host 必须重新观察真实系统状态。
 
+## 15. 0.2.18 Windows ConPTY Input 收敛边界
+
+0.2.17 的真实 Windows Runner 已证明 ConPTY 能编译、启动并进入正确 cwd，但 CRLF 没有形成期望的交互 Enter。0.2.18 将 Windows `appendNewline` 固定为单个 CR（`\r`）；Linux PTY / fallback 继续使用 LF。Terminal protocol、Host authorization、RBAC 与 Domain authority 均不改变。
+
 ## 14. 0.2.17 Windows ConPTY Runtime 收敛边界
 
 0.2.16 Windows `cargo check` 已通过，说明 FFI/ABI 边界正确。剩余失败来自运行时语义：Rust `canonicalize()` 产生的本地 verbatim drive path 不应原样交给 `cmd.exe`，ConPTY 交互输入也需要 Windows Enter/CRLF 语义。0.2.17 在 `CreateProcessW` 边界规范化 cwd，并让 `appendNewline` 按 backend 选择 CRLF/LF。Terminal protocol、Host authorization 与 Linux PTY 均保持不变。

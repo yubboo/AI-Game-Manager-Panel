@@ -1,5 +1,17 @@
 # AI-Game-Manager-Panel 项目历史
 
+## AI-Game-Manager-Panel 0.2.18
+
+### Windows ConPTY Input Convergence
+
+- 0.2.17 Windows Runner 已通过 `cargo fmt` 与 `cargo check --workspace --locked`，并且 ConPTY 已能启动 `cmd.exe`、输出正确仓库 cwd；剩余两个 Windows 测试失败都集中在输入命令没有作为 Enter 执行。
+- Windows ConPTY `appendNewline` 从 CRLF 修正为单个 CR（`\r` / `0x0D`）；Linux PTY / fallback 继续使用 LF。
+- Windows newline 单元测试改为 `windows_conpty_append_newline_uses_cr`，Terminal/PTY Gate 同步拒绝 CRLF 回归。
+- 0.2.17 的 cwd verbatim-prefix 规范化、resize MutexGuard lexical scope 与 fallback `Pipe` cfg 继续保留。
+- 固定开发工作流写入规范：AI 在新版本开始前、用户报告 Push 后、下一版打包前必须主动查看 GitHub `main` 最新提交和对应 Actions/失败日志，不再等待用户提醒。
+- 固定源码交付链：完整 `agmp-<version>.zip` + SHA-256 → `AGMP-Sync.bat` → `H:\一键部署\AI-Game-Manager-Panel` → `AGMP-GitHub.bat` → `1. 一键推送`。
+- 本版不扩大模型可见 Terminal 权限；Windows ConPTY 是否冻结仍以真实 Windows integration + workspace tests 全绿为准。
+
 ## AI-Game-Manager-Panel 0.2.17
 
 ### Windows ConPTY Runtime Convergence

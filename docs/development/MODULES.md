@@ -1,4 +1,4 @@
-# AGMP 0.2.17 模块边界
+# AGMP 0.2.18 模块边界
 
 > 0.2.9 冻结语言职责：Rust-first XiaoYu Agent Runtime、Go Domain Host、Vue UI。详细边界见 `docs/architecture/LANGUAGE-OWNERSHIP.md`。模块是否规划存在仍由 `configs/modules.json` 描述；源码目录只为真实实现创建。
 

@@ -82,8 +82,8 @@ try {
   if (!windowsPty.includes('windows_current_directory_removes_verbatim_prefix_before_create_process')) failures.push('Windows ConPTY 缺少 cwd verbatim-prefix 单元测试')
 
   if (!terminal.includes('fn terminal_newline(backend: &str)')) failures.push('Terminal Runtime 缺少 backend-aware newline 语义')
-  if (!terminal.includes('return b"\\r\\n";')) failures.push('Windows ConPTY appendNewline 必须发送 CRLF/Enter 语义')
-  if (!terminal.includes('windows_conpty_append_newline_uses_crlf')) failures.push('Windows ConPTY 缺少 CRLF newline 单元测试')
+  if (!terminal.includes('return b"\\r";')) failures.push('Windows ConPTY appendNewline 必须发送 CR/Enter 语义')
+  if (!terminal.includes('windows_conpty_append_newline_uses_cr')) failures.push('Windows ConPTY 缺少 CR newline 单元测试')
   if (!terminal.includes('AGMP-CONPTY-CWD:%CD%')) failures.push('Windows ConPTY integration 必须验证 CreateProcessW current directory')
   const staleResizeUnlock = `        let process = process
             .as_mut()
@@ -168,4 +168,4 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY cwd/CRLF · resize · per-input Host authorization)')
+console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY cwd/CR · resize · per-input Host authorization)')

@@ -5,6 +5,22 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
+## 0.2.18：Windows ConPTY Input Convergence
+
+- 以 0.2.17 Windows Runner 的真实失败日志为唯一修复依据，不扩大模型执行权限；
+- Windows ConPTY `appendNewline` 必须发送单个 CR（`\r` / `0x0D`），不得再发送 CRLF；
+- Linux PTY / fallback backend 继续使用 LF；
+- Windows newline 单元测试与 Terminal/PTY Gate 必须冻结 CR 语义；
+- 0.2.17 已通过的 cwd normalize、resize lock scope、fallback cfg 不得回退；
+- AI 在开始下一版本、用户 Push 完成后、准备下一源码包前必须主动查看 GitHub `main` 最新提交与对应 Actions/失败日志；
+- 正式开发版交付必须是完整 `agmp-<version>.zip` + SHA-256，不得默认改成 patch-only 包。
+
+**冻结条件：** `Windows Rust Runtime + ConPTY` 的 `cargo check`、`windows_terminal_` integration、workspace tests 全绿；Safety、Linux PTY、Windows Helper、Linux Headless 不回退。
+
+### 下一步
+
+ConPTY 全绿后才进入 Approved Agent → Native Terminal wiring 与 Sandbox / Capability Lease。
+
 ## 0.2.17：Windows ConPTY Runtime Convergence
 
 - 以 0.2.16 Windows Runner 的真实 integration 日志为修复依据，不增加新的模型执行权限；

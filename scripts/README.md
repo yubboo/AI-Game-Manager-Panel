@@ -1,4 +1,4 @@
-# AI Game Manager Panel Scripts 0.2.17
+# AI Game Manager Panel Scripts 0.2.18
 
 Windows 开发助手自 0.1.64 起固定为：**一个 ASCII-safe BAT 启动器 + PowerShell Task Runner**。
 
@@ -108,6 +108,13 @@ GitHub Safety Job 单独执行 `go test ./internal/xiaoyu/host -run '^TestAgentB
 ## 0.2.10 Session / Job Runtime Gate
 
 `check-xiaoyu-jobs.mjs` validates the Rust Session Registry and Long-running Job contracts: Host authorization, Runtime Root cwd containment, bounded output, cancellation and JSON-RPC methods. It is part of GitHub Actions, Windows project checks and the GitHub push helper.
+
+## 0.2.18 ConPTY CR input / fixed development handoff
+
+- `check-xiaoyu-terminal.mjs` freezes Windows ConPTY Enter as a single CR, not CRLF.
+- `AGMP-Sync.bat` / `sync-agmp.ps1` keep the already validated 0.2.17 implementation and encoding rules; this release does not rewrite the sync helper.
+- AI/developers must inspect GitHub `main` and the matching Actions run before choosing the next fix.
+- Development source delivery stays fixed: complete `agmp-<version>.zip` + SHA-256 → `AGMP-Sync.bat` → Git worktree → `AGMP-GitHub.bat` → `1. 一键推送`.
 
 ## 0.2.17 Windows ConPTY runtime / local cargo check preflight
 

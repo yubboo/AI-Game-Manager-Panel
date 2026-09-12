@@ -1,6 +1,6 @@
 // Package xiaoyuruntime connects AGMP to XiaoYu's Rust Agent Runtime.
 //
-// 0.2.17 keeps the same Host-authorized cross-platform Terminal RPC while Windows ConPTY converges its cwd and CRLF runtime semantics exposed by the Windows Runner. Go remains the source
+// 0.2.18 keeps the same Host-authorized cross-platform Terminal RPC while Windows ConPTY converges Enter input to a single CR after the real Windows Runner disproved CRLF. Go remains the source
 // of truth for AGMP domain services, while generic Agent capabilities move to
 // Rust incrementally. Existing Go execution paths remain compatible until the
 // Rust equivalents have protocol tests and Agent Bench coverage.
@@ -243,7 +243,7 @@ func (s *Service) Close() {
 }
 
 // SessionInfo, Job* and Terminal* structures mirror xiaoyu.v1. They are Host-internal
-// primitives in 0.2.17, including Linux PTY and Windows ConPTY/resize; model-visible execution still goes through AGMP Tool
+// primitives in 0.2.18, including Linux PTY and Windows ConPTY/resize; model-visible execution still goes through AGMP Tool
 // contracts and the existing RBAC/approval boundary.
 type SessionInfo struct {
 	ID           string `json:"id"`
