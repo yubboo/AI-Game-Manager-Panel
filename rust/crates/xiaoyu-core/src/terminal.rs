@@ -5,9 +5,8 @@ use anyhow::{Result, bail};
 use std::collections::{HashMap, VecDeque};
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
-use std::process::Child;
 #[cfg(not(any(target_os = "linux", windows)))]
-use std::process::{Command, Stdio};
+use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -67,6 +66,7 @@ struct TerminalStateData {
 }
 
 enum TerminalProcess {
+    #[cfg(not(any(target_os = "linux", windows)))]
     Pipe(Child),
     #[cfg(target_os = "linux")]
     LinuxPty(crate::pty_linux::LinuxPtyProcess),
@@ -77,6 +77,7 @@ enum TerminalProcess {
 impl TerminalProcess {
     fn pid(&self) -> u32 {
         match self {
+            #[cfg(not(any(target_os = "linux", windows)))]
             Self::Pipe(child) => child.id(),
             #[cfg(target_os = "linux")]
             Self::LinuxPty(process) => process.pid(),
@@ -87,6 +88,7 @@ impl TerminalProcess {
 
     fn try_wait(&mut self) -> io::Result<Option<i32>> {
         match self {
+            #[cfg(not(any(target_os = "linux", windows)))]
             Self::Pipe(child) => child
                 .try_wait()
                 .map(|status| status.map(|status| status.code().unwrap_or_default())),
@@ -99,6 +101,7 @@ impl TerminalProcess {
 
     fn kill(&mut self) -> io::Result<()> {
         match self {
+            #[cfg(not(any(target_os = "linux", windows)))]
             Self::Pipe(child) => child.kill(),
             #[cfg(target_os = "linux")]
             Self::LinuxPty(process) => process.kill(),
@@ -109,6 +112,7 @@ impl TerminalProcess {
 
     fn resize(&mut self, rows: u16, cols: u16) -> io::Result<()> {
         match self {
+            #[cfg(not(any(target_os = "linux", windows)))]
             Self::Pipe(_) => Err(io::Error::new(
                 io::ErrorKind::Unsupported,
                 "terminal backend does not support resize",
@@ -388,7 +392,7 @@ impl TerminalManager {
             bail!("terminal input exceeds {MAX_WRITE_BYTES} bytes");
         }
         let entry = self.entry(&request.id)?;
-        {
+        let newline = {
             let state = entry
                 .state
                 .lock()
@@ -396,7 +400,8 @@ impl TerminalManager {
             if state.state != TerminalState::Running {
                 bail!("terminal is not running: {}", request.id);
             }
-        }
+            terminal_newline(&state.backend)
+        };
         let mut input = entry
             .input
             .lock()
@@ -406,7 +411,7 @@ impl TerminalManager {
             .ok_or_else(|| anyhow::anyhow!("terminal input is already closed"))?;
         writer.write_all(request.data.as_bytes())?;
         if request.append_newline {
-            writer.write_all(b"\n")?;
+            writer.write_all(newline)?;
         }
         writer.flush()?;
         drop(input);
@@ -439,15 +444,16 @@ impl TerminalManager {
                 bail!("terminal is not running: {}", request.id);
             }
         }
-        let mut process = entry
-            .process
-            .lock()
-            .map_err(|_| anyhow::anyhow!("terminal process lock poisoned"))?;
-        let process = process
-            .as_mut()
-            .ok_or_else(|| anyhow::anyhow!("terminal process is unavailable"))?;
-        process.resize(request.rows, request.cols)?;
-        drop(process);
+        {
+            let mut process = entry
+                .process
+                .lock()
+                .map_err(|_| anyhow::anyhow!("terminal process lock poisoned"))?;
+            let process = process
+                .as_mut()
+                .ok_or_else(|| anyhow::anyhow!("terminal process is unavailable"))?;
+            process.resize(request.rows, request.cols)?;
+        }
         {
             let mut state = entry
                 .state
@@ -499,6 +505,15 @@ impl TerminalManager {
             .cloned()
             .ok_or_else(|| anyhow::anyhow!("unknown terminal: {id}"))
     }
+}
+
+fn terminal_newline(backend: &str) -> &'static [u8] {
+    #[cfg(windows)]
+    if backend == WINDOWS_CONPTY_BACKEND {
+        return b"\r\n";
+    }
+    let _ = backend;
+    b"\n"
 }
 
 fn snapshot(entry: &TerminalEntry) -> Result<TerminalSnapshot> {
@@ -832,8 +847,19 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
+    fn windows_conpty_append_newline_uses_crlf() {
+        assert_eq!(terminal_newline(WINDOWS_CONPTY_BACKEND), b"\r\n");
+    }
+
+    #[cfg(windows)]
+    #[test]
     fn windows_terminal_conpty_accepts_io_and_resize() {
         let root = std::env::current_dir().unwrap();
+        let root_text = root.to_string_lossy();
+        let expected_cwd = root_text
+            .strip_prefix(r"\\?\")
+            .unwrap_or(root_text.as_ref())
+            .to_string();
         let manager = TerminalManager::new(root);
         let terminal = manager
             .start(
@@ -874,6 +900,14 @@ mod tests {
         manager
             .write(TerminalWriteRequest {
                 id: terminal.id.clone(),
+                data: "echo AGMP-CONPTY-CWD:%CD%".to_string(),
+                append_newline: true,
+                host_authorized: true,
+            })
+            .unwrap();
+        manager
+            .write(TerminalWriteRequest {
+                id: terminal.id.clone(),
                 data: "exit".to_string(),
                 append_newline: true,
                 host_authorized: true,
@@ -888,11 +922,16 @@ mod tests {
                     limit: 100,
                 })
                 .unwrap();
-            if output
+            let has_probe = output
                 .chunks
                 .iter()
-                .any(|chunk| chunk.text.contains("AGMP-CONPTY"))
-            {
+                .any(|chunk| chunk.text.contains("AGMP-CONPTY"));
+            let has_cwd = output.chunks.iter().any(|chunk| {
+                chunk
+                    .text
+                    .contains(&format!("AGMP-CONPTY-CWD:{expected_cwd}"))
+            });
+            if has_probe && has_cwd {
                 let _ = manager.close(&terminal.id);
                 return;
             }

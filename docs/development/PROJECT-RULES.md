@@ -147,13 +147,13 @@ AI 的主要职责始终围绕 AGMP：理解用户的开服/运维意图，自�
 - Host identity/RBAC/approval 仍是最终授权来源，Rust `hostAuthorized` 只是内部防线。
 - 应用关闭必须显式关闭 Worker；开发模式缺少 Rust binary 时允许降级并给出可诊断状态，不得导致整个 AGMP 无法启动。
 
-## 0.2.16 Windows ConPTY ABI Rule
+## 0.2.17 Windows ConPTY Runtime Rule
 
-- Windows ConPTY 的 Rust FFI 必须以当前锁定 `windows-sys` 签名为准，不允许凭 C/C++ 旧 typedef 直觉猜 Rust 生成类型。
-- `UpdateProcThreadAttribute` attribute 参数必须是 `usize`；`PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE` 需要显式转换。
-- `HPCON` 当前为 `isize`，空值使用 `0`，不得使用 `null_mut()`。
-- 本机存在 Cargo 时，Push 前必须执行 `cargo fmt --check` 与 `cargo check --workspace --locked`。
-- Linux PTY 已通过真实 CI，修 Windows 不得回退 Linux backend 或授权边界。
+- Windows Rust canonical cwd 可以内部保留 verbatim path 用于安全比较，但传给 `CreateProcessW` 的本地盘符 current directory 必须去掉 `\\?\` 前缀，避免 `cmd.exe` 按 UNC 语义回退目录。
+- `appendNewline` 是 Terminal backend 语义：Windows ConPTY 必须发送 CRLF，Linux PTY/其他 backend 保持 LF；不得在 Go Host 复制平台判断。
+- Terminal process mutex 必须用作用域释放；禁止对 shadow 后的 `&mut TerminalProcess` 调用 `drop()` 假装释放锁。
+- Native Windows/Linux 构建不得保留只属于 fallback backend 的 dead-code variant。
+- 本版仍不把 Terminal 直接暴露成新的模型自由 shell；Host identity/RBAC/approval 规则不变。
 
 ## 0.2.15 Native Terminal CI Convergence Rule
 

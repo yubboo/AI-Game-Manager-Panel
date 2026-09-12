@@ -377,6 +377,14 @@ All contributors and AI agents must follow `docs/NAMING-CONVENTIONS.md` before c
 - Windows 源码同步禁止直接显示 Robocopy OEM 报表；中文路径诊断必须使用 Unicode 日志或 PowerShell 自身输出。
 - 新增/修改 Worker 必须通过 `check-xiaoyu-worker.mjs`，并继续通过 Rust fmt/check/test、Go test/vet 与 Agent Bench。
 
+### 0.2.17 Windows ConPTY Runtime 硬规则
+
+- Runtime Root / Session scope 内部仍使用 canonical path 做边界比较；只有在 Windows `CreateProcessW` current-directory 边界才规范化本地 `\\?\X:\...` verbatim 前缀。
+- Windows ConPTY 的 `appendNewline` 必须发送 CRLF；Linux PTY 与 fallback backend 使用 LF。平台换行判断留在 Rust Terminal Runtime，不复制到 Go Host。
+- Terminal process mutex 必须依赖 lexical scope 释放；禁止 `drop(&mut TerminalProcess)` 这种无效解锁写法。
+- `TerminalProcess::Pipe` 只属于无 native PTY/ConPTY 的 fallback 平台；Windows/Linux native build 不应保留该 dead-code variant。
+- 0.2.17 仍不扩大模型可见 shell 权限。Windows ConPTY integration/workspace tests 全绿前，不进入 Agent Terminal wiring 或 Sandbox/Capability Lease。
+
 ### 0.2.16 Windows ConPTY ABI 硬规则
 
 - `windows-sys 0.61.2` 的生成签名是 Rust 侧唯一事实源；Windows FFI 类型不得按 C 头文件印象猜测。

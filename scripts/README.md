@@ -1,4 +1,4 @@
-# AI Game Manager Panel Scripts 0.2.16
+# AI Game Manager Panel Scripts 0.2.17
 
 Windows 开发助手自 0.1.64 起固定为：**一个 ASCII-safe BAT 启动器 + PowerShell Task Runner**。
 
@@ -109,11 +109,11 @@ GitHub Safety Job 单独执行 `go test ./internal/xiaoyu/host -run '^TestAgentB
 
 `check-xiaoyu-jobs.mjs` validates the Rust Session Registry and Long-running Job contracts: Host authorization, Runtime Root cwd containment, bounded output, cancellation and JSON-RPC methods. It is part of GitHub Actions, Windows project checks and the GitHub push helper.
 
-## 0.2.16 Windows ConPTY ABI / local cargo check preflight
+## 0.2.17 Windows ConPTY runtime / local cargo check preflight
 
 - Push helper 的 Rust 本机预检从 `cargo fmt --check` 扩展为 `cargo fmt --check` + `cargo check --workspace --locked`。
 - `pty_linux.rs` 与 `pty_windows.rs` 加入 Push helper 关键源码集合。
-- Terminal Gate 固定 `windows-sys 0.61.2` 的 ConPTY attribute/HPCON 类型契约。
+- Terminal Gate 除保留 `windows-sys 0.61.2` ABI 契约外，还固定 Windows verbatim cwd 规范化、ConPTY CRLF newline 与 resize lock 语义。
 
 ## 0.2.15 Rust CI convergence / local rustfmt preflight
 

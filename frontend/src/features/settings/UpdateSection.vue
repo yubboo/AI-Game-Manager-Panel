@@ -63,7 +63,7 @@ onMounted(() => {
       <div class="feature-card">
         <span class="feature-title">当前版本</span>
         <p class="feature-description">正在运行的 AI游戏管理器面板版本。</p>
-        <strong>v{{ status?.currentVersion || app.info?.version || '0.2.16' }}</strong>
+        <strong>v{{ status?.currentVersion || app.info?.version || '0.2.17' }}</strong>
       </div>
       <div class="feature-card">
         <span class="feature-title">最新稳定版</span>

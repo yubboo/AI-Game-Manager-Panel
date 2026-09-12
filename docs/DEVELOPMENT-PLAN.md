@@ -5,20 +5,20 @@
 > 项目目标：现代化、智能化、AI 驱动的一键游戏服务器部署与管理平台。每个阶段都必须经过开发、自检、正式构建、Windows 实机验证、问题修复、更新记录、冻结基线。
 
 
-## 0.2.16：Windows ConPTY ABI Convergence
+## 0.2.17：Windows ConPTY Runtime Convergence
 
-- 以 0.2.15 Windows Runner 的真实 `E0308` 编译错误为唯一修复目标，不继续叠加 Agent 权限；
-- `UpdateProcThreadAttribute` 的 attribute 参数固定使用 `PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE as usize`；
-- `HPCON` 按 `windows-sys 0.61.2` 的 `isize` ABI 使用 `0` 初始化；
-- Terminal/PTY Gate 必须检查上述两个 ABI 契约，防止未来依赖/重构恢复错误类型；
-- `AGMP-GitHub` 本机存在 Cargo 时必须在 Push 前执行 rustfmt + workspace cargo check；
-- Linux PTY 已由 0.2.15 CI 实机证明，禁止为修 Windows 而回退 Linux native terminal。
+- 以 0.2.16 Windows Runner 的真实 integration 日志为修复依据，不增加新的模型执行权限；
+- Windows `CreateProcessW` 之前必须把 Rust `canonicalize()` 产生的本地 `\\?\X:\...` cwd 还原为普通 drive path，避免 `cmd.exe` 误判为 UNC 并回退到 `C:\Windows`；
+- `terminal/write` 的 `appendNewline` 必须按 backend 发送：Windows ConPTY=`\r\n`，Linux PTY/其他 backend=`\n`；
+- Terminal resize 的 process mutex 必须通过 lexical scope 释放，禁止 `drop(&mut TerminalProcess)` 这种无效解锁；
+- `TerminalProcess::Pipe` 仅在没有 native PTY/ConPTY 的 fallback 平台编译，减少平台 warning；
+- 增加 cwd verbatim-prefix 与 ConPTY CRLF 的静态/单元 Gate，已通过的 Linux PTY、Safety、Headless、Windows Helper 不得回退。
 
-**冻结条件：** Safety、Windows Rust Runtime + ConPTY、Windows Helper、Linux Headless 四个主要 Job 全绿；Windows `cargo check`、`windows_terminal_` integration、workspace tests 全部实际执行并通过。
+**冻结条件：** `Windows Rust Runtime + ConPTY` 的 `cargo check`、`windows_terminal_` integration、workspace tests 全绿；其余三个主要 Job 继续全绿。
 
 ### 下一步
 
-ConPTY 全绿后才进入 Approved Agent → Native Terminal wiring 与 Sandbox / Capability Lease。
+Windows ConPTY integration 全绿后，再进入 Approved Agent → Native Terminal wiring 与 Sandbox / Capability Lease。
 
 ## 0.2.15：Native Terminal CI Convergence
 

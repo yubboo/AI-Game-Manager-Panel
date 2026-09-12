@@ -6,7 +6,7 @@
       "category": "智能核心",
       "route": "/",
       "status": "partial",
-      "phase": "0.2.16 · Windows ConPTY ABI Convergence",
+      "phase": "0.2.17 · Windows ConPTY Runtime Convergence",
       "features": [
         "小鱼自然语言主入口",
         "XiaoYu Agent Runtime（Rust-first）",

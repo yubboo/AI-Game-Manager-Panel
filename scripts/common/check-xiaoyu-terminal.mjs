@@ -77,6 +77,20 @@ try {
   }
   if (!windowsPty.includes('PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE as usize')) failures.push('Windows ConPTY ABI 必须把 PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE 转为 UpdateProcThreadAttribute 所需的 usize')
   if (!windowsPty.includes('let mut pseudo_console: HPCON = 0;')) failures.push('Windows ConPTY ABI 必须按 windows-sys 0.61.2 的 isize HPCON 使用 0 初始化')
+  if (!windowsPty.includes('normalize_windows_current_directory')) failures.push('Windows ConPTY 必须在 CreateProcessW 边界规范化 verbatim cwd')
+  if (!windowsPty.includes('strip_prefix(r"\\\\?\\")')) failures.push('Windows ConPTY 必须移除本地盘符 cwd 的 \\?\ verbatim 前缀后再传给子进程')
+  if (!windowsPty.includes('windows_current_directory_removes_verbatim_prefix_before_create_process')) failures.push('Windows ConPTY 缺少 cwd verbatim-prefix 单元测试')
+
+  if (!terminal.includes('fn terminal_newline(backend: &str)')) failures.push('Terminal Runtime 缺少 backend-aware newline 语义')
+  if (!terminal.includes('return b"\\r\\n";')) failures.push('Windows ConPTY appendNewline 必须发送 CRLF/Enter 语义')
+  if (!terminal.includes('windows_conpty_append_newline_uses_crlf')) failures.push('Windows ConPTY 缺少 CRLF newline 单元测试')
+  if (!terminal.includes('AGMP-CONPTY-CWD:%CD%')) failures.push('Windows ConPTY integration 必须验证 CreateProcessW current directory')
+  const staleResizeUnlock = `        let process = process
+            .as_mut()
+            .ok_or_else(|| anyhow::anyhow!("terminal process is unavailable"))?;
+        process.resize(request.rows, request.cols)?;
+        drop(process);`
+  if (terminal.includes(staleResizeUnlock)) failures.push('Terminal resize 禁止 drop 已 shadow 为引用的 process；必须用 MutexGuard 作用域释放锁')
 
   const protocol = read('rust/crates/xiaoyu-protocol/src/lib.rs')
   for (const token of [
@@ -154,4 +168,4 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY ABI · resize · per-input Host authorization)')
+console.log('AGMP XiaoYu Terminal/PTY Gate PASS (Linux PTY · Windows ConPTY cwd/CRLF · resize · per-input Host authorization)')

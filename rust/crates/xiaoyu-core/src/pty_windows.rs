@@ -5,7 +5,7 @@ use std::io;
 use std::mem::{size_of, zeroed};
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::io::{AsRawHandle, FromRawHandle, RawHandle};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::ptr::{null, null_mut};
 use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
 use windows_sys::Win32::System::Console::{
@@ -185,7 +185,8 @@ pub fn spawn(
 
     let mut process_info: PROCESS_INFORMATION = unsafe { zeroed() };
     let mut command_line = command_line(executable, arguments);
-    let current_directory = wide_null(cwd.as_os_str());
+    let process_cwd = normalize_windows_current_directory(cwd);
+    let current_directory = wide_null(process_cwd.as_os_str());
     let created = unsafe {
         CreateProcessW(
             null(),
@@ -257,6 +258,17 @@ fn command_line(executable: &str, arguments: &[String]) -> Vec<u16> {
     wide_null(OsStr::new(&command))
 }
 
+fn normalize_windows_current_directory(cwd: &Path) -> PathBuf {
+    let raw = cwd.to_string_lossy();
+    if let Some(rest) = raw.strip_prefix(r"\\?\UNC\") {
+        return PathBuf::from(format!(r"\\{rest}"));
+    }
+    if let Some(rest) = raw.strip_prefix(r"\\?\") {
+        return PathBuf::from(rest);
+    }
+    cwd.to_path_buf()
+}
+
 fn wide_null(value: &OsStr) -> Vec<u16> {
     value.encode_wide().chain(std::iter::once(0)).collect()
 }
@@ -295,7 +307,8 @@ fn quote_windows_argument(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::quote_windows_argument;
+    use super::{normalize_windows_current_directory, quote_windows_argument};
+    use std::path::{Path, PathBuf};
 
     #[test]
     fn windows_argument_quoting_preserves_spaces_quotes_and_trailing_slashes() {
@@ -307,5 +320,14 @@ mod tests {
             quote_windows_argument("C:\\path with space\\"),
             "\"C:\\path with space\\\\\""
         );
+    }
+
+    #[test]
+    fn windows_current_directory_removes_verbatim_prefix_before_create_process() {
+        let drive = normalize_windows_current_directory(Path::new(r"\\?\C:\work\agmp"));
+        assert_eq!(drive, PathBuf::from(r"C:\work\agmp"));
+
+        let unc = normalize_windows_current_directory(Path::new(r"\\?\UNC\server\share\agmp"));
+        assert_eq!(unc, PathBuf::from(r"\\server\share\agmp"));
     }
 }

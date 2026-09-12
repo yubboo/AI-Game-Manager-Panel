@@ -199,10 +199,9 @@ Rust 作为 XiaoYu 内部 Runtime 随完整 AGMP 一起发行。未来只有当 
 - Go：监督 Rust Worker 生命周期并继续提供 Product/Domain authority。
 - 下一步：只把已通过 Host Approval 的长任务切到 Rust Jobs，然后再引入 PTY。
 
-### 0.2.16 Windows ConPTY ABI 收敛
+### 0.2.17 Windows ConPTY Runtime 收敛
 
-Rust 继续独占 Native Terminal / PTY / ConPTY 的平台实现。0.2.16 只修正 Windows FFI 类型边界，不把任何 Win32 进程/终端实现迁回 Go。Go Host 仍只负责身份、RBAC、审批与 Domain Service；Windows ConPTY 的 `windows-sys` ABI 细节必须留在 Rust Runtime。
-
+Rust 继续独占 PTY / ConPTY 平台实现。0.2.16 已证明 Windows ConPTY 可以在锁定的 `windows-sys 0.61.2` 下通过真实 `cargo check`；0.2.17 只在 Rust backend 内修正 Win32 cwd 与 CRLF 输入语义，并收紧 native/fallback 编译边界。Go Host 不复制这些平台细节，仍只负责身份、RBAC、审批与 Domain Service。
 ### 0.2.15 验证收敛
 
 - 语言归属不变：Native Terminal 仍属于 Rust XiaoYu Runtime，Go Host 仍负责授权和 Domain authority。

@@ -1,5 +1,22 @@
 # AI-Game-Manager-Panel 项目历史
 
+## AI-Game-Manager-Panel 0.2.17
+
+### Windows ConPTY Runtime Convergence
+
+- 0.2.16 Windows Runner 已通过 `cargo fmt` 与 `cargo check --workspace --locked`，确认 `windows-sys 0.61.2` ConPTY ABI 编译问题已解决。
+- 真实 ConPTY integration 进一步暴露运行时问题：`cmd.exe` 不接受 Rust `canonicalize()` 产生的本地 `\\?\D:\...` current directory 语义，会回退到 `C:\Windows`；同时 LF-only `appendNewline` 没有稳定触发 Windows Console Enter。
+- `pty_windows.rs` 在 `CreateProcessW` 边界把本地 verbatim drive path 规范化为普通 Win32 path；内部 Runtime Root / Session scope 仍使用 canonical path 做安全比较。
+- `terminal/write` 改为 backend-aware newline：Windows ConPTY=`CRLF`，Linux PTY / fallback=`LF`。
+- 修正 Terminal resize 的 mutex guard 生命周期，并把 `TerminalProcess::Pipe` 限制到 fallback 平台，清除 Windows native build 的两类 warning 来源。
+- Terminal/PTY Gate 增加 cwd/CRLF/lock regression 约束；本版不新增模型权限。
+
+### 冻结目标
+
+- `Windows Rust Runtime + ConPTY` 的 check、`windows_terminal_` integration、workspace tests 全绿；
+- Safety、Linux PTY、Windows Helper、Linux Headless 不回退；
+- 全绿后才进入 Approved Agent → Native Terminal wiring 与 Sandbox / Capability Lease。
+
 ## AI-Game-Manager-Panel 0.2.16
 
 ### Windows ConPTY ABI Convergence

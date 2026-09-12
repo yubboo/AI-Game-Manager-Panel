@@ -4,7 +4,7 @@ AI游戏管理器面板是一个面向 Windows / Linux 的多游戏服务器部�
 
 > 旧项目品牌只保留在历史版本记录中；当前产品、模块和用户可见命名统一使用 **AGMP / XiaoYu**。
 
-当前版本：**0.2.16**  
+当前版本：**0.2.17**  
 目标仓库：`https://github.com/yubboo/AI-Game-Manager-Panel.git`
 当前状态：[`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)  
 架构边界：[`docs/PROJECT-ARCHITECTURE.md`](docs/PROJECT-ARCHITECTURE.md) / [`docs/architecture/LANGUAGE-OWNERSHIP.md`](docs/architecture/LANGUAGE-OWNERSHIP.md)
@@ -48,11 +48,11 @@ build/
 
 
 
-## 0.2.16 Windows ConPTY ABI Convergence
+## 0.2.17 Windows ConPTY Runtime Convergence
 
-0.2.15 已经让 Safety、Linux Native PTY integration、Rust workspace tests、Windows Helper 与 Linux Headless 全绿；Windows Runner 也终于越过 rustfmt，真实编译到 `pty_windows.rs`，并暴露 `windows-sys 0.61.2` 的两个具体 ABI 类型差异。0.2.16 不扩展权限，只修正这些真实平台问题：`PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE` 显式转为 `usize`，`HPCON` 按 `isize` 以 `0` 初始化。
+0.2.16 已经让 Windows Rust Runtime 真正通过 `cargo fmt` 与 `cargo check --workspace --locked`，说明 ConPTY FFI/ABI 编译边界已经站稳。Windows Runner 随后进入真实 integration test，并暴露两个运行时语义问题：Rust `canonicalize()` 产生的 `\\?\D:\...` verbatim cwd 会让 `cmd.exe` 把当前目录视为 UNC 风格路径并回退到 `C:\Windows`；同时 `terminal/write` 的 `appendNewline` 统一发送 `\n`，不足以稳定表达 Windows Console 的 Enter 语义。
 
-Terminal/PTY Gate 同步冻结这两个 ABI 契约；`AGMP-GitHub` 在本机存在 Cargo 时从只做 rustfmt 升级为同时执行 `cargo check --workspace --locked`，尽量在 Push 前就抓住 Windows Rust 编译问题。是否宣布 Windows ConPTY 稳定完成，仍只以 Windows GitHub Runner 的 `cargo check + windows_terminal_ integration + workspace tests` 全绿为准。
+0.2.17 在不扩大任何 Agent 权限的前提下，只收敛 Windows Native Terminal：`CreateProcessW` 边界会把 verbatim 本地盘符路径规范化回普通 Win32 drive path，Windows ConPTY 的 `appendNewline` 使用 CRLF；同时修正 Terminal resize 的 MutexGuard 作用域，并让 stdio `Pipe` variant 只在 fallback 平台编译。Windows ConPTY 仍以 GitHub Windows Runner 的 integration + workspace tests 全绿作为稳定完成证据。
 
 ## 0.2.15 Native Terminal CI Convergence
 

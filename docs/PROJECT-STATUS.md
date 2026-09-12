@@ -4,20 +4,22 @@
 
 ## Current version
 
-**0.2.16 — Windows ConPTY ABI Convergence**
+**0.2.17 — Windows ConPTY Runtime Convergence**
 
 ## Stable baseline
 
-0.2.15 proved the Linux side end-to-end: Safety is fully green, including `cargo fmt`, `cargo check`, Rust workspace tests and the real Linux native PTY integration test. Windows Helper and Linux Headless are also green. The only remaining red lane is `Windows Rust Runtime + ConPTY`, where the Windows Runner reached real Rust compilation and exposed two `windows-sys 0.61.2` ABI type mismatches in `pty_windows.rs`.
+0.2.16 confirmed that Windows ConPTY now compiles on the real Windows GitHub Runner: `cargo fmt` and `cargo check --workspace --locked` both pass. Safety, Linux native PTY, Linux Headless and Windows Helper remain green. The remaining red lane is the Windows ConPTY runtime integration itself.
 
-## 0.2.16 changes
+The 0.2.16 Runner exposed two concrete Windows runtime semantics: Rust canonical paths such as `\\?\D:\...` were handed to `cmd.exe` as the current directory and treated as UNC-style paths, causing CMD to fall back to `C:\Windows`; and `terminal/write` used LF for `appendNewline`, so the ConPTY shell did not reliably receive an Enter command.
 
-- Cast `PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE` from its generated `u32` constant type to the `usize` required by `UpdateProcThreadAttribute`.
-- Initialize `HPCON` with integer zero because `windows-sys 0.61.2` defines the alias as `isize`, not a raw pointer.
-- Extend the Terminal/PTY source gate so these two Windows ABI contracts cannot silently regress.
-- Add `pty_linux.rs` / `pty_windows.rs` to the local push helper's required source set.
-- When Cargo exists locally, `AGMP-GitHub` now runs both `cargo fmt --check` and `cargo check --workspace --locked` before commit/push.
-- Do not add new Agent permissions in this release; first require the Windows Runner to compile and execute the ConPTY integration test.
+## 0.2.17 changes
+
+- Normalize Windows verbatim local-drive cwd only at the `CreateProcessW` boundary while keeping canonical paths for internal scope/security checks.
+- Use backend-aware terminal newline semantics: Windows ConPTY uses CRLF; Linux PTY and fallback terminals use LF.
+- Fix Terminal resize lock lifetime with lexical `MutexGuard` scope instead of dropping a shadowed `&mut TerminalProcess` reference.
+- Compile the stdio `Pipe` process variant only on fallback platforms so Linux/Windows native builds do not carry dead code.
+- Extend the Terminal/PTY source gate with Windows cwd normalization, CRLF and regression checks.
+- Do not add new model-visible execution privileges in this release.
 
 ## Current migration boundary
 
@@ -28,7 +30,7 @@ Still in Go for compatibility:
 - current model-visible `shell.exec`;
 - AGMP Domain Tool registry and game/product services.
 
-Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs, Persistent RPC Worker and Terminal Runtime. Linux native PTY is now CI-proven. Windows ConPTY is implemented and statically gated, but is not frozen as stable until the Windows Rust lane passes `cargo check`, `windows_terminal_` integration and workspace tests.
+Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running Jobs, Persistent RPC Worker and Terminal Runtime. Linux native PTY is CI-proven. Windows ConPTY is compile-proven and is waiting for runtime integration/workspace tests to turn green.
 
 ## Next runtime milestones
 
@@ -41,7 +43,7 @@ Rust owns Tool Search, Brain policy primitives, Session Registry, Long-running J
 
 ## Verification status
 
-Local packaging runs project Node gates and Go compatibility checks where available. If Cargo is installed on the Windows development machine, `AGMP-GitHub` additionally runs Rust fmt + workspace check before push. GitHub Actions remains authoritative for Linux PTY and Windows ConPTY platform integration.
+Local packaging runs project Node gates and Go compatibility checks where available. If Cargo is installed on the Windows development machine, `AGMP-GitHub` additionally runs Rust fmt + workspace check before push. GitHub Actions remains authoritative for Windows ConPTY integration and cross-platform Rust tests.
 
 ## AI reading order
 
@@ -51,7 +53,3 @@ Local packaging runs project Node gates and Go compatibility checks where availa
 4. `docs/architecture/LANGUAGE-OWNERSHIP.md`
 5. `docs/development/PROJECT-RULES.md`
 6. `docs/DEVELOPMENT-PLAN.md`
-
-## AI 开发阅读顺序
-
-开始较大修改前依次阅读：`docs/PROJECT-STATUS.md` → `docs/PROJECT-ARCHITECTURE.md` → `docs/architecture/LANGUAGE-OWNERSHIP.md` → `docs/development/PROJECT-RULES.md` → `docs/DEVELOPMENT-PLAN.md`。历史细节只在需要时读取 `docs/PROJECT-HISTORY.md`。当前状态与长期规范优先于历史版本描述。
